@@ -44,13 +44,24 @@
  */
 
 #include "ee_internal.h"
+#include "frsh_error.h"
+/* used to check if the initialization has already been done */
+int EE_frsh_init_once = 1;
 
 
 #ifndef __PRIVATE_FRSH_INIT__
 int EE_frsh_init(void)
 {
-  EE_time_init();
-  EE_frsh_time_init();
-  return 0;
+  if (EE_frsh_init_once) {
+    /* must be done once */
+    EE_frsh_init_once = 0;
+
+    EE_time_init();
+    EE_frsh_time_init();
+    
+    return FRSH_NO_ERROR;
+  } else {
+    return FRSH_ERR_SYSTEM_ALREADY_INITIALIZED;
+  }
 }
 #endif

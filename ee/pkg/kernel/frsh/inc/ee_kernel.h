@@ -56,10 +56,6 @@
  System functions
  *************************************************************************/
 
-#ifndef __PRIVATE_FRSH_INIT__
-int EE_frsh_init(void);
-#endif
-
 #ifndef __PRIVATE_SYS_GETTIME__
 #ifdef __TIME_SUPPORT__
 EE_TIME EE_frsh_sys_gettime(void);
@@ -71,17 +67,12 @@ EE_TIME EE_frsh_sys_gettime(void);
  Primitives
  *************************************************************************/
 
+
+
+
 #ifndef __PRIVATE_THREAD_ACTIVATE__
-/* This primitive activates a thread once and then execute the
-   preemption test */
 void EE_frsh_thread_activate(EE_TID t);
 #endif
-
-
-
-/* mutexes are called using symbolic names as parameters. using MUTEX
-   values different from these constants give an unspecified behavior. 
-   Mutex constants are contained into structs.ini */
 
 #ifndef __PRIVATE_MUTEX_LOCK__
 /* This primitive implements a SRP mutex lock */
@@ -92,6 +83,73 @@ void EE_frsh_mutex_lock(EE_MUTEX m);
 /* This primitive implements a SRP mutex unlock */
 void EE_frsh_mutex_unlock(EE_MUTEX m);
 #endif
+
+
+
+/* FRESCOR API Implementation */
+
+#include "frsh_configuration_parameters.h"
+#include "frsh_core_types.h"
+#include "frsh_error.h"
+
+
+/* Basic services */
+
+#ifndef __PRIVATE_FRSH_INIT__
+int EE_frsh_init(void);
+#endif
+
+#ifndef __PRIVATE_FRSH_STRERROR__
+int EE_frsh_strerror(int error, char *message, size_t size);
+#endif
+
+
+
+
+/* Contract Creation and initialization */
+
+#ifndef __PRIVATE_FRSH_CONTRACT_GET_BASIC_PARAMS__
+int EE_frsh_contract_get_basic_params (const frsh_contract_t *contract,
+				       frsh_rel_time_t *budget_min,
+				       frsh_rel_time_t *period_max,
+				       frsh_workload_t *workload,
+				       frsh_contract_type_t *contract_type);
+#endif
+
+#ifndef __PRIVATE_FRSH_CONTRACT_GET_RESOURCE_AND_LABEL__
+int EE_frsh_contract_get_resource_and_label(const frsh_contract_t *contract,
+					    frsh_resource_type_t *resource_type,
+					    frsh_resource_id_t *resource_id, 
+					    char *contract_label);
+#endif
+
+#ifndef __PRIVATE_FRSH_CONTRACT_GET_TIMING_REQS__
+int EE_frsh_contract_get_timing_reqs(const frsh_contract_t *contract, 
+				     int *d_equals_t,
+				     frsh_rel_time_t *deadline, 
+				     frsh_signal_t *budget_overrun_signal, 
+				     frsh_signal_info_t *budget_overrun_siginfo, 
+				     frsh_signal_t *deadline_miss_signal, 
+				     frsh_signal_info_t *deadline_miss_siginfo);
+#endif
+
+
+
+
+
+
+/* Negotiate Contract Functions */
+
+#ifndef __PRIVATE_BINDTASK__
+int EE_frsh_BindTask(const frsh_vres_id_t vres, const frsh_thread_id_t thread);
+#endif
+
+
+
+
+
+
+
 
 #endif
 
