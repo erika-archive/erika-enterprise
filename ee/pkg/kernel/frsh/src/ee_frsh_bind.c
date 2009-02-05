@@ -101,8 +101,8 @@ int EE_frsh_BindTask(const frsh_vres_id_t vres, const frsh_thread_id_t thread)
   /* implement the bind behavior */
 
   /* detach the current VRES, and depending on the result do the thread handling */
-
-  if (EE_frsh_bind_detach_vres(EE_th[thread].vres)) {
+  /* works also if the thread has not a VRES attached (that is EE_VRES_NIL) */
+  if (EE_frsh_bind_detach_thread(thread)) {
     /* The VRES has been detached
        - as a result of detach_vres the task is not inserted in the ready queue
        - we can give the task the new VRES now*/
@@ -157,7 +157,7 @@ int EE_frsh_BindTask(const frsh_vres_id_t vres, const frsh_thread_id_t thread)
     */
 
     if (EE_th[thread].status & EE_TASK_READY) {
-      if(EE_frsh_updatecapacity(thread, tmp_time) == InsertRDQueue) {
+      if(EE_frsh_updatecapacity(thread, tmp_time) == EE_UC_InsertRDQueue) {
 	EE_rq_insert(thread);
       }
     } else if (EE_th[thread].status & EE_TASK_STACKED) {
@@ -189,7 +189,7 @@ int EE_frsh_BindTask(const frsh_vres_id_t vres, const frsh_thread_id_t thread)
   /* --- */
   
   wasstacked = EE_th[EE_exec].status & EE_TASK_WASSTACKED;
-  EE_th[EE_exec].status = EE_TASK_READY;  
+  EE_th[EE_exec].status = EE_TASK_EXEC;  
   
   /* if different from the current running task implement the preemption */
   if (tmp_exec != EE_exec) {
