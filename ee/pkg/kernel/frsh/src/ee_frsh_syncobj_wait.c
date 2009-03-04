@@ -158,7 +158,10 @@ int EE_frsh_synchobj_wait (const frsh_synchobj_handle_t synch_handle,
 
       /* The task state switch from STACKED TO BLOCKED */
       EE_th[tmp_exec].status = EE_TASK_BLOCKED | EE_TASK_WASSTACKED;
-      
+
+      /* The VRES becomes inactive */
+      EE_vres[EE_th[tmp_exec].vres].status = EE_VRES_INACTIVE;
+
       /* the system ceiling is not touched because it is only modified 
 	 when locking a mutex */
       
