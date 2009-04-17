@@ -7,7 +7,7 @@
  *
  * ERIKA Enterprise is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation, 
+ * version 2 as published by the Free Software Foundation,
  * (with a special exception described below).
  *
  * Linking this code statically or dynamically with other modules is
@@ -41,24 +41,31 @@
 
 #include "ee.h"
 #include "mcu/atmel_atmega128/inc/ee_ic.h"
-//#include "wpan_defines.h"
-//#include "ieee_const.h"
-//#include "wpan_mac.h"
 
- 
-int main(void)
-{
+void irq_1_f__type2(void) {
+	ActivateTask(Task0);
+}
 
-unsigned char maskExtInt = 0x01;
-//EE_IC_enable_external_IRQ(maskExtInt);
-//EE_IC_clear_pending_IRQ();
-EE_timer_init1();
-EE_timer_init3();
-//EE_timer_0_start(); 
-//EE_timer_2_start();
-EE_timer_1_start();
-EE_timer_3_start();
+void irq_1_f__type3(void) {
+	ActivateTask(Task1);
+}
 
-//wpan_init();
-for (;;); 
+TASK(Task0) {
+	EE_led_3_on();
+	EE_led_2_off();
+};
+
+TASK(Task1) {
+	EE_led_2_on();
+	EE_led_3_off();
+};
+
+int main(void) {
+	EE_timer_init1();
+	EE_timer_init3();
+
+	EE_timer_1_start();
+	EE_timer_3_start();
+
+	for (;;);
 }
