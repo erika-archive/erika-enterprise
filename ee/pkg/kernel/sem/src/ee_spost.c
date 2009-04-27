@@ -67,7 +67,7 @@ void EE_sem_PostSem(SemRefType s)
 #else
       if (!EE_hal_get_IRQ_nesting_level() &&
 	  (EE_stk_queryfirst() == EE_NIL || 	/* main task! */
-	   ((EE_STIME)(EE_th_absdline[stk_queryfirst()] - EE_th_absdline[newthread]) > 0
+	   ((EE_STIME)(EE_th_absdline[EE_stk_queryfirst()] - EE_th_absdline[newthread]) > 0
 	    && EE_sys_ceiling < EE_th_ready_prio[newthread])
 	  )
 	 ) {
