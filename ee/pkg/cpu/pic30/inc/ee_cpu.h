@@ -46,10 +46,8 @@
  * CVS: $Id: ee_cpu.h,v 1.7 2008/07/16 15:01:38 francesco Exp $
  */
 
-
 #include "eecfg.h"
 #include "cpu/pic30/inc/ee_compiler.h"
-#include "ee_pic30regs.h"
 
 #ifndef __INCLUDE_PIC30_EE_CPU_H__
 #define __INCLUDE_PIC30_EE_CPU_H__
@@ -66,7 +64,6 @@
  HAL Constants
  *************************************************************************/
 
-
 /* invalid pointer */
 #ifndef NULL
 #define NULL 0
@@ -75,7 +72,6 @@
 /*************************************************************************
  HAL Types
  *************************************************************************/
-
 
 /* Primitive data types */
 /* TODO: it is worth for THUMB?!? */

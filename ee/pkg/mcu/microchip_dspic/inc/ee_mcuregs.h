@@ -53,9 +53,18 @@
    
 /* Include a file with the registers from Microchip C30 distribution */ 
 #ifdef __PIC30_INCLUDE_REGS__
-#include "ee_pic30regs.h"
+#ifdef __33F__
+#include "p33fxxxx.h"
+#elif defined(__30F__)
+#include "p30fxxxx.h"
+#elif defined(__24F__)
+#include "p24Fxxxx.h"
+#elif defined(__24H__)
+#include "p24Hxxxx.h"
+#else
+#error "Error! No MCU model specified!"
 #endif
-
+#endif
 
 /* A set of features which are used by the MCU code... */
 #ifdef __PIC24HJ128GP206__
@@ -218,7 +227,4 @@
 #define __PIC30_HAS_TMR8__
 #endif
 
-
-
- 
 #endif

@@ -5,7 +5,15 @@
 
 /* Include a file with the registers from Microchip C30 distribution */ 
 #ifdef __PIC30_INCLUDE_REGS__
-#include "ee_pic30regs.h"
+#ifdef __33F__
+#include "p33fxxxx.h"
+#elif defined(__30F__)
+#include "p30fxxxx.h"
+#elif defined(__24F__)
+#include "p24Fxxxx.h"
+#elif defined(__24H__)
+#include "p24Hxxxx.h"
+#endif
 #endif
 
 //#include "P2PDefs.h"	// FIXME: chris: from gianluca's driver

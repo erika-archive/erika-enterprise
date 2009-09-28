@@ -77,9 +77,9 @@
 #define EE_STIME EE_INT32
 #endif
 
-#define EE_TIMER_MINCAPACITY 5000
-#define EE_TIMER_MAXFUTUREVALUE    0x7fffffff
-#define EE_TIMER_LIFETIME          0xffffffff
+#define EE_TIMER_MINCAPACITY   	5000
+#define EE_TIMER_MAXFUTUREVALUE 0x7fffffff
+#define EE_TIMER_LIFETIME       0xffffffff
 
 /* compile these functions only if TMR8 is available on the
    particular microcontroller */
