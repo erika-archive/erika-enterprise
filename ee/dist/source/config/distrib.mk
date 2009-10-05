@@ -689,6 +689,8 @@ distrib_opt___AMAZING__:: \
 		ee_$(DIST)/contrib/amazing/inc/amazing.h \
 		ee_$(DIST)/contrib/amazing/src \
 		ee_$(DIST)/contrib/amazing/src/amazing.c \
+		ee_$(DIST)/contrib/microchip/cfg \
+		ee_$(DIST)/contrib/microchip/cfg/contrib.mk \
 		ee_$(DIST)/contrib/microchip/dee_emulation/ \
 		ee_$(DIST)/contrib/microchip/dee_emulation/cfg \
 		ee_$(DIST)/contrib/microchip/dee_emulation/cfg/cfg.mk \
