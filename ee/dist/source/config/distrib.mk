@@ -689,6 +689,15 @@ distrib_opt___AMAZING__:: \
 		ee_$(DIST)/contrib/amazing/inc/amazing.h \
 		ee_$(DIST)/contrib/amazing/src \
 		ee_$(DIST)/contrib/amazing/src/amazing.c
+		ee_$(DIST)/contrib/microchip/dee_emulation/ \
+		ee_$(DIST)/contrib/microchip/dee_emulation/cfg \
+		ee_$(DIST)/contrib/microchip/dee_emulation/cfg/cfg.mk \
+		ee_$(DIST)/contrib/microchip/dee_emulation/cfg/libcfg.mk \
+		ee_$(DIST)/contrib/microchip/dee_emulation/inc \
+		ee_$(DIST)/contrib/microchip/dee_emulation/inc/dee_emulation_16-bit.h \
+		ee_$(DIST)/contrib/microchip/dee_emulation/src \
+		ee_$(DIST)/contrib/microchip/dee_emulation/src/dee_emulation_16-bit.c \
+		ee_$(DIST)/contrib/microchip/dee_emulation/src/dee_emulation_flash_operations.S
 
 distrib_opt___OPENZB__:: \
 		ee_$(DIST)/contrib/network \
