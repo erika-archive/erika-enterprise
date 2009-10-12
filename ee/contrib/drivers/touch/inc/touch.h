@@ -20,7 +20,7 @@
 #define MAXIMUM_UNTOUCH_CONDITIONS   	100           // Number of (successive) Invalid Measurements till Untouch Condition
 #define SLEEP_COUNTDOWN                 2000
 
-#define TOUCH_ACTIVATION_TIME		2000
+#define TOUCH_ACTIVATION_TIME		4000//2000
 
 #define TOUCH_ERROR_NONE		0
 #define TOUCH_ERROR_WRONG_AXIS		-1

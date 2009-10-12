@@ -7,11 +7,12 @@
 #define AMAZING_LAPS			2
 #define AMAZING_ALREADY_SET_ADDR	2
 #define AMAZING_TUNE_ADDR		4
-#define AMAZING_DUTY_MIN		1200
-#define AMAZING_DUTY_MAX		1800
+#define AMAZING_DUTY_MIN		1500 //1200
+#define AMAZING_DUTY_MAX		2100 //1800
 
 volatile EE_UINT8 pwm_phase = 0;
 volatile EE_UINT8 modified = 0;
+volatile EE_UINT8 CALIBRATION_FINISHED = 0;
 
 /* Program the Timer9 peripheral to raise interrupts */
 static void T9_program(void)
@@ -34,32 +35,40 @@ static void T9_clear(void)
 ISR2(_T9Interrupt)
 {
 	static EE_UINT16 c_tick = 0;
+	if(pwm_phase == 0)
+        CALIBRATION_FINISHED = 0; 
 	// clear the interrupt source
 	T9_clear();
-
 	if(c_tick == 2000){
-
-		switch(pwm_phase%4)
-		{
-			case 0: 
+        switch(pwm_phase%4)
+		    {
+			    case 0: 
 				EE_pwm_set_duty(EE_PWM_PORT1,AMAZING_DUTY_MIN);
 				EE_pwm_set_duty(EE_PWM_PORT2,AMAZING_DUTY_MIN);
 				break;
-			case 1:
+			    case 1:
 				EE_pwm_set_duty(EE_PWM_PORT1,AMAZING_DUTY_MAX);
 				break;
-			case 2:
+			    case 2:
 				EE_pwm_set_duty(EE_PWM_PORT2,AMAZING_DUTY_MAX);
 				break;
-			case 3:
+			    case 3:
 				EE_pwm_set_duty(EE_PWM_PORT1,AMAZING_DUTY_MIN);
 				break;
-		}
-
-		if(++pwm_phase == AMAZING_LAPS*4) T9CONbits.TON = 0; 
-
+		    }            
+        if(pwm_phase == (AMAZING_LAPS*4+1))
+        {
+            T9CONbits.TON = 0;
+            pwm_phase = 0;
+            CALIBRATION_FINISHED = 1;
+            EE_pwm_set_duty(EE_PWM_PORT1,1500);
+            EE_pwm_set_duty(EE_PWM_PORT2,1500);
+        }
+        else
+        {
+		    pwm_phase++; 
+        }
 		c_tick = 0;
-
 	} else c_tick++;
 }
 
@@ -159,13 +168,13 @@ void amazing_tuner_body(EE_UINT16 horiz_width,EE_UINT16 vert_height)
 	        	        modified = 1;
 	        	}
 	
-	        	if(!modified){
-	
-				if(pwm_phase>=AMAZING_LAPS*4) break;
-	
-			}
-	        	else 
-			{ 
+	        	if(CALIBRATION_FINISHED)
+                {
+                    T9CONbits.TON = 0;
+	                break;
+                }
+	        	if(modified) 
+			    { 
 				#ifdef CONFIG_AMAZING_UART_DEBUG
 				EE_uart_write_byte(EE_UART_PORT_2,'<');
 				EE_uart_write_byte(EE_UART_PORT_2,(X_raw >> 8) & 0xFF);
@@ -198,7 +207,7 @@ void amazing_tuner_body(EE_UINT16 horiz_width,EE_UINT16 vert_height)
 			
 				tun.cal.f = yd3-tun.cal.d*xt3-tun.cal.e*yt3;
 	
-			}
+			    }
 		}
 	
 		DataEEWrite(0xEE,AMAZING_ALREADY_SET_ADDR);
