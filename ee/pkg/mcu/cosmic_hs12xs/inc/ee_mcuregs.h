@@ -53,7 +53,7 @@
    
 /* Include a file with the registers from Microchip C30 distribution */ 
 #ifdef __S12XS_INCLUDE_REGS__
-#include "ee_s12xsregs.h"
+#include "ee_hs12xsregs.h"
 #endif
 
 
