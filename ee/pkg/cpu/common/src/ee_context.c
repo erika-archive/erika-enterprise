@@ -49,12 +49,13 @@
 /* This version should work for both the monostack and multistack versions of
  * the kernel, thanks to the macros defined in cpu/commmon/inc/ee_context.h.
  * In the mono version, all the stack-related stuff is ignored. */
-void EE_hal_ready2stacked(EE_TID thread)
+void EE_std_run_task_code(EE_FADDR thread_addr)
 {
-    EE_FADDR thread_addr = EE_hal_thread_body[thread];
-    EE_UREG tos_index = EE_std_get_tos_from_index(thread);
+    EE_hal_enableIRQ();
+    ((void (*)())thread_addr)(); /* Call thread_addr */
+    EE_hal_disableIRQ();
+    EE_UREG tos_index;
     do {
-        EE_std_change_context(thread_addr, tos_index);
         EE_thread_end_instance();
         thread_addr = EE_hal_endcycle_next_thread;
         tos_index = EE_std_get_next_tos();
