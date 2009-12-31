@@ -59,6 +59,8 @@
 #else
 #define __INLINE__ static inline
 #endif
+/* Used to declare an inline function before the actual definition */
+#define __DECLARE_INLINE__ static
 
 #define __ALWAYS_INLINE__ __attribute__((always_inline))
 
