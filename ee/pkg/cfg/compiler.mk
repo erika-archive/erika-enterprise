@@ -83,3 +83,7 @@ ifeq ($(findstring __COSMIC__,$(EEALLOPT)), __COSMIC__)
 include $(PKGBASE)/cfg/arch/cc_s12x_cosmic.mk
 endif
 endif
+
+ifeq ($(findstring __LM32__,$(EEALLOPT)) , __LM32__)
+include $(EEBASE)/pkg/cfg/arch/cc_mico32.mk
+endif
