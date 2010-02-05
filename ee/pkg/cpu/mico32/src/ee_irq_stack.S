@@ -45,23 +45,7 @@
  * Author: 2010,  Bernardo  Dal Seno
  */
 
-/* 
-void EE_mico32_call_ISR_new_stack(EE_mico32_ISR_handler fun, int nesting_level)
-{
-    if (nesting_level == 1)
-        change_stacks();
-    EE_std_enableIRQ_nested(); // Enable IRQ if nesting is allowed
-    fun();
-    EE_std_disableIRQ_nested(); // Disable IRQ if nesting is allowed
-    if (nesting_level == 1)
-        change_stacks_back();
-}
-*/
-
-	.macro LOAD_ADDR r sym
-	mvhi	\r, hi(\sym)
-	ori	\r, \r, lo(\sym)
-	.endm
+#include <cpu/mico32/inc/ee_irq_asm.h>
 
 	
         .section        .bss
@@ -75,19 +59,35 @@ EE_mico32_tmp_tos:
 	
 	.text
 
+/* 
+void EE_mico32_call_ISR_new_stack(EE_mico32_ISR_handler fun, int nesting_level)
+{
+    if (nesting_level == 1)
+        change_stacks();
+    EE_std_enableIRQ_nested(); // Enable IRQ if nesting is allowed
+    fun();
+    EE_std_disableIRQ_nested(); // Disable IRQ if nesting is allowed
+    if (nesting_level == 1)
+        change_stacks_back();
+}
+*/
+
 	.global EE_mico32_call_ISR_new_stack
 	.type	EE_mico32_call_ISR_new_stack, @function
 /* void EE_std_change_context_multi(EE_mico32_ISR_handler fun, int nesting_level) */
 EE_mico32_call_ISR_new_stack:
 	// r1 == fun
 	// r2 == nesting_level
+	addi	sp, sp, -8
+	sw	(sp + 4), ra
 
 	/* if (nesting_level == 1) */
-	SKIP_IF_NESTED r2, r3, .L_skip_change
+	SKIP_IF_NESTED_REG r2, r3, .L_skip_change
         /*     change_stacks(); */
-	LOAD_ADDR r4, EE_mico32_tmp_tos
-	sw	(r4 + 0), sp
-	LOAD_ADDR r5, EE_mico32_irq_tos
+	sw	(sp + 8), r11
+	LOAD_ADDR r11, EE_mico32_tmp_tos
+	sw	(r11 + 0), sp
+	LOAD_ADDR r5, EE_mico32_IRQ_tos
 	lw	sp, (r5 + 0)
 .L_skip_change:
 	/* EE_std_enableIRQ_nested(); */
@@ -97,11 +97,13 @@ EE_mico32_call_ISR_new_stack:
 	/* EE_std_disableIRQ_nested(); */
 	DISABLE_NESTED_IRQ
 	/* if (nesting_level == 1) */
-	SKIP_IF_NESTED r2, r3, .L_skip_change_back
+	SKIP_IF_NESTED r2, r2, .L_skip_change_back
 	/*     change_stacks_back(); */
-	LOAD_ADDR r4, EE_mico32_tmp_tos
-	lw	sp, (r4 + 0)
+	lw	sp, (r11 + 0)
+	lw	r11, (sp + 8)
 .L_skip_change_back:
+	lw	ra, (sp + 4)
+	addi	sp, sp, 8
 	ret
 	
 	.size	EE_mico32_call_ISR_new_stack, .-EE_mico32_call_ISR_new_stack
