@@ -46,11 +46,7 @@
 #ifndef __INCLUDE_MICO32_IRQ_ASM_H__
 #define __INCLUDE_MICO32_IRQ_ASM_H__
 
-	.macro LOAD_ADDR r sym
-	mvhi	\r, hi(\sym)
-	ori	\r, \r, lo(\sym)
-	.endm
-
+#include <cpu/mico32/inc/ee_asm_util.h>
 
 #ifdef __ALLOW_NESTED_IRQ__
 	.macro  SKIP_IF_NESTED_REG nest_lev, tmp_reg, skip_lab
