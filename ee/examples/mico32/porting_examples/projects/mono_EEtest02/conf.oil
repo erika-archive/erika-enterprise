@@ -1,6 +1,7 @@
 CPU test_application {
 
-	OS EE {		
+	OS EE {
+		EE_OPT = "__ASSERT__";
 		CFLAGS = "-g2";
 		ASFLAGS = "";
 		LDFLAGS = ""; 
@@ -30,16 +31,15 @@ CPU test_application {
 		USEGETSERVICEID = FALSE;
 		USEPARAMETERACCESS = FALSE;
 		USERESSCHEDULER = FALSE;
-		
-    };
-    
-    /* this is the OIL part for the first task */
-    TASK Task1 {
+	};
+
+	/* this is the OIL part for the first task */
+	TASK Task1 {
 		PRIORITY = 0x01;   /* Low priority */
 		AUTOSTART = FALSE;
 		STACK = SHARED;
-		ACTIVATION = 1;    /* only one pending activation */
-	};	
-
-    OS EE { KERNEL_TYPE = FP; }; 	
+		ACTIVATION = 1;	   /* only one pending activation */
+	};
+	
+	OS EE { KERNEL_TYPE = FP; };	
 };

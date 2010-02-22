@@ -52,6 +52,8 @@
 #include <MicoTimer.h>
 /* Erika Mico32 interrupts */
 #include <cpu/mico32/inc/ee_irq.h>
+/* Assertions */
+#include "test/assert/inc/ee_assert.h"
 
 
 /* Counters; volatile because they are accessed in interrupt handlers and
@@ -61,6 +63,12 @@ volatile int counter, tick_counter;
 /* started: Set to 1 at the beginning of main() */
 int started;
 
+/* Final result */
+EE_TYPEASSERTVALUE result;
+
+/* Assertion */
+EE_TYPEASSERTVALUE EE_assertions[9];
+
 
 /*
  * Task 1
@@ -68,6 +76,10 @@ int started;
 TASK(Task1)
 {
     ++counter;
+    if (counter == 1)
+        EE_assert(3, tick_counter == 1, 2);
+    else if (counter == 2)
+        EE_assert(6, tick_counter == 3, 5);
 }
 
 
@@ -81,6 +93,20 @@ void timer_interrupt(int level)
     ++tick_counter;
     if (tick_counter & 1)
         ActivateTask(Task1);
+    switch (tick_counter) {
+    case 1:
+        EE_assert(2, counter == 0, 1);
+        break;
+    case 2:
+        EE_assert(4, counter == 1, 3);
+        break;
+    case 3:
+        EE_assert(5, counter == 1, 4);
+        break;
+    case 4:
+        EE_assert(7, counter == 2, 6);
+        break;
+    }
 }
 
 
@@ -106,11 +132,15 @@ void init_timer(void)
 int main(void)
 {
     started = 1;
+    EE_assert(1, 1, EE_ASSERT_NIL);
     EE_mico32_enableIRQ();
     init_timer();
     /* Wait until the fourth timer period */
     while (tick_counter < 4)
         ;
+    EE_assert(8, counter == 2 && tick_counter == 4, 7);
+    EE_assert_range(0, 1, 8);
+    result = EE_assert_last();
     started = 0;
     return 0;
 }

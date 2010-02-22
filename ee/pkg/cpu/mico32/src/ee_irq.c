@@ -43,11 +43,13 @@
  * Author: 2009-2010,  Bernardo  Dal Seno
  */
 
-#include "cpu/mico32/inc/ee_irq_internal.h"
-#include "ee_internal.h"
-#include "cpu/common/inc/ee_irqstub.h"
+#include <cpu/mico32/inc/ee_irq_internal.h>
+#include <ee_internal.h>
+#include <cpu/common/inc/ee_irqstub.h>
 
+#ifndef __STATIC_ISR_TABLE__
 EE_mico32_ISR_handler EE_mico32_ISR_table[MAX_MICO32_ISR_LEVEL+1];
+#endif
 
 
 /* Possible improvement: Enable higher-level interrupts while processing lower
@@ -84,6 +86,8 @@ void MicoISRHandler(void)
 }
 
 
+#ifndef __STATIC_ISR_TABLE__
+
 void EE_mico32_register_ISR(int level, EE_mico32_ISR_handler fun)
 {
     int mask;
@@ -98,3 +102,5 @@ void EE_mico32_register_ISR(int level, EE_mico32_ISR_handler fun)
     if (EE_mico32_are_IRQs_enabled(intst))
         EE_mico32_enableIRQ();
 }
+
+#endif /* __STATIC_ISR_TABLE__ */
