@@ -34,6 +34,8 @@ TEMPLATE_LIST_PIC30 += board_flex_openzb_demo
 TEMPLATE_LIST_PIC30 += pic30_res_scheduler
 TEMPLATE_LIST_PIC30 += pic30_semaphore
 TEMPLATE_LIST_PIC30 += pic30_MultiBus_Serial
+TEMPLATE_LIST_PIC30 += pic30_uwl_demo_coord
+TEMPLATE_LIST_PIC30 += pic30_uwl_demo_device
 
 # -----------------------------------------------------------
 
@@ -65,11 +67,11 @@ help:
 	@echo "      make witherrors"
 
 
-BATCH_DIR=/cygdrive/c/Evidence/Evidence/eclipse/evidence
+BATCH_DIR=/cygdrive/c/Evidence/eclipse/evidence
 BATCH_TEMPLATE=$(BATCH_DIR)/template_launcher.bat
 BATCH_GENERATOR=$(BATCH_DIR)/rtd_launcher.bat
 
-ECLIPSE_HOME="C:\\Evidence\\Evidence\\eclipse"
+ECLIPSE_HOME="C:\\Evidence\\eclipse"
 
 FLAGS=$(addsuffix /doneflag.txt,$(addprefix regression/,$(TEMPLATE_LIST)))
 
