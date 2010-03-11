@@ -80,4 +80,7 @@ typedef EE_UINT32 *EE_ADDR;
 /* Code addresses (same size of function pointers) */
 typedef void (*EE_FADDR)(void);
 
+/* Callback function called by driver handlers  */
+typedef void (*EE_ISR_callback)(void);
+
 #endif /* __INCLUDE_CPU_COMMON_EE_TYPES__ */
