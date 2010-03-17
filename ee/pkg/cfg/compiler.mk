@@ -74,8 +74,12 @@ ifeq ($(findstring __PIC32__,$(EEALLOPT)), __PIC32__)
 include $(PKGBASE)/cfg/arch/cc_pic32.mk
 endif
 
-ifeq ($(findstring __TRICORE1__,$(EEALLOPT)), __TRICORE1__)
+ifeq ($(findstring __TRICORE1_TASKING__,$(EEALLOPT)), __TRICORE1_TASKING__)
 include $(PKGBASE)/cfg/arch/cc_tricore_tasking.mk
+endif
+
+ifeq ($(findstring __TRICORE_GNU__,$(EEALLOPT)), __TRICORE_GNU__)
+include $(PKGBASE)/cfg/arch/cc_tricore_gnu.mk
 endif
 
 ifeq ($(findstring __HCS12XS__,$(EEALLOPT)) , __HCS12XS__)
