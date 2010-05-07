@@ -45,3 +45,11 @@ ifeq ($(findstring __LM32__,$(EEOPT)) , __LM32__)
 EE_SRCS += pkg/cpu/common/src/ee_hal_structs.c
 EE_SRCS += pkg/cpu/common/src/ee_context.c
 endif
+
+ifeq ($(findstring __PPCE200Z7__,$(EEALLOPT)) , __PPCE200Z7__)
+ifeq ($(findstring __MPC5674F__,$(EEALLOPT)) , __MPC5674F__)
+EE_SRCS += pkg/cpu/common/src/ee_hal_structs.c
+EE_SRCS += pkg/cpu/common/src/ee_context.c
+endif
+endif
+
