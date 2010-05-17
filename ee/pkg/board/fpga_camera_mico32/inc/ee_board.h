@@ -51,9 +51,9 @@
 #include "board/fpga_camera_mico32/inc/ee_rtc_pcf8583.h"
 #endif // __USE_MICO32BOARD_RTC_PCF8583__
 
-#ifdef __USE_MICO32BOARD_CAMERA_HV7131GP__
+#ifdef __USE_CAMERA_HV7131GP__
 #include "board/fpga_camera_mico32/inc/ee_camera_hv7131gp.h"
-#endif // __USE_MICO32BOARD_CAMERA_HV7131GP__
+#endif // __USE_CAMERA_HV7131GP__
 
 #ifdef __USE_MICO32BOARD_ETHERNET_ENC28J60__
 #include "board/fpga_camera_mico32/inc/ee_ethernet_enc28j60.h"
