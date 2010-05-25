@@ -1,0 +1,52 @@
+//	UART POLLING TEST
+
+CPU test_application {
+
+	OS EE {		
+		EE_OPT = "DEBUG_STACK";
+		
+		CFLAGS = "-g2";
+		ASFLAGS = "";
+		LDFLAGS = ""; 
+
+		CPU_DATA = LM32 {
+			APP_SRC = "test1_main.c";
+			MULTI_STACK = FALSE;
+			USESTANDALONEPRINTF = FALSE; // Optional, default is FALSE
+			USESMALLC = FALSE; // Optional, defautl is FALSE
+		};
+		
+
+		MCU_DATA = LATTICE_PLATFORM {
+   			MODEL = LIBRARY {
+				PLATFORM_LIB_PATH = "../test_led_switch_lib";
+				PLATFORM_NAME = "test_led_switch";
+				PLATFORM_BLD_CFG = "Release"; // Optional, default is ""
+   			};
+   			
+   			DEVICE = UART{						
+					NAME = "uart";										
+			};
+			
+			DEVICE = TIMER{						
+					NAME = "timer";	
+					OPTIONS = TIMER_IRQ_SUPPORT;									
+			};
+  		};
+    };
+    
+    TASK myTask {
+		PRIORITY = 10;
+		STACK = SHARED;
+		SCHEDULE = FULL;
+	};
+	
+	COUNTER myCounter;
+
+ 	ALARM myAlarm {
+  		COUNTER = "myCounter";
+    	ACTION = ACTIVATETASK { TASK = "myTask"; };
+    };
+
+    OS EE { KERNEL_TYPE = FP; }; 	
+};
