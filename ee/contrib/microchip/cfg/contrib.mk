@@ -45,6 +45,7 @@ ifneq ($(ONLY_LIBS) , TRUE)
 
 include $(EEBASE)/contrib/microchip/dee_emulation/cfg/cfg.mk
 #include $(EEBASE)/contrib/microchip/tcpip/cfg/cfg.mk
+include $(EEBASE)/contrib/microchip/drivers/cfg/cfg.mk
 
 endif
 
