@@ -1,5 +1,7 @@
 `timescale 1 ns / 1 ns
 
+`define BOARD_FREQ 25
+`define PLATFORM_FREQ 25
 // Define Wrapping Module
 module mico32_test_base_wrapper( 
                             clk_i,reset_n
@@ -37,10 +39,11 @@ module mico32_test_base_wrapper(
                             , lcd_gpioPIO_IO
                             , misc_gpioPIO_BOTH_IN
                             , misc_gpioPIO_BOTH_OUT
-                            , camera_gpioPIO_BOTH_IN
-                            , camera_gpioPIO_BOTH_OUT
-                            , multiplexed_gpioPIO_BOTH_IN
-                            , multiplexed_gpioPIO_BOTH_OUT
+                            , serparioSER_IN
+                            , serparioSER_OUT
+                            , serparioSH_CLK
+                            , serparioSTORE
+                            , serparioOUT_EN
                             , ext_spiMISO_MASTER
                             , ext_spiMOSI_MASTER
                             , ext_spiSS_N_MASTER
@@ -50,6 +53,13 @@ module mico32_test_base_wrapper(
                             , SPIFlash_bootSCK
                             , SPIFlash_bootSI
                             , SPIFlash_bootSO
+			    , cameracam_y
+			    , cameracam_pclk
+			    , cameracam_hsync
+			    , cameracam_vsync
+			    , cameracam_mclk
+			    , cameracam_rst
+			    , cameracam_enb
                             );
     
     // Inputs
@@ -58,13 +68,11 @@ module mico32_test_base_wrapper(
     input SPIFlashSO;
     input uartSIN;
     input net_spiMISO_MASTER;
-	input [2:0] misc_gpioPIO_BOTH_IN;
-    input [10:0] camera_gpioPIO_BOTH_IN;
-    input [0:0]  multiplexed_gpioPIO_BOTH_IN;
+    input [3:0] misc_gpioPIO_BOTH_IN;
+    input serparioSER_IN;
     input        ext_spiMISO_MASTER;
     input SPIFlash_bootSO;
-    
-    
+
     // Outputs
     output       sramsram_wen;
     output [17:0] sramsram_addr;
@@ -85,20 +93,30 @@ module mico32_test_base_wrapper(
     output [1:0]  sdramsdr_DQM;
     output        sdramsdr_CLK;
     output        uartSOUT;
-	output [3:0]  misc_gpioPIO_BOTH_OUT;
     output        net_spiMOSI_MASTER;
     output [0:0]  net_spiSS_N_MASTER;
     output        net_spiSCLK_MASTER;
-    output [2:0]  camera_gpioPIO_BOTH_OUT;
-    output [3:0]  multiplexed_gpioPIO_BOTH_OUT;
+    output [2:0]  misc_gpioPIO_BOTH_OUT;
+    output        serparioSER_OUT;
+    output        serparioSH_CLK;
+    output        serparioSTORE;
+    output        serparioOUT_EN;
     output        ext_spiMOSI_MASTER;
-    output [0:0]  ext_spiSS_N_MASTER;
+    output [2:0]  ext_spiSS_N_MASTER;
     output        ext_spiSCLK_MASTER;
     output        SPIFlash_bootCEJ;
     output        SPIFlash_bootSCK;
     output        SPIFlash_bootSI;
     output        spi_flash_hold_out;
+    output        cameracam_mclk;
+    output        cameracam_rst;
+    output        cameracam_enb;
     
+    // Input
+    input [7:0]   cameracam_y;
+    input         cameracam_pclk;
+    input         cameracam_hsync;
+    input         cameracam_vsync;
     
     // Bidirs
     inout [15:0]  sramsram_data;
@@ -107,14 +125,35 @@ module mico32_test_base_wrapper(
     inout         camera_i2cSCL;
     inout         rtc_i2cSDA;
     inout         rtc_i2cSCL;
-    inout [5:0]  lcd_gpioPIO_IO;
-   
-	
-    wire          sram_addr_0;
+    inout [8:0]  lcd_gpioPIO_IO;
     
+    wire          sram_addr_0;
+
+    wire          main_clock;
+    wire          main_reset_n;
+
+    pmi_pll_fp #(.pmi_freq_clki(`BOARD_FREQ),
+                 .pmi_freq_clkop(`PLATFORM_FREQ),
+                 .pmi_freq_clkos(`PLATFORM_FREQ),
+                 .pmi_freq_clkok(`PLATFORM_FREQ),
+                 .pmi_family(`LATTICE_FAMILY),
+                 .pmi_phase_adj(0),
+                 .pmi_duty_cycle(50),
+                 .pmi_clkfb_source("CLKOP"),
+                 .module_type("pmi_pll"))
+    platform_pll (.CLKI(clk_i),
+                  .CLKFB(main_clock),
+                  .RESET(!reset_n),
+                  .CLKOP(main_clock),
+                  .CLKOS(),
+                  .CLKOK(),
+                  .CLKOK2(),
+                  .LOCK(main_reset_n)
+                  );
+
     test_base base_platform (
-                               .clk_i(clk_i), 
-                               .reset_n(reset_n), 
+                               .clk_i(main_clock), 
+                               .reset_n(main_reset_n), 
                                .sramsram_wen(sramsram_wen), 
                                .sramsram_data(sramsram_data), 
                                .sramsram_addr({sramsram_addr[17:0],sram_addr_0}),
@@ -148,10 +187,11 @@ module mico32_test_base_wrapper(
                                .lcd_gpioPIO_IO(lcd_gpioPIO_IO), 
                                .misc_gpioPIO_BOTH_IN(misc_gpioPIO_BOTH_IN), 
                                .misc_gpioPIO_BOTH_OUT(misc_gpioPIO_BOTH_OUT), 
-                               .camera_gpioPIO_BOTH_IN(camera_gpioPIO_BOTH_IN), 
-                               .camera_gpioPIO_BOTH_OUT(camera_gpioPIO_BOTH_OUT), 
-                               .multiplexed_gpioPIO_BOTH_IN(multiplexed_gpioPIO_BOTH_IN), 
-                               .multiplexed_gpioPIO_BOTH_OUT(multiplexed_gpioPIO_BOTH_OUT), 
+                               .serparioSER_IN(serparioSER_IN),
+                               .serparioSER_OUT(serparioSER_OUT),
+                               .serparioSH_CLK(serparioSH_CLK),
+                               .serparioSTORE(serparioSTORE),
+                               .serparioOUT_EN(serparioOUT_EN),
                                .ext_spiMISO_MASTER(ext_spiMISO_MASTER), 
                                .ext_spiMOSI_MASTER(ext_spiMOSI_MASTER), 
                                .ext_spiSS_N_MASTER(ext_spiSS_N_MASTER), 
@@ -159,7 +199,14 @@ module mico32_test_base_wrapper(
                                .SPIFlash_bootCEJ(SPIFlash_bootCEJ), 
                                .SPIFlash_bootSCK(SPIFlash_bootSCK), 
                                .SPIFlash_bootSI(SPIFlash_bootSI), 
-                               .SPIFlash_bootSO(SPIFlash_bootSO)
+                               .SPIFlash_bootSO(SPIFlash_bootSO),
+			       .cameracam_y(cameracam_y),
+			       .cameracam_pclk(cameracam_pclk),
+			       .cameracam_hsync(cameracam_hsync),
+			       .cameracam_vsync(cameracam_vsync),
+			       .cameracam_mclk(cameracam_mclk),
+			       .cameracam_rst(cameracam_rst),
+			       .cameracam_enb(cameracam_enb)
                                );
 
     // Unblock SPI Flash
