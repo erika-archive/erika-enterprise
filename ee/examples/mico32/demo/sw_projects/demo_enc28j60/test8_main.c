@@ -3,7 +3,7 @@
   Copyright: Evidence Srl
   Author: Dario Di Stefano
   Date: 29/03/10 18.23
-  Description: LWIP tcp test.
+  Description: LWIP tcp test (tcp server).
 */
 
 /* RT-Kernel */
@@ -16,71 +16,35 @@
 #include <MicoMacros.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdarg.h>
+#include "MicoUtils.h"
 
 /* LWIP */
-#include "lwip/opt.h"
-#include "lwip/init.h"
-#include "arch/init.h"
-#include "lwip/ip.h"
-#include "netif/etharp.h"
-#include "lwip/tcp.h"
-#include "hal/lwip_ethernet.h"
+#include "ee_lwip.h"
 
 /* Utilities */
 #include "test8.h"
-#include "lwipopts_ee.h"
 #include "echo.h"
 
 /* ----------------------------------------------------------- */
 /* Demo Variables */
 /* ----------------------------------------------------------- */
-/* Main network structure */
-struct netif netif;		
-/* My ethernet board data */			
-struct ethernetif my_ethernetif;
-/* TCP socket used in this demo */
-struct tcp_pcb* my_tcp_socket;
-/* TCP buffers used to store TCP packets payloads */
-EE_buffer TCP_rx_buffer;
-EE_buffer TCP_tx_buffer;
-EE_UINT8 tcp_rx_data[TCP_BUFFER_SIZE * TCP_PAYLOAD_PKT_SIZE];
-EE_UINT8 tcp_tx_data[TCP_BUFFER_SIZE * TCP_PAYLOAD_PKT_SIZE];
+/* Socket status structure */
+struct mysocket_state {
+  struct pbuf *p;
+  u32_t  pos;    /* where to start in this pbuf */
+  u32_t  left;   /* how many are left in this pbuf */
+};
 
 /* ----------------------------------------------------------- */
 /* Callbacks and tasks */
 /* ----------------------------------------------------------- */
-/* TCP rx handler */
-err_t tcp_rx_handler(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
-{
-	struct pbuf *q;
-	int i,j=0;
-	BYTE rx_payload[128];
-	
-	print_string("\ntcp_rx_handler!\n");
-	print_val("err: %d\n", err);
-	
-	/* connect to the remote host */
-    //tcp_connect(tpcb, addr, port);   
-                
-    /* TCP received packet print */
-    LWIP_DEBUGF(NETIF_DEBUG | LWIP_DBG_TRACE, ("\np->tot_len: %d\n", p->tot_len));
-    for(q = p; q != NULL; q = q->next) 
-    {
-		 LWIP_DEBUGF(NETIF_DEBUG | LWIP_DBG_TRACE, ("payload: %x, len: %d\n", q->payload, q->len));
-		 for(i=0; i<(q->len); i++)
-		 {	
-		 	rx_payload[j] = ((u8_t*)q->payload)[i];
-		 	j++;
-			LWIP_DEBUGF(NETIF_DEBUG | LWIP_DBG_TRACE, ("q->payload[%d]:%x  ", i, ((u8_t*)q->payload)[i]));
-		 }
-		 
-	}
-	/* Put the tcp packet in the rx buffer */
-	EE_buffer_putmsg(&TCP_rx_buffer, (EE_UINT8*)rx_payload);
-    pbuf_free(p);                                // don't leak the pbuf!
-	
-	return ERR_OK;
-}
+void tcp_close_connection(struct tcp_pcb *pcb, struct mysocket_state *mss);
+void tcp_send_data(struct tcp_pcb *pcb, struct mysocket_state *mss);
+err_t tcp_poll_callback(void *arg, struct tcp_pcb *pcb);
+err_t tcp_tx_callback(void *arg, struct tcp_pcb *pcb, u16_t len);
+err_t tcp_rx_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err);
+err_t tcp_accept_callback(void *arg, struct tcp_pcb *pcb, err_t err);
 
 /* myTask1 */
 TASK(myTask1)
@@ -88,125 +52,15 @@ TASK(myTask1)
 	/* Reception */
 	if(EE_enc28j60_pending_interrupt())
 	{
-		print_string("interrupt signal!\n");
-		print_val("eir: 0x%x\n", ReadETHReg(EIR).Val);
-		print_string("Reception in progress...\n");
-		/* Elaborate the received packet */
-		ethernetif_input(&netif);
-		print_val("eir: 0x%x\n", ReadETHReg(EIR).Val);
+		myprintf("Reception in progress...\n");
+		ethernetif_input(&lwip_netif);	/* Elaborate the received packet */
 	}
-	else
-		print_string("no interrupt!\n");
-		
-	#if 0	
-	/* Transmission */
-	int i;
-	u8_t msg[TCP_PAYLOAD_PKT_SIZE];
-	if(!EE_buffer_isempty(&TCP_tx_buffer))
-	{
-		/* if the tcp socket is connected... */
-		if (my_tcp_socket->remote_port != (uint16_t)0) 	
-		{
-			/* Extract one packet */
-			EE_buffer_getmsg(&TCP_tx_buffer, (EE_UINT8*)msg);
-	    	struct pbuf *p = pbuf_new(msg, TCP_PAYLOAD_PKT_SIZE);
-	        if (p != (struct pbuf *)0) 
-	        {
-	        	print_string("Transmission in progress...\n");
-	        	for(i=0; i<TCP_PAYLOAD_PKT_SIZE; i++)
-					print_vals("p->payload[%d]:0x%x  ", i, ((u8_t*)p->payload)[i]);
-				/* Send the extracted packet */
-	        	tcp_send(my_tcp_socket, p);
-	        }
-	    }
-	}
-	#endif
 }
 
 /* myTask2 */
 TASK(myTask2)
 {
-	print_string("tmr!\n");
-	LWIP_timer_task();
-	
-	#if 0
-	BYTE rx_v[TCP_PAYLOAD_PKT_SIZE];
-	BYTE tx_v[TCP_PAYLOAD_PKT_SIZE];
-	int i;
-	
-	/* Receive one TCP packet (loaded in the tx buffer by the handler...) */
-	if(TCP_receive(rx_v)>=0)
-	{
-		for(i=0; i<TCP_PAYLOAD_PKT_SIZE; i++)
-		{
-			print_vals("rx_v[%d]:0x%x  ", i, rx_v[i]);
-			tx_v[i] = rx_v[i] + 5;
-		}
-		/* Send only if one packet has been received (to see proper increment...) */
-		TCP_send(tx_v);
-	}
-	#endif
-}
-
-/* LWIP_startup_task */
-void LWIP_startup_task(void)
-{
-	struct ip_addr my_ipaddr, netmask, gw;
-	
-	/* Initialize lwip */
-  	ee_lwip_init();
-  	
-  	/* Initialize the main netif structure */
-	IP4_ADDR(&my_ipaddr, MY_IPADDR_BYTE1, MY_IPADDR_BYTE2, MY_IPADDR_BYTE3, MY_IPADDR_BYTE4);
-	IP4_ADDR(&netmask, MY_NETMASK_BYTE1, MY_NETMASK_BYTE2, MY_NETMASK_BYTE3, MY_NETMASK_BYTE4);
-	IP4_ADDR(&gw, MY_GATEWAY_ADDR_BYTE1, MY_GATEWAY_ADDR_BYTE2, MY_GATEWAY_ADDR_BYTE3, MY_GATEWAY_ADDR_BYTE4);
-	LWIP_DEBUGF(NETIF_DEBUG | LWIP_DBG_TRACE, ("netif_add!\n"));
-	netif_add(&netif, &my_ipaddr, &netmask, &gw,
-                                          (void*)&my_ethernetif,
-                                          ethernetif_init, 
-                                          ethernet_input);
-	netif_set_default(&netif);
-    netif_set_up(&netif);                       /* bring the interface up */
-    
-	/* Initialize application(s) */
-	#if 0
-	err_t ret;
-	EE_buffer_init(&TCP_rx_buffer, TCP_PAYLOAD_PKT_SIZE, TCP_BUFFER_SIZE, tcp_rx_data);
-	EE_buffer_init(&TCP_tx_buffer, TCP_PAYLOAD_PKT_SIZE, TCP_BUFFER_SIZE, tcp_tx_data);
-	LWIP_DEBUGF(NETIF_DEBUG | LWIP_DBG_TRACE, ("tcp_new!\n"));
-	my_tcp_socket = tcp_new();	/* Create an tcp socket */
-	ret = tcp_bind(my_tcp_socket, &my_ipaddr, MY_PORT);	/* Bind the tcp socket */ 
-	LWIP_DEBUGF(NETIF_DEBUG | LWIP_DBG_TRACE, ("tcp_bind return value: %d\n", ret));
-	tcp_recv(my_tcp_socket, &tcp_rx_handler);		/* Set the rx callback for tcp packets */ 
-	#endif
-	/* echo app init */
-	echo_init();
-}
-
-void ip_reass_timer(void *arg);
-void LWIP_timer_task(void)
-{
-  static int i=0;
-#if IP_REASSEMBLY
-  static int j=0;
-#endif
-
-  tcp_tmr();
-  
-  if (++i==50) {
-    //etharp_tmr();
-    i=0;
-  }       
-
-#if IP_REASSEMBLY
-  if (++j==4) { 
-    /* once every second... Please note that this is not the same 
-     * periodicity as in the original example
-     */
-    ip_reass_timer();
-    j=0;
-  }       
-#endif
+	tcp_tmr();
 }
 
 /* MAIN (Background task) */
@@ -235,16 +89,39 @@ int main(void)
 	EE_mico32_enableIRQ();
 	
 	/* ------------------- */
+    /* LWIP configuration  */
+    /* ------------------- */
+    myprintf("\n\n\nLWIP configuration in progress...");
+    EE_lwip_init();
+    myprintf("Done!\n");
+	
+	/* ------------------- */
+	/* My app initialization */
+	/* ------------------- */
+	/* TCP socket used in this demo */
+	
+	#if 1
+	err_t ret;
+	struct ip_addr my_ipaddr;
+	IP4_ADDR(&my_ipaddr, MY_IPADDR_BYTE1, MY_IPADDR_BYTE2, MY_IPADDR_BYTE3, MY_IPADDR_BYTE4);
+	struct tcp_pcb* my_tcp_socket = tcp_new();	/* Create an tcp socket */
+	myprintf("tcp_new!\n");
+	ret = tcp_bind(my_tcp_socket, &my_ipaddr, MY_PORT);	/* Bind the tcp socket */ 
+	myprintf("tcp_bind return value: %d\n", ret);
+	my_tcp_socket = tcp_listen(my_tcp_socket);
+	myprintf("tcp_listen\n");
+	tcp_accept(my_tcp_socket, &tcp_accept_callback);
+	myprintf("tcp_accept\n");
+	#else
+	echo_init();
+	#endif
+	
+	/* ------------------- */
 	/* Background activity */
 	/* ------------------- */
-	/* Device initialization */
-	print_string("\n\n\nLWIP configuration in progress...");
-	LWIP_startup_task();	/* LWIP network interface initialization */
-	print_string("Done!\n\n\n");
-	
 	turn_on_led();
-	SetRelAlarm(myAlarm1, 10, 100);
-	SetRelAlarm(myAlarm2, 20, 250);
+	SetRelAlarm(myAlarm1, 1000, 100);
+	SetRelAlarm(myAlarm2, 10, 250);	
 	EE_timer_on();
 		
 	while(1)
@@ -262,63 +139,273 @@ void system_timer_callback(void)
 	CounterTick(myCounter);
 }
 
-/*
-* Allocate a transport-layer pbuf and copies the provided data buffer 'data'
-* of length 'len' bytes into the payload(s) of the pbuf. The function takes
-* care of splitting the data into successive pbuf payloads, if necessary.
-* The function returns the newly created pbuf or NULL if the pbuf cannot
-* be allocated.
-*/
-struct pbuf *pbuf_new(u8_t *data, u16_t len) {
-    struct pbuf *p = pbuf_alloc(PBUF_TRANSPORT, len, PBUF_RAM);
-    struct pbuf *q = p;
-    while ((q != (struct pbuf *)0) && (len >= q->len)) {
-        memcpy(q->payload, data, q->len);         /* copy data into payload */
-        len  -= q->len;                                 /* remaining length */
-        data += q->len;                              /* remainig data chunk */
-        q = q->next;                                       /* get next pbuf */
+/* TCP send data callback */
+void tcp_close_connection(struct tcp_pcb *pcb, struct mysocket_state *mss)
+{
+	myprintf("\ntcp_close_connection start!\n");
+	tcp_arg(pcb, NULL);
+	tcp_sent(pcb, NULL);
+	tcp_recv(pcb, NULL);
+	if (mss) {
+    	if (mss->p) {
+      		pbuf_free(mss->p);
+    	}
+    	mem_free(mss);
+	}
+	tcp_close(pcb);
+	myprintf("\ntcp_close_connection end!\n");
+}
+
+/* TCP send data callback */
+void tcp_send_data(struct tcp_pcb *pcb, struct mysocket_state *mss)
+{
+	err_t err;
+	u16_t len;
+  
+	myprintf("\ntcp_send_data start!\n");
+	if (mss->p == NULL) {
+		myprintf("\ntcp_send_data end!\n");
+    	return;
+	}
+	/* We cannot send more data than space avaliable in the send
+     buffer. */    
+	len = tcp_sndbuf(pcb); 
+	myprintf("tcp_send_data sndbuf: %d\n", len);
+	if(len > mss->left) {
+		len = mss->left;
+	} 
+  	myprintf("tcp_send_data len: %d\n", len);
+  	int i;
+  	for(i=0; i<len; i++)
+		myprintf("p->payload[%d]:0x%x  ", i, ((u8_t*)(mss->p->payload + mss->pos))[i]);
+	/* Send the extracted packet */
+	myprintf("tcp_send_data write...\n");
+  	err = tcp_write(pcb, mss->p->payload + mss->pos, len, 1);
+  	if(err == ERR_OK) {
+    	mss->pos  += len;
+    	mss->left -= len;
+  	} else {
+    	myprintf("tcp_send_data: error %d len %d %d\n", err, len, tcp_sndbuf(pcb));
+  	}
+  	myprintf("\ntcp_send_data end!\n");
+}
+
+/* TCP poll callback */
+err_t tcp_poll_callback(void *arg, struct tcp_pcb *pcb)
+{
+	myprintf("\ntcp_poll_callback!\n");
+	return ERR_OK;
+}
+
+/* TCP tx handler */
+err_t tcp_tx_callback(void *arg, struct tcp_pcb *pcb, u16_t len)
+{
+	struct pbuf *p;
+	struct mysocket_state *mss = arg;
+	
+	myprintf("\ntxcbk start!\n");
+	if (mss->left > 0) {
+		tcp_send_data(pcb, mss);
+	} else {
+    	if (mss->p) {
+			/* free the pbuf and send the next one */
+			p = mss->p;
+			mss->p = pbuf_dechain(p);
+			mss->pos = 0;
+			if (mss->p) 
+				mss->left = mss->p->len;
+			else       
+				mss->left = 0;
+			pbuf_free(p);
+			if (mss->left > 0) 
+				tcp_send_data(pcb, mss);
+		}
+  	}
+  	myprintf("\ntxcbk end!\n");
+	return ERR_OK;
+}
+
+/* TCP rx handler */
+err_t tcp_rx_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
+{
+	struct mysocket_state *mss = arg;
+	
+	myprintf("\ntcp_rx_callback start!\n");
+	if(p != NULL) 
+	{
+		/* Print received data */
+		print_pbuf("rx_p",p);
+		/* Do something with received data */
+		do_something(p);
+    	/* Inform TCP that we have taken the data. */
+    	tcp_recved(tpcb, p->tot_len);
+	} 
+	else 
+	{
+		myprintf("rxcbk no data received, connection closed\n");
+		//close_conn(pcb, mss);
+	}
+	if (err != ERR_OK) 
+	{
+		myprintf("rxcbk error %d, connection closed \n", err);
+		//close_conn(pcb, mss);
+	}
+	
+	/* Transmission */
+    if (mss->p) {						/* append this pbuf to the sending list */
+      pbuf_chain(mss->p, p);	
     }
-    return p;
+    else {
+      mss->p    = p;
+      mss->left = p->len;
+      mss->pos  = 0;
+    }
+    if(err == ERR_OK && p != NULL)
+    	 tcp_send_data(tpcb, mss);		/* Send data */
+
+	myprintf("\ntcp_rx_callback end!\n");
+	return err;
 }
 
-void print_string(const char *s)
+/* TCP accept callback */
+err_t tcp_accept_callback(void *arg, struct tcp_pcb *pcb, err_t err)
+{
+	myprintf("\ntcp_accept_callback start!\n");
+	
+	/* Initialize the server structure. */
+	struct mysocket_state *mss;
+	mss = mem_malloc(sizeof(struct mysocket_state));
+  	if(mss == NULL) {
+		myprintf("\ntcp_accept_callback: mem_malloc out of memory!\n");
+    	return ERR_MEM;
+  	}
+	mss->p    = NULL;
+	mss->left = 0;
+	mss->pos  = 0;
+
+  	/* Tell TCP that this is the structure we wish to be passed for our
+     callbacks. */
+  	tcp_arg(pcb, mss);
+  	tcp_sent(pcb, &tcp_tx_callback);		/* Set the tx callback for tcp packets */
+	tcp_recv(pcb, &tcp_rx_callback);		/* Set the rx callback for tcp packets */ 
+	tcp_poll(pcb, &tcp_poll_callback, 10);	/* Set the poll callback for tcp */
+	
+	myprintf("\ntcp_accept_callback end!\n");
+	return ERR_OK;
+}
+
+
+void print_time_results(void)
+{
+	tsprintf("\n");
+	
+	tsprintf("Absolute time:\n");
+	tsprintf("LWIP_START_ETH_OUT:      %u\n", EE_lwip_read_timestamp(LWIP_START_ETH_OUT));
+	tsprintf("LWIP_START_LOWLEV_OUT:   %u\n", EE_lwip_read_timestamp(LWIP_START_LOWLEV_OUT));
+	tsprintf("LWIP_START_UDP_SEND:     %u\n", EE_lwip_read_timestamp(LWIP_START_UDP_SEND));
+	tsprintf("LWIP_START_LOWLEV_INIT:  %u\n", EE_lwip_read_timestamp(LWIP_START_LOWLEV_INIT));
+	tsprintf("LWIP_START_ETH_INIT:     %u\n", EE_lwip_read_timestamp(LWIP_START_ETH_INIT));
+	tsprintf("LWIP_START_LOWLEV_INPUT: %u\n", EE_lwip_read_timestamp(LWIP_START_LOWLEV_INPUT));
+	tsprintf("LWIP_START_ETH_INPUT:    %u\n", EE_lwip_read_timestamp(LWIP_START_ETH_INPUT));
+	tsprintf("LWIP_START_UDP_INPUT:    %u\n", EE_lwip_read_timestamp(LWIP_START_UDP_INPUT));
+	tsprintf("LWIP_START_UDP_RX_CBK:   %u\n", EE_lwip_read_timestamp(LWIP_START_UDP_RX_CBK));
+	tsprintf("LWIP_END_ETH_OUT:        %u\n", EE_lwip_read_timestamp(LWIP_END_ETH_OUT));
+	tsprintf("LWIP_END_LOWLEV_OUT:     %u\n", EE_lwip_read_timestamp(LWIP_END_LOWLEV_OUT));
+	tsprintf("LWIP_END_UDP_SEND:       %u\n", EE_lwip_read_timestamp(LWIP_END_UDP_SEND));
+	tsprintf("LWIP_END_LOWLEV_INIT:    %u\n", EE_lwip_read_timestamp(LWIP_END_LOWLEV_INIT));
+	tsprintf("LWIP_END_ETH_INIT:       %u\n", EE_lwip_read_timestamp(LWIP_END_ETH_INIT));
+	tsprintf("LWIP_END_LOWLEV_INPUT:   %u\n", EE_lwip_read_timestamp(LWIP_END_LOWLEV_INPUT));
+	tsprintf("LWIP_END_ETH_INPUT:      %u\n", EE_lwip_read_timestamp(LWIP_END_ETH_INPUT));
+	tsprintf("LWIP_END_UDP_INPUT:      %u\n", EE_lwip_read_timestamp(LWIP_END_UDP_INPUT));
+	tsprintf("LWIP_END_UDP_RX_CBK:     %u\n", EE_lwip_read_timestamp(LWIP_END_UDP_RX_CBK));
+	
+	tsprintf("Init time:\n");
+	tsprintf("LWIP_START_ETH_INIT - LWIP_END_ETH_INIT:         %u\n", lwip_time_diff_us(EE_lwip_read_timestamp(LWIP_START_ETH_INIT), EE_lwip_read_timestamp(LWIP_END_ETH_INIT)));
+	tsprintf("LWIP_START_LOWLEV_INIT - LWIP_END_LOWLEV_INIT:   %u\n", lwip_time_diff_us(EE_lwip_read_timestamp(LWIP_START_LOWLEV_INIT), EE_lwip_read_timestamp(LWIP_END_LOWLEV_INIT)));
+	
+	tsprintf("Transmission time:\n");
+	tsprintf("LWIP_START_UDP_SEND - LWIP_END_UDP_SEND:         %u\n", lwip_time_diff_us(EE_lwip_read_timestamp(LWIP_START_UDP_SEND), EE_lwip_read_timestamp(LWIP_END_UDP_SEND)));
+	tsprintf("LWIP_START_ETH_OUT - LWIP_END_ETH_OUT:           %u\n", lwip_time_diff_us(EE_lwip_read_timestamp(LWIP_START_ETH_OUT), EE_lwip_read_timestamp(LWIP_END_ETH_OUT)));
+	tsprintf("LWIP_START_LOWLEV_OUT - LWIP_END_LOWLEV_OUT:     %u\n", lwip_time_diff_us(EE_lwip_read_timestamp(LWIP_START_LOWLEV_OUT), EE_lwip_read_timestamp(LWIP_END_LOWLEV_OUT)));
+	tsprintf("LWIP_START_UDP_SEND_IPROUTE - LWIP_END_UDP_SEND_IPROUTE:             %u\n", lwip_time_diff_us(EE_lwip_read_timestamp(LWIP_START_UDP_SEND_IPROUTE), EE_lwip_read_timestamp(LWIP_END_UDP_SEND_IPROUTE)));
+	tsprintf("LWIP_START_LOWLEV_INIT_TRANSFER - LWIP_END_LOWLEV_INIT_TRANSFER:     %u\n", lwip_time_diff_us(EE_lwip_read_timestamp(LWIP_START_LOWLEV_INIT_TRANSFER), EE_lwip_read_timestamp(LWIP_END_LOWLEV_INIT_TRANSFER)));
+	tsprintf("LWIP_START_LOWLEV_WRITE - LWIP_END_LOWLEV_WRITE:                     %u\n", lwip_time_diff_us(EE_lwip_read_timestamp(LWIP_START_LOWLEV_WRITE), EE_lwip_read_timestamp(LWIP_END_LOWLEV_WRITE)));
+	tsprintf("LWIP_START_LOWLEV_SIGNAL - LWIP_END_LOWLEV_SIGNAL:                   %u\n", lwip_time_diff_us(EE_lwip_read_timestamp(LWIP_START_LOWLEV_SIGNAL), EE_lwip_read_timestamp(LWIP_END_LOWLEV_SIGNAL)));
+	tsprintf("ENC28J60_START_MAC_FLUSH_WAIT - ENC28J60_END_MAC_FLUSH_WAIT:         %u\n", enc28j60_time_diff_us(EE_enc28j60_read_timestamp(ENC28J60_START_MAC_FLUSH_WAIT), EE_enc28j60_read_timestamp(ENC28J60_END_MAC_FLUSH_WAIT)));
+	tsprintf("ENC28J60_START_MAC_FLUSH_RETX - ENC28J60_END_MAC_FLUSH_RETX:         %u\n", enc28j60_time_diff_us(EE_enc28j60_read_timestamp(ENC28J60_START_MAC_FLUSH_RETX), EE_enc28j60_read_timestamp(ENC28J60_END_MAC_FLUSH_RETX)));
+	
+	tsprintf("Reception time:\n");
+	tsprintf("LWIP_START_UDP_INPUT - LWIP_END_UDP_INPUT:       %u\n", lwip_time_diff_us(EE_lwip_read_timestamp(LWIP_START_UDP_INPUT), EE_lwip_read_timestamp(LWIP_END_UDP_INPUT)));
+	tsprintf("LWIP_START_ETH_INPUT - LWIP_END_ETH_INPUT:       %u\n", lwip_time_diff_us(EE_lwip_read_timestamp(LWIP_START_ETH_INPUT), EE_lwip_read_timestamp(LWIP_END_ETH_INPUT)));
+	tsprintf("LWIP_START_LOWLEV_INPUT - LWIP_END_LOWLEV_INPUT: %u\n", lwip_time_diff_us(EE_lwip_read_timestamp(LWIP_START_LOWLEV_INPUT), EE_lwip_read_timestamp(LWIP_END_LOWLEV_INPUT)));
+	
+}
+
+#define MAX_CHARS 128
+void myprintf(const char* format, ...)
+{
+#ifdef PRINT_ON 
+	char str[MAX_CHARS];
+	
+	va_list args;
+	va_start( args, format );
+	vsnprintf(str, MAX_CHARS, format, args);
+	va_end( args );
+	EE_uart_send_buffer((EE_UINT8*)str, strlen(str));
+#endif
+}
+
+void tsprintf(const char* format, ...)
+{
+	char str[MAX_CHARS];
+	
+	va_list args;
+	va_start( args, format );
+	vsnprintf(str, MAX_CHARS, format, args);
+	va_end( args );
+	EE_uart_send_buffer((EE_UINT8*)str, strlen(str));
+}
+
+void print_pbuf(const char *name, struct pbuf *p)
 {
 	#ifdef PRINT_ON 
-	EE_uart_send_buffer((EE_UINT8*)s,strlen(s));
+	int i;
+	struct pbuf *q;
+	
+	myprintf(name);
+	myprintf("\np->tot_len: %d\n", p->tot_len);
+	for(q = p; q != NULL; q = q->next) 
+	{
+		myprintf("payload: %x, len: %d\n", (unsigned int)q->payload, q->len);
+		for(i=0; i<(q->len); i++)
+		{
+			myprintf("q->payload[%d]:%x  ", i, ((u8_t*)q->payload)[i]);
+		}	
+	}
+	myprintf("\n");
 	#endif
 }
 
-void print_val(char* s, int val)
+void print_array(const char *name, BYTE* vet, int len)
 {
 	#ifdef PRINT_ON 
-	char str[64];
-	sprintf(str, s, val);
-	print_string(str);
+	int i;
+	
+	for(i=0; i<len; i++)
+	{
+		myprintf(name);
+		myprintf("[%d]:%x  ", i, vet[i]);
+	}
+	myprintf("\n");
 	#endif
 }
 
-void print_vals(char* s, int val1, int val2)
+void do_something(struct pbuf *p)
 {
-	#ifdef PRINT_ON 
-	char str[64];
-	sprintf(str, s, val1, val2);
-	print_string(str);
-	#endif
+	struct pbuf *q;
+	int i;
+	
+    for(q = p; q != NULL; q = q->next) 
+         for(i=0; i<(q->len); i++)
+            ((u8_t*)q->payload)[i] += 5; 
 }
-
-
-int TCP_receive(BYTE* rxv)
-{
-	if(EE_buffer_getmsg(&TCP_rx_buffer, (EE_UINT8*)rxv)==EE_BUF_OK)
-		return 1;
-	else
-		return -1;
-}
-
-int TCP_send(BYTE* txv)
-{
-	EE_buffer_putmsg(&TCP_tx_buffer, (EE_UINT8*)txv);
-	return 1;
-}
-
-
