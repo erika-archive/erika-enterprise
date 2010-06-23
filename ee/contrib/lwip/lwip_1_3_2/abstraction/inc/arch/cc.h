@@ -41,8 +41,6 @@
 #ifndef __CC_H__
 #define __CC_H__
  
-#include <hal/lwip_compiler.h> 
-
 #if defined __LM32__
 #include <arch/cc_mico32.h>
 #else			/* No timer */
