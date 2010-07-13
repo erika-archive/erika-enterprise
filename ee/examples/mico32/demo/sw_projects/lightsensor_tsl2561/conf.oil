@@ -33,7 +33,9 @@ CPU test_application {
   		};
 
 		// Light sensor
-		EE_OPT = "__USE_LIGHTSENSOR_TSL2561__";
+		EE_OPT = "__ADD_LIBS__";
+		EE_OPT = "__USE_LIGHTSENSOR_TSL2561T__";
+		LIB = ENABLE { NAME = "TSL2561T"; };	
 		
 		BOARD_DATA = XP2_CAMERA_BOARD {
 			OPTIONS = TIMER;			
