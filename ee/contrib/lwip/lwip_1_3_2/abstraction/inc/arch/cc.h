@@ -43,6 +43,8 @@
  
 #if defined __LM32__
 #include <arch/cc_mico32.h>
+#elif defined __PIC32__
+#include <arch/cc_pic32.h>
 #else			/* No timer */
 #error "LWIP_ARCH ERROR: cpu not specified!"
 #endif	/* End Selection */
