@@ -1,0 +1,71 @@
+//	ENC28J60 + lwIP TCP test
+
+CPU test_application {
+
+	#include "conf.oil.lwip"
+	#include "conf.oil.enc28j60"
+
+	OS EE {		
+		CFLAGS = "-g2";
+		ASFLAGS = "";
+		LDFLAGS = ""; 
+
+		CPU_DATA = LM32 {
+			APP_SRC = "main.c";
+			MULTI_STACK = FALSE;
+			USESTANDALONEPRINTF = FALSE; // Optional, default is FALSE
+			USESMALLC = FALSE; // Optional, default is FALSE
+		};
+		
+		MCU_DATA = LATTICE_PLATFORM {
+			MODEL = LIBRARY {
+				PLATFORM_LIB_PATH = "../test_sram_lib";
+				PLATFORM_NAME = "test_base";
+				PLATFORM_BLD_CFG = "Release"; // Optional, default is ""
+			};
+
+			/* used by LWIP */
+			DEVICE = TIMER {
+				NAME = "timer_uwl";				
+				OPTIONS = TIMER_IRQ_SUPPORT;
+			};
+
+			/* used for time debug */
+			DEVICE = TIMER {
+				NAME = "freetimer";				
+			};
+		};
+
+		BOARD_DATA = XP2_CAMERA_BOARD {
+			OPTIONS = RS232;
+			OPTIONS = ETHERNET;
+			OPTIONS = ETHERNET_IRQ_SUPPORT;
+			OPTIONS = LEDS;
+		};
+		
+		KERNEL_TYPE = FP;
+		
+		/* ********************************************************** */
+		/*                Contrib Library Inclusion                   */
+		/* ********************************************************** */
+		/* CONSOLE library is used only for enc28j60 and lwip debug */
+		EE_OPT = "__ADD_LIBS__";
+		LIB = ENABLE { NAME = "CONSOLE"; };
+		EE_OPT = "USE_CONSOLE";
+		EE_OPT = "USE_CONSOLE_SERIAL";
+		
+
+	};
+
+	/* ****************************************************************** */
+	/*                          Application                               */
+	/* ****************************************************************** */
+
+	/* TASKs list */
+	TASK Sender {
+		PRIORITY = 8;
+		STACK = SHARED;
+		SCHEDULE = FULL;
+		RESOURCE = "LwipMutex";
+	};
+};

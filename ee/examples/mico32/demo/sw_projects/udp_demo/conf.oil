@@ -6,7 +6,6 @@ CPU test_application {
 	#include "conf.oil.enc28j60"
 
 	OS EE {		
-		CFLAGS = "-D__USE_LEDS__"; // Workaround for RT-Druid bug
 		CFLAGS = "-g2";
 		ASFLAGS = "";
 		LDFLAGS = ""; 
@@ -26,16 +25,16 @@ CPU test_application {
 			};
 
 			DEVICE = TIMER {
-				NAME = "timer_uwl";
+				NAME = "timer_uwl";				/* used by LWIP */
 				OPTIONS = TIMER_IRQ_SUPPORT;
 			};
 
 			DEVICE = TIMER {
-				NAME = "freetimer";
+				NAME = "freetimer";				/* used for time debug */
 			};
 
 			DEVICE = TIMER {
-				NAME = "timer";
+				NAME = "timer";					/* used for tasks activations */
 				OPTIONS = TIMER_IRQ_SUPPORT;
 			};
 		};
@@ -44,7 +43,7 @@ CPU test_application {
 			OPTIONS = RS232;
 			OPTIONS = ETHERNET;
 			OPTIONS = ETHERNET_IRQ_SUPPORT;
-//			OPTIONS = LEDS;
+			OPTIONS = LEDS;
 		};
 		
 		KERNEL_TYPE = FP;
@@ -52,12 +51,12 @@ CPU test_application {
 		/* ********************************************************** */
 		/*                Contrib Library Inclusion                   */
 		/* ********************************************************** */
-/* CONSOLE
+		/* CONSOLE library is used only for enc28j60 and lwip debug
 		EE_OPT = "__ADD_LIBS__";
 		LIB = ENABLE { NAME = "CONSOLE"; };
 		EE_OPT = "USE_CONSOLE";
 		EE_OPT = "USE_CONSOLE_SERIAL";
-*/
+		*/
 
 	};
 
@@ -65,12 +64,14 @@ CPU test_application {
 	/*                          Application                               */
 	/* ****************************************************************** */
 
+	/* ISRs list */
 	ISR Timer {
 		CATEGORY = 2;
 		LEVEL = "TIMER_IRQ";
 		HANDLER = "EE_timer_common_handler";
 	};
 
+	/* TASKs list */
 	TASK Sender {
 		PRIORITY = 8;
 		STACK = SHARED;
@@ -78,8 +79,10 @@ CPU test_application {
 		RESOURCE = "LwipMutex";
 	};
 
+	/* COUNTERs list */
 	COUNTER SenderCounter;
 
+	/* ALARMs list */
 	ALARM SenderAlarm {
 		COUNTER = SenderCounter;
 		ACTION = ACTIVATETASK { TASK = "Sender"; };
