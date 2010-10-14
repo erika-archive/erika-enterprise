@@ -97,3 +97,7 @@ endif
 ifeq ($(findstring __LM32__,$(EEALLOPT)) , __LM32__)
 include $(EEBASE)/pkg/cfg/arch/cc_mico32.mk
 endif
+
+ifeq ($(findstring __ESI_RISC__,$(EEALLOPT)) , __ESI_RISC__)
+include $(EEBASE)/pkg/cfg/arch/cc_esi_risc.mk
+endif
