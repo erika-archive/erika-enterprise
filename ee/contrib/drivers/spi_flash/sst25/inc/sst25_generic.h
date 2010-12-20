@@ -101,8 +101,10 @@ void sst25_generic_flash_write_buffer(unsigned id, EE_UINT32 addr,
     const void *data, EE_UREG len);
 #endif
 
-#define flash_hal_spi_erase_sector(i_d, ad)    spiflash_short_write(i_d, ((EE_UINT32)(cmd_sector_erase[0]) << 24) | ad, 4) //sizeof(ad)+sizeof(cmd_sector_erase));
-#define flash_hal_spi_erase_block(i_d, ad)     spiflash_short_write(i_d, ((EE_UINT32)(cmd_block_erase[0]) << 24) | ad, 4) //sizeof(ad)+sizeof(cmd_sector_erase));
+#define SPI_FLASH_SECTOR_SIZE   (4U * 1024U)
+#define SPI_FLASH_BLOCK_SIZE    (32U * 1024U)
+#define SPI_FLASH_CMD_SECTOR_ERASE      SPI_FLASH_CMD_4K_ERASE
+#define SPI_FLASH_CMD_BLOCK_ERASE       SPI_FLASH_CMD_32K_ERASE
 
 #include "spi_flash_generic.h"
 

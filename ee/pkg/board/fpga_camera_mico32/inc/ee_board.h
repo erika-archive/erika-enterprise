@@ -66,6 +66,10 @@
 #include "board/fpga_camera_mico32/inc/ee_rtc_pcf8583.h"
 #endif 
 
+#if defined(__USE_SST25VF016B__) || defined(__USE_SST25LF0X0A__)
+#include "ee_spi_flash_boot.h"
+#endif
+
 #endif
 
 #if defined(__USE_LEDS__) || defined(__USE_SWITCHES__) || defined(__USE_TRANSISTORS__)
