@@ -45,8 +45,6 @@
 #ifndef __MCU_EE_REGS_H__
 #define __MCU_EE_REGS_H__
 
-#include <cpu/e200zx/inc/ee_regs.h>
-
 #define INTC_MCR	0xfff48000
 #define INTC_CPR0	0xfff48008
 #define INTC_CPR1	0xfff4800c
@@ -54,5 +52,10 @@
 #define INTC_IACKR1	0xfff4801c
 #define INTC_EOIR0	0xfff48018
 #define INTC_EOIR1	0xfff4801c
+
+/* For duplicated registers, pick the Z6 instance */
+#define INTC_CPR	INTC_CPR0
+#define INTC_IACKR	INTC_IACKR0
+#define INTC_EOIR	INTC_EOIR0
 
 #endif
