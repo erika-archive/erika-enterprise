@@ -49,9 +49,9 @@
 /* Include the appropriate file according to the target MCU */
 
 #ifdef __MPC5668__
-#include <mcu/freescale_mpc5668/inc/mpc5668.h>
+#include <mcu/freescale_mpc5668/inc/ee_mpc5668.h>
 #elif defined __MPC5674F__
-#include <mcu/freescale_mpc5674f/inc/mpc5674f.h>
+#include <mcu/freescale_mpc5674f/inc/ee_mpc5674f.h>
 #else
 #error "No known MCU found"
 #endif
