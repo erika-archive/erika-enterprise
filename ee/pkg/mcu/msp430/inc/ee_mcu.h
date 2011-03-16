@@ -41,12 +41,21 @@
 /*
  * Header file to include drivers header files needed.
  * Author: 2010,  Christian Grioli
+ * Updates: 2011, Steve Langstaff
  */
 
 
 #ifndef __INCLUDE_MSP430_MCU_H__
 #define __INCLUDE_MSP430_MCU_H__
 
+#ifdef __USE_UART__
 #include "mcu/msp430/inc/ee_uart.h"
+#endif
+
+#include "mcu/msp430/inc/ee_watchdog.h"
+
+#include "mcu/msp430/inc/ee_sysclk.h"
+
+#include "mcu/msp430/inc/ee_delay.h"
 
 #endif
