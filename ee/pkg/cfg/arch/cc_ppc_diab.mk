@@ -72,7 +72,7 @@ OPT_CC = -Xlicense-wait -Xstderr-fully-buffered -Xbss-common-off	\
 	-Xeieio -g3 -Xdebug-dwarf1 -XO -Xsavefpr-avoid \
 	-Xsmall-data=8 -Xswitch-table=0 -Xinline=40 -Xsmall-const=0 \
 	-Xenum-is-best -Xunroll=4 -Xunroll-size=5 -Xsize-opt -Xsemi-is-comment \
-	-Xstop-on-warning -Xkeywords=4 $(ALLINCPATH) -c $(CFLAGS) \
+	-Xstop-on-warning -Xkeywords=4 -c $(CFLAGS) \
 	-Xforce-prototypes $(OPT_TARGET)
 
 
@@ -94,13 +94,18 @@ endif
 # OPT_LINK represents the options for ld invocation
 LINK_SCRIPT = loc_diab.dld
 OPT_LINK += $(OPT_TARGET)
-OPT_LINK += $(LINK_SCRIPT) -e __start
+OPT_LINK += $(LINK_SCRIPT) -e __start -lc
 LINKDEP = $(LINK_SCRIPT)
+MAP_OPT = -m > $(MAP_FILE)
 
 ifeq ($(call iseeopt, __DEFAULT_LD_SCRIPT__), yes)
 $(error "EEOPT __DEFAULT_LD_SCRIPT__ not supported")
 endif
 
+# OPT_AR: options for library generation
+OPT_AR = rs
+
+PREPROC_ASM_2_PASS = 1
 DEFS_ASM = $(addprefix -D, $(EEOPT) )
 DEFS_CC  = $(addprefix -D, $(EEOPT) )
 

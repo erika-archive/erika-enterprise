@@ -1,7 +1,7 @@
 /* ###*B*###
  * ERIKA Enterprise - a tiny RTOS for small microcontrollers
  *
- * Copyright (C) 2002-2010  Evidence Srl
+ * Copyright (C) 2002-2011  Evidence Srl
  *
  * This file is part of ERIKA Enterprise.
  *
@@ -38,12 +38,25 @@
  * Boston, MA 02110-1301 USA.
  * ###*E*### */
 /*
- * Z7 register mappings.
+ * e200zX register mappings.
  * Author: 2010 Fabio Checconi
  */
 
 #ifndef __EE_CPU_E200ZX_REGS_H__
 #define __EE_CPU_E200ZX_REGS_H__
+
+#ifdef __DCC__
+#define ASM_REORDER_OFF .set noreorder
+#define ASM_REORDER_ON .set reorder
+#else
+#define ASM_REORDER_OFF
+#define ASM_REORDER_ON
+#endif
+
+#ifdef __MWERKS__ /* CodeWarrior Assembly uses this deprecated macro */
+/* CodeWarrior doesn't recognize lower-case "sp" */
+#define sp r1
+#endif
 
 #define SPRG_XER	1
 #define SPRG_LR		8
@@ -77,6 +90,6 @@
 #define EE_E200ZX_MAX_CPU_EXCP 16
 
 #define E200ZX_IRQ_VECTOR_BASE_ALIGN	E200ZX_IRQ_ENTRY_ALIGN
-#define E200ZX_IRQ_ENTRY_ALIGN	4
+#define E200ZX_IRQ_ENTRY_ALIGN	16
 
 #endif /* __EE_CPU_E200ZX_REGS_H__ */
