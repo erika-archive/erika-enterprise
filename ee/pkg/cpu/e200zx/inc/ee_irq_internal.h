@@ -73,6 +73,8 @@
  * 		change_stacks_back();
  */
 #ifdef __IRQ_STACK_NEEDED__
+extern struct EE_TOS EE_e200z7_IRQ_tos;
+
 void EE_e200z7_call_ISR_new_stack(int level, EE_e200z7_ISR_handler fun,
 							unsigned nesting);
 #else
