@@ -16,20 +16,18 @@ printf "$1: START\n" >>regression/output.log
 printf "$1: template\n"
 printf "$1: template\n" >>regression/output.log
 cd regression/$1
-export ECLIPSE_HOME=$2
-$3 --template $1 --output . 2>&1 >>output.log || exit
+$3 $2 $1 . >>output.log 2>&1 || exit
 cd ../..
 
 printf "$1: OIL\n"
 printf "$1: OIL\n" >>regression/output.log
 cd regression/$1
-export ECLIPSE_HOME=$2
-$4 --template $1 --output . 2>&1 >>output.log || exit
+$4 $2 conf.oil Debug >>output.log 2>&1 || exit
 cd ../..
 
 printf "$1: Compile\n"
 printf "$1: Compile\n" >>regression/output.log
-make -C regression/$1/Debug 2>&1 >>regression/$1/output.log || exit
+make -C regression/$1/Debug >>regression/$1/output.log 2>&1 || exit
 
 printf "$1: OK\n-------------------------------------\n"
 printf "$1: OK\n-------------------------------------\n" >>regression/output.log
