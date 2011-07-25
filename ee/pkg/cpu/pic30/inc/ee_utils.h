@@ -44,9 +44,6 @@
 
 #include "cpu/pic30/inc/ee_compiler.h"
 
-
 void EE_delay_us(EE_UINT32 delay);
 
-
-
-#endif  /* __INCLUDE_PIC32_EE_UTILS_H__ */
+#endif  /* __INCLUDE_PIC30_EE_UTILS_H__ */
