@@ -54,37 +54,54 @@
 #include <string.h>
 
 static void init(scicos_block *block)
-{   
-	can_debug_print_string("can_rx init start!\n");
-	/* to do: add eCAN2 support */
-	ecan_rx_canid	=	1;	//block->ipar[2];
-	if( ecan_rx_canid==1 ) 
-	{
-		ecan1_rx_id 	= 	block->ipar[0];							/* packet id */
-		ecan1_rx_len 	= 	block->ipar[1];	  						/* number of floats */
-		can_debug_print_val("can_rx block->ipar[0]: %d\n", block->ipar[0]);
-		can_debug_print_val("can_rx block->ipar[1]: %d\n", block->ipar[1]);
-		if(ecan1_rx_len & 0x01)
-			ecan1_rx_div = ecan1_rx_len/2 + 1;	/* number of packets, odd case */
-		else
-			ecan1_rx_div = ecan1_rx_len/2;		/* number of packets, even case */
-		ecan1_rx_initialized = 1;
-	}
-	can_debug_print_string("can_rx init end!\n");
-	
+{
+    /* 
+        to do: add eCAN2 support 
+        ecan_rx_canid	=	block->ipar[2];
+    */
+	EESCI_can_debug_print_string("can_rx init start!\n");
+	EESCI_can_debug_print_val("can_rx block->ipar[0]: %d\n", block->ipar[0]);
+	EESCI_can_debug_print_val("can_rx block->ipar[1]: %d\n", block->ipar[1]);
+	EESCI_can_debug_print_string("can_rx init end!\n");
 }
+
+
+extern volatile int eesci_can_debug_rx_service_flag;
 
 static void inout(scicos_block *block)
 {
-	int i;
-	int cnt = CAN_Buffer_count(&CAN1_rx_buffer);
-	if(cnt >= ecan1_rx_div)
+	static int eesci_can_debug_counter=0;
+
+	EE_UINT32 id  = block->ipar[0]; /* packet id */
+	EE_UINT8 len = block->ipar[1]; /* number of floats */
+	//EE_UINT8 div = (len & 0x01)? len/2 + 1: len/2; /* number of CAN packets for this id (max 1 packet is supported) */
+	int ind = EESCI_eCAN1_get_rx_block(id);
+	if(ind >= 0)
 	{
-		for(i=0; i<ecan1_rx_div; i++)
-			CAN_Buffer_Getmsg(&CAN1_rx_buffer, scicosCAN1_rx_buffer, CAN_BUF_SIZE);
-		for(i=0; i<ecan1_rx_len; i++)
-			memcpy(&y(i,0), scicosCAN1_rx_buffer + i*SIZE_OF_ELEMENT, SIZE_OF_ELEMENT);
+		int i;
+		CAN1_rx_block can1b = CAN1_rx_blocks[ind];
+		
+		EE_hal_disableIRQ();
+		for(i=0; i<CAN_DATA_LEN; i++)
+			scicosCAN1_rx_buffer[i] = can1b.rx_ecan1message.data[i];
+		EE_hal_enableIRQ();
+		
+		/* Received data is saved for testing */
+		if( (eesci_can_debug_counter < CAN_DEBUG_TEST_NUM) && (eesci_can_debug_rx_service_flag!=0) ) {
+				EESCI_can_debug_insert_val(scicosCAN1_rx_buffer, eesci_can_debug_counter);
+				eesci_can_debug_counter++;
+				eesci_can_debug_rx_service_flag = 0;
+		}
+		else if(eesci_can_debug_counter >= CAN_DEBUG_TEST_NUM) {
+			/* This function is blocking in TEST mode */
+			EESCI_can_debug_print_results();
+		}
+		
+		for(i=0; i<len; i++)
+			memcpy(&y(i,0), scicosCAN1_rx_buffer + i*sizeof(float), sizeof(float)); /* move data to output */
 	}
+	else
+		EESCI_can_debug_print_string("can_rx inout error: ind<0!\n");
 }
 
 static void end(scicos_block *block)
