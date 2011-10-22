@@ -51,11 +51,16 @@ SECTIONS
 	} > boot
 
 	GROUP : {
+		_stext = . ;
 		.text : {
 			*(.text)
 			*(.text_vle)
 			*(.init)
 			*(.fini)
+		}
+
+		_srodata = . ;
+		.rodata : {
 			*(.rdata)
 			*(.rodata)
 		}

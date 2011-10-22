@@ -77,6 +77,7 @@ endif
 
 ifeq ($(call iseeopt, __EE_MEMORY_PROTECTION__), yes)
 EE_SRCS += pkg/cpu/e200zx/src/ee_memp_syscall.S
+EE_SRCS += pkg/cpu/e200zx/src/ee_e200zx_mem_prot.c
 endif
 
 endif # __PPCE200ZX__
