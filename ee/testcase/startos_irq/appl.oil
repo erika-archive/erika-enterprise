@@ -57,6 +57,10 @@ CPU test_application {
 		USEPARAMETERACCESS = FALSE;
 		USERESSCHEDULER = TRUE;
 
+#ifdef pic30
+	EE_OPT = "__USE_TIMER__";
+#endif
+
 #ifdef evaluator7t
 	MCU_DATA = SAMSUNG_KS32C50100;
 #endif
