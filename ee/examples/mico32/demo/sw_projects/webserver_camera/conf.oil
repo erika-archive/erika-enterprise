@@ -62,9 +62,9 @@ CPU test_application {
 		
 		MCU_DATA = LATTICE_PLATFORM {
 			MODEL = LIBRARY {
-				PLATFORM_LIB_PATH = "../../platforms/camera_debug_50/library/camera_debug_50";
-				PLATFORM_NAME = "camera_debug_50";
-				PLATFORM_BLD_CFG = "Debug";
+				PLATFORM_LIB_PATH = "../../platforms/fpg_eye_diamond/library";
+				PLATFORM_NAME = "fpg_eye_mico32";
+				PLATFORM_BLD_CFG = "Release";
 			};
 			
 			DEVICE = TIMER {
@@ -96,11 +96,13 @@ CPU test_application {
 		/*                Contrib Library Inclusion                   */
 		/* ********************************************************** */
 		EE_OPT = "__ADD_LIBS__";
+		EE_OPT = "__USE_ETHERNET_IRQ__";
 
 		LIB = ENABLE {
 			NAME = "HV7131GP";
 		};
 		EE_OPT = "USE_HV7131GP";
+		EE_OPT = "__USE_DIAMOND__";
 		
 	};
 	

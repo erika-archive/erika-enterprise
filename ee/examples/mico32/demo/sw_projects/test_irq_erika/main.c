@@ -72,7 +72,11 @@ void put_byte(unsigned char msg)
 
 void myISRcallback(void)
 {
+	unsigned int temp;
+	
 	put_byte('B');
+	temp = EE_misc_gpio_read_edgeCapture();
+	EE_misc_gpio_write_edgeCapture(~temp);
 }
 
 int main(void)
