@@ -54,48 +54,16 @@
 #include <scicos_block4.h>
 
 #include <ee.h>
-#include "stdio.h"
+#include "pic30/flex_daughter.h"
 
-#define in_uint8(i,j) ((unsigned char *)block->inptr[i])[j]
-#define in_float(i,j) ((float *)block->inptr[i])[j]
-
-// defined in the dspic_main template
-extern int scicos_lcd_used;
-extern char ee_lcd_line1[17];
-extern char ee_lcd_line2[17];
 
 static void init(scicos_block *block) {
-	scicos_lcd_used = 1;
+	flex_daughter_lcd_init();
 }
-
-void EESCI_flexdmb_lcd_float_inout(float scicos_lcd_value1, float scicos_lcd_value2) {
-	EE_pic30_disableIRQ();
-	sprintf(ee_lcd_line1, "%+.6E", (double)scicos_lcd_value1);
-	sprintf(ee_lcd_line2, "%+.6E", (double)scicos_lcd_value2);
-	EE_pic30_enableIRQ();
-}
-
-
-void EESCI_flexdmb_lcd_uint8_inout(unsigned char* line1, unsigned char* line2) {
-	int i;
-	EE_pic30_disableIRQ();
-	for(i=0; i<16; i++) {
-		ee_lcd_line1[i] = line1[i];
-		ee_lcd_line2[i] = line2[i];
-	}
-	ee_lcd_line1[16] = '\0';
-	ee_lcd_line2[16] = '\0';
-	EE_pic30_enableIRQ();
-}
-
 
 static void inout(scicos_block *block) {
 	int port_type = block->ipar[0];
-	
-	if (port_type == 1)
-		EESCI_flexdmb_lcd_float_inout(in_float(0,0), in_float(1,0));
-	else
-		EESCI_flexdmb_lcd_uint8_inout( (unsigned char *)block->inptr[0], (unsigned char *)block->inptr[1] );
+	flex_daughter_lcd_inout(port_type, block->inptr[0], block->inptr[1]);
 }
 
 static void end(scicos_block *block)
@@ -121,3 +89,5 @@ void flex_daughter_lcd(scicos_block *block,int flag)
       break;
   }
 }
+
+
