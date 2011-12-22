@@ -53,7 +53,8 @@
 #ifndef __INCLUDE_CPU_COMMON_EE_COMPILER_IAR__
 #define __INCLUDE_CPU_COMMON_EE_COMPILER_IAR__
 
-#include <stdint.h>
+#include "cpu/common/inc/ee_stdint.h"
+#include "cpu/common/inc/ee_types.h"
 #include <cmsis_iar.h>
 
 #ifdef __NO_INLINE__
@@ -66,15 +67,17 @@
 #define __DECLARE_INLINE__ static inline
 #endif
 
-/*#define __ALWAYS_INLINE__ __attribute__((always_inline))*/
-#define __ALWAYS_INLINE__  /* __attribute__ does not exist under IAR*/
-							/* we should use #pragma inline=forced */
+#define __ALWAYS_INLINE__	/* __attribute__ does not exist under IAR*/
+				/* we should use #pragma inline=forced */
 #define __ASM __asm
+#define __IRQ __irq
 
 #define NORETURN __noreturn
 
-/*#define EE_COMPILER_ALIGN(a) __attribute__((aligned(a))) */
-/*#define EE_COMPILER_SECTION(s) __attribute__((section(s)))*/
-
+/* Macros used to encapsulate # and ## operators; used to enforce the expected
+ * evaluation order of arguments */
+#define EE_PREPROC_JOIN(a,b) a ## b
+#define EE_PREPROC_STRING(s) # s
+#define EE_PREPROC_EVAL(e) e
 
 #endif /* __INCLUDE_CPU_COMMON_EE_COMPILER_IAR__ */
