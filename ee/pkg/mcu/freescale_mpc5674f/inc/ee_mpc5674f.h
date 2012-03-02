@@ -52,13 +52,18 @@
 
 #include "mpc5674f.h"
 
+/* Number of externa interrupts */
 #define EE_E200ZX_MAX_EXT_IRQ 474
 
 /* These are used for compatibility with multi-core CPUs */
 #define INTC_CPR (INTC.CPR)
 #define INTC_IACKR (INTC.IACKR)
 #define INTC_EOIR (INTC.EOIR)
+/* Default external interrupt priority */
 #define EE_E200ZX_INTC_CURRPROC 0U
 
+#ifdef __STATIC_ISR_TABLE__
+void EE_mpc5674_initialize_external_IRQ_priorities(void);
+#endif /* __STATIC_ISR_TABLE__ */
 
 #endif /* EE_MCU_MPC5674F_H */
