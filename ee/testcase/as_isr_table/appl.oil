@@ -63,13 +63,12 @@
 
 #include "../common/rtdruid_common/ee_oil_e200zx_os.h"
 
-/* Mono Stack */
-
-/* Multi Stack */
 #ifdef NO
+/* Mono Stack */
       MULTI_STACK = FALSE;
 #endif
 #ifdef YES
+/* Multi Stack */
       MULTI_STACK = TRUE {
         IRQ_STACK = TRUE {
           SYS_SIZE=512;
@@ -78,6 +77,7 @@
 #endif
     };
 
+    EE_OPT = "__OO_STARTOS_OLD__";
     KERNEL_TYPE = BCC1;
   };
 
