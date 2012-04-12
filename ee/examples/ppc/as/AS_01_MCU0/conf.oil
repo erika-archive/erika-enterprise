@@ -79,8 +79,8 @@ CPU test_application {
 		USEPARAMETERACCESS = FALSE;
 		USERESSCHEDULER = FALSE;
 
-		KERNEL_TYPE = FP;
-
+		EE_OPT = "__OO_STARTOS_OLD__";
+		KERNEL_TYPE = BCC1;
 	};
 
 	TASK Fake {
