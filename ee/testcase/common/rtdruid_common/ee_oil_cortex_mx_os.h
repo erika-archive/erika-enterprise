@@ -74,6 +74,10 @@
 
 			APP_SRC = "code.c";
 
+#if ( defined(cortex_m4) && defined(USEIRQ) )
+			APP_SRC = "../../common/cortex_mx/test_irq.c";
+#endif
+
 #ifdef iar
 			JLINK = TRUE;
 			COMPILER_TYPE = IAR;
