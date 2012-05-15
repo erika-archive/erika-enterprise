@@ -116,7 +116,7 @@ DIALOG.YESNO "Flash programming prepared. Program flash memory now?"
 entry &progflash
 
 ; evi - prepare VM for the copy
-Data.Set VM:0--(&flashsize-1) 0xff
+Data.Set VM:0--(0x22000-1) 0xff
 Data.LOAD &filename /VM
 
 if &progflash 
@@ -126,10 +126,10 @@ if &progflash
     d.set VM:0x0 %LONG 0x015A0000
   else
     d.set VM:0x0 %LONG 0x005A0000
-  d.set VM:0x4 %LONG __start
+  d.set VM:0x4 %LONG ee_start
 
   FLASH.ReProgram ALL /Erase
-  Data.COPY VM:0x0--(&flashsize-1) E:0x0
+  Data.COPY VM:0x0--(0x22000-1) E:0x0
   FLASH.ReProgram OFF
 )
 
