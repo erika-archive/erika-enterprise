@@ -102,4 +102,6 @@ __INLINE__ unsigned int EE_mpc5643l_lsm_or_dpm(void)
 	return (SSCM.UOPS.B.UOPT & 0x400000UL);
 }
 
+__asm void EE_mpc5643l_initMMU(void);
+
 #endif /* EE_MCU_MPC5643L_H */
