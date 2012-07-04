@@ -1,0 +1,50 @@
+;
+; Script to run ERIKA in MPC5643L from RAM in single core mode (both LSM or DPM & VLE or FLE)
+;
+; Francesco Esposito 23-03-2012
+;
+
+; evi - ERIKA binary object and VLE setting (from the makefile)
+&filename="#EXE_NAME#"
+&use_vle=#USE_VLE#
+
+SYStem.RESet
+SYStem.BdmClock 4.0MHz
+SYStem.CPU MPC5643L
+NExus.PORTSIze MDO4
+NExus.Dtm ReadWrite
+NExus.PORTMode 1/2
+SYStem.Option.WATCHDOG OFF
+SYStem.Up
+
+; initialize SRAM
+Data.Set EA:0x40000000--0x4000FFFF %Quad 0
+
+; setup MMU for flash, RAM and register access, as BAM does
+GOSUB setup_mmu &use_vle
+
+d.load.elf &filename /PlusVM
+
+#ORTICMD#
+
+ENDDO
+
+setup_mmu:
+	ENTRY &set_vle
+	if &set_vle==1
+		&vle_flag=0x20
+	else
+		&vle_flag=0
+
+	MMU.TLB1.SET 0x0 0xC0000500 0x00000008+&vle_flag 0x0000003F
+	MMU.TLB1.SET 0x1 0xC0000500 0x00F00008+&vle_flag 0x00F0003F
+	MMU.TLB1.SET 0x2 0xC0000300 0x40000008+&vle_flag 0x4000003F
+	MMU.TLB1.SET 0x3 0xC0000300 0x50000008+&vle_flag 0x5000003F
+	MMU.TLB1.SET 0x4 0xC0000500 0x8FF0000A+&vle_flag 0x8FF0003F
+	MMU.TLB1.SET 0x5 0xC0000500 0xC3F0000A+&vle_flag 0xC3F0003F
+	MMU.TLB1.SET 0x6 0xC0000500 0xFFE00008+&vle_flag 0xFFE0003F
+	MMU.TLB1.SET 0x7 0xC0000480 0xFFF00008+&vle_flag 0xFFF0003F
+	MMU.TLB1.SET 0x8 0xC0000300 0xFFF90008+&vle_flag 0xFFF9003F
+	MMU.TLB1.SET 0x9 0xC0000400 0xFFFC0008+&vle_flag 0xFFFC003F
+
+	RETURN
