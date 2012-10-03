@@ -106,6 +106,12 @@
 #define ccrx
 #endif
 
+
+#ifdef  tricore_tc27x_tasking
+#define tricore_tc27x
+#define tasking
+#endif
+
 //#ifdef s12xs_...
 //#define s12xs
 //#endif
