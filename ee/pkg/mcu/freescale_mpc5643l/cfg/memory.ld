@@ -1,4 +1,4 @@
-/* Memory map for Freescale MPC5643L */
+/* Memory map for Freescale MPC5643L in DPM mode */
 
 MEMORY
 {
