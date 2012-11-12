@@ -1,7 +1,7 @@
 /* ###*B*###
  * ERIKA Enterprise - a tiny RTOS for small microcontrollers
  *
- * Copyright (C) 2002-2011  Evidence Srl
+ * Copyright (C) 2002-2012  Evidence Srl
  *
  * This file is part of ERIKA Enterprise.
  *
@@ -52,7 +52,7 @@ CPU mySystem {
 	
 		CPU_DATA = RX200 {
 			APP_SRC = "code.c";
-			APP_SRC = "ee_lcd.c";
+			//APP_SRC = "ee_lcd.c";
 			COMPILER_TYPE = CCRX;
 			MULTI_STACK = FALSE;
 		};
@@ -65,6 +65,7 @@ CPU mySystem {
 		EE_OPT = "__USE_SYSTICK__";
 		EE_OPT = "__USE_RSKRX120_USER_LED__";
 		EE_OPT = "__USE_RSKRX120_BUTTONS__";
+		EE_OPT = "__USE_RSKRX120_LCD__ ";
 		EE_OPT = "__USE_RSKRX210_OP_FREQ_SETUP__";
 		EE_OPT = "__ADD_LIB_SECT__";
 
