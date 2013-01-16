@@ -52,6 +52,7 @@ volatile int counter = 0;
 
 /* reset reason */
 volatile Mcu_RawResetType reset = 0;
+
 /*
  * SysTick ISR2
  */
@@ -80,6 +81,8 @@ TASK(Task1)
 
 }
 
+#define	PLL_LOCK_ATTEMPTS	1000
+
 /*
  * MAIN TASK
  */
@@ -92,14 +95,28 @@ int main(void)
 
   if ( reset & SYSCTL_RESC_EXT ) {
 
-    Mcu_InitClock(MCU_CLOCK_MODE_PRIOSC_3_PLL);
+    Mcu_InitClock(MCU_CLOCK_MODE_MOSC_4_PLL);
 
-    while (Mcu_GetPllStatus() != MCU_PLL_LOCKED)
-    {
+    while (
+      (Mcu_GetPllStatus() != MCU_PLL_LOCKED) && (counter < PLL_LOCK_ATTEMPTS)
+    ) {
       counter++;
     }
 
-    Mcu_DistributePllClock();
+    if ( Mcu_GetPllStatus() == MCU_PLL_LOCKED ) {
+  
+      Mcu_DistributePllClock();
+
+    }
+    else {
+
+      /* Forever loop: PLL NOT LOCKED!!! */
+      for (;;)
+      {
+	;
+      }
+
+    }
 
     counter = 0;
 

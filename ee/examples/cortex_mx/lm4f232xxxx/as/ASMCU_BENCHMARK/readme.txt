@@ -17,10 +17,10 @@ Image component sizes
      0          0       1064          0          0          0   Mcu_Cfg.o
    632        622          0          0       1024          0   ee_startup_keil.o
      0          0         12         20          0          0   eecfg.o
-   324         40          0          8          0        132   main.o
+   336         42          0          8          0        132   main.o
 
 ----------------------------------------------------------------------
-   956        662       1108         28       1024        132   Object Totals
+   968        664       1108         28       1024        132   Object Totals
      0          0         32          0          0          0   (incl. Generated)
      0          0          0          0          0          0   (incl. Padding)
 
@@ -66,9 +66,9 @@ Image component sizes
 
   Code (inc. data)   RO Data    RW Data    ZI Data      Debug   Library Name
 
-  186         16          0          0          0        428   c_w.l
-  512         36         52          0         12        356   libas.a
-  606        146          0          8          0        748   libee.a
+   186         16          0          0          0        428   c_w.l
+   512         36         52          0         12        356   libas.a
+   606        146          0          8          0        748   libee.a
 
 ----------------------------------------------------------------------
  1312        198         52          8         12       1532   Library Totals
@@ -79,15 +79,15 @@ Image component sizes
 
   Code (inc. data)   RO Data    RW Data    ZI Data      Debug
 
-  2268        860       1160         36       1036        884   Grand Totals
-  2268        860       1160         36       1036        884   ELF Image Totals
-  2268        860       1160         36          0          0   ROM Totals
+  2280        862       1160         36       1036        884   Grand Totals
+  2280        862       1160         36       1036        884   ELF Image Totals
+  2280        862       1160         36          0          0   ROM Totals
 
 ==============================================================================
 
-Total RO  Size (Code + RO Data)                 3428 (   3.35kB)
+Total RO  Size (Code + RO Data)                 3440 (   3.36kB)
 Total RW  Size (RW Data + ZI Data)              1072 (   1.05kB)
-Total ROM Size (Code + RO Data + RW Data)       3464 (   3.38kB)
+Total ROM Size (Code + RO Data + RW Data)       3476 (   3.39kB)
 
 ==============================================================================
 
