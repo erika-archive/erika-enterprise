@@ -39,8 +39,7 @@
  * ###*E*### */
 
 /*
- * Simple project to demonstrate that the PORT driver is integrated into the
- * makefiles and to test Port_Init() and Port_GetVersionInfo() services.
+ * Simple benchmark project to AUTOSAR "like" PORT Driver.
  *
  * Author: 2011,  Giuseppe Serano
  */
@@ -48,6 +47,12 @@
 #include "ee.h"
 #include "Mcu.h"
 #include "Port.h"
+
+/* counter */
+volatile int counter = 0;
+
+/* reset reason */
+volatile Mcu_RawResetType reset = 0;
 
 /*
  * Initializes Buttons Interrupts
@@ -117,30 +122,41 @@ TASK(Task1)
 int main(void)
 {
 
-  uint32	counter = 0;
-
   Mcu_Init(MCU_CONFIG_DEFAULT_PTR);
 
-  Mcu_InitClock(MCU_CLOCK_MODE_MOSC_4_PLL);
+  reset = Mcu_GetResetRawValue();
 
-  while (
-    (Mcu_GetPllStatus() != MCU_PLL_LOCKED) && (counter < PLL_LOCK_ATTEMPTS)
-  ){
-    counter++;
-  }
+  if ( reset & SYSCTL_RESC_EXT ) {
 
-  if ( Mcu_GetPllStatus() == MCU_PLL_LOCKED ) {
+    Mcu_InitClock(MCU_CLOCK_MODE_MOSC_4_PLL);
+
+    while (
+      (Mcu_GetPllStatus() != MCU_PLL_LOCKED) && (counter < PLL_LOCK_ATTEMPTS)
+    ) {
+      counter++;
+    }
+
+    if ( Mcu_GetPllStatus() == MCU_PLL_LOCKED ) {
   
-    Mcu_DistributePllClock();
+      Mcu_DistributePllClock();
+
+    }
+    else {
+
+      /* Forever loop: PLL NOT LOCKED!!! */
+      for (;;)
+      {
+	;
+      }
+
+    }
+
+    counter = 0;
 
   }
   else {
 
-    /* Forever loop: PLL NOT LOCKED!!! */
-    for (;;)
-    {
-      ;
-    }
+    Mcu_InitClock(MCU_CLOCK_MODE_NORMAL);
 
   }
 

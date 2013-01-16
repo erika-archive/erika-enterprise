@@ -18,10 +18,10 @@ Image component sizes
      0          0        716          0          0          0   Port_Cfg.o
    632        622          0          0       1024          0   ee_startup_keil.o
      0          0         12         20          0          0   eecfg.o
-   252         38          0          0          0        252   main.o
+   284         40          0          8          0        252   main.o
 
 ----------------------------------------------------------------------
-   884        660       1824         20       1024        252   Object Totals
+   916        662       1824         28       1024        252   Object Totals
      0          0         32          0          0          0   (incl. Generated)
      0          0          0          0          0          0   (incl. Padding)
 
@@ -81,14 +81,14 @@ Image component sizes
 
   Code (inc. data)   RO Data    RW Data    ZI Data      Debug
 
-  2972        910       1876         36       1036       1116   Grand Totals
-  2972        910       1876         36       1036       1116   ELF Image Totals
-  2972        910       1876         36          0          0   ROM Totals
+  3004        912       1876         44       1036       1116   Grand Totals
+  3004        912       1876         44       1036       1116   ELF Image Totals
+  3004        912       1876         44          0          0   ROM Totals
 
 ==============================================================================
 
-Total RO  Size (Code + RO Data)                 4848 (   4.73kB)
-Total RW  Size (RW Data + ZI Data)              1072 (   1.05kB)
-Total ROM Size (Code + RO Data + RW Data)       4884 (   4.77kB)
+Total RO  Size (Code + RO Data)                 4880 (   4.77kB)
+Total RW  Size (RW Data + ZI Data)              1080 (   1.05kB)
+Total ROM Size (Code + RO Data + RW Data)       4924 (   4.81kB)
 
 ==============================================================================
