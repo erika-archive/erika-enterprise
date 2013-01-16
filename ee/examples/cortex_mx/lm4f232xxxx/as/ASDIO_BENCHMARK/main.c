@@ -49,11 +49,66 @@
 #include "Port.h"
 #include "Dio.h"
 
+/* counter */
+volatile int counter = 0;
+
+/* api selector */
+volatile int api = 0;
+
+/* reset reason */
+volatile Mcu_RawResetType reset = 0;
+
+/*
+ * SysTick ISR2
+ */
+ISR2(systick_handler)
+{
+
+  counter++;
+
+  ActivateTask(Task1);
+
+}
+
 /*
  * TASK 1
  */
 TASK(Task1)
 {
+
+  Dio_LevelType		lvl;
+  Dio_PortLevelType	plvl;
+
+  switch (api) {
+
+    case 0:
+      {
+	lvl = Dio_ReadChannel(DIO_CHANNEL_USER_LED);
+	if (lvl == STD_HIGH)
+	  Dio_WriteChannel(DIO_CHANNEL_USER_LED, STD_LOW);
+	else
+	  Dio_WriteChannel(DIO_CHANNEL_USER_LED, STD_HIGH);
+      }
+      api++;
+      break;
+
+    case 1:
+      Dio_FlipChannel(DIO_CHANNEL_USER_LED);
+      api++;
+      break;
+
+    default:
+      {
+	plvl = Dio_ReadPort(DIO_PORT_USER_LED);
+	if (plvl & 0x00000004)
+	  Dio_WritePort(DIO_PORT_USER_LED, 0x00000000);
+	else
+	  Dio_WritePort(DIO_PORT_USER_LED, 0x00000004);
+      }
+      api = 0;
+      break;
+
+  }
 
 }
 
@@ -65,33 +120,41 @@ TASK(Task1)
 int main(void)
 {
 
-  uint32		counter = 0;
-  uint32		api = 0;
-  Dio_LevelType		lvl;
-  Dio_PortLevelType	plvl;
-
   Mcu_Init(MCU_CONFIG_DEFAULT_PTR);
 
-  Mcu_InitClock(MCU_CLOCK_MODE_PRIOSC_4_PLL);
+  reset = Mcu_GetResetRawValue();
 
-  while (
-    (Mcu_GetPllStatus() != MCU_PLL_LOCKED) && (counter < PLL_LOCK_ATTEMPTS)
-  ){
-    counter++;
-  }
+  if ( reset & SYSCTL_RESC_EXT ) {
 
-  if ( Mcu_GetPllStatus() == MCU_PLL_LOCKED ) {
+    Mcu_InitClock(MCU_CLOCK_MODE_MOSC_4_PLL);
+
+    while (
+      (Mcu_GetPllStatus() != MCU_PLL_LOCKED) && (counter < PLL_LOCK_ATTEMPTS)
+    ){
+      counter++;
+    }
+
+    if ( Mcu_GetPllStatus() == MCU_PLL_LOCKED ) {
   
-    Mcu_DistributePllClock();
+      Mcu_DistributePllClock();
+
+    }
+    else {
+
+      /* Forever loop: PLL NOT LOCKED!!! */
+      for (;;)
+      {
+	;
+      }
+
+    }
+
+    counter = 0;
 
   }
   else {
 
-    /* Forever loop: PLL NOT LOCKED!!! */
-    for (;;)
-    {
-      ;
-    }
+    Mcu_InitClock(MCU_CLOCK_MODE_NORMAL);
 
   }
 
@@ -99,42 +162,16 @@ int main(void)
 
   Dio_Init(DIO_CONFIG_DEFAULT_PTR);
 
+  EE_systick_set_period(NVIC_ST_RELOAD_M);
+  EE_systick_enable_int();
+  EE_systick_start();
+
+  while(!counter);
+
   /* Forever loop: background activities (if any) should go here */
   for (;;)
   {
-    while (counter % 100000) counter++;
-
-    switch (api) {
-
-      case 0:
-	{
-	  lvl = Dio_ReadChannel(DIO_CHANNEL_USER_LED);
-	  if (lvl == STD_HIGH)
-	    Dio_WriteChannel(DIO_CHANNEL_USER_LED, STD_LOW);
-	  else
-	    Dio_WriteChannel(DIO_CHANNEL_USER_LED, STD_HIGH);
-	}
-	api++;
-	break;
-
-      case 1:
-	Dio_FlipChannel(DIO_CHANNEL_USER_LED);
-	api++;
-	break;
-
-      default:
-	{
-	  plvl = Dio_ReadPort(DIO_PORT_USER_LED);
-	  if (plvl & 0x00000004)
-	    Dio_WritePort(DIO_PORT_USER_LED, 0x00000000);
-	  else
-	    Dio_WritePort(DIO_PORT_USER_LED, 0x00000004);
-	}
-	api = 0;
-	break;
-    }
-
-    counter++;
+    ;
   }
 
 }

@@ -63,6 +63,8 @@ CPU test_application {
 			MODEL = LM4F232xxxx;
 		};
 
+		EE_OPT = "__USE_SYSTICK__";
+
 		EE_OPT = "__AUTOSAR_R4_0__";
 		EE_OPT = "__AS_MCU_DRIVER__";
 		EE_OPT = "__AS_PORT_DRIVER__";
@@ -95,6 +97,11 @@ CPU test_application {
 		AUTOSTART = FALSE;
 		ACTIVATION = 1;    /* only one pending activation */
 		STACK = SHARED;
+	};
+
+	ISR systick_handler {
+		CATEGORY = 2;
+		ENTRY = "SYSTICK";
 	};
 
 };

@@ -19,10 +19,10 @@ Image component sizes
      0          0        716          0          0          0   Port_Cfg.o
    632        622          0          0       1024          0   ee_startup_keil.o
      0          0         12         20          0          0   eecfg.o
-   160         18          0          0          0        140   main.o
+   356         36          0         12          0        140   main.o
 
 ----------------------------------------------------------------------
-   792        640       2072         20       1024        140   Object Totals
+   988        658       2072         32       1024        140   Object Totals
      0          0         32          0          0          0   (incl. Generated)
      0          0          0          0          0          0   (incl. Padding)
 
@@ -53,16 +53,17 @@ Image component sizes
    464         28          0          0         12        276   Mcu.o
    764         48          0          8          0        216   Port.o
     44          8          0          0          0        152   ee_context.o
-     0          0          0          4          0          0   ee_hal_structs.o
+     0          0          0          8          0          0   ee_hal_structs.o
     72         22          0          0          0         76   ee_irqsc.o
    128         34          0          0          0        132   ee_keil_change_context_isr.o
     36         12          0          0          0         68   ee_rqexchg.o
     68         12          0          0          0         84   ee_rqinsert.o
+   116         26          0          0          0         80   ee_thact.o
    124         32          0          0          0         80   ee_thendin.o
     18          0          0          0          0         76   ee_utils.o
 
 ----------------------------------------------------------------------
-  2748        230         52         20         16       2016   Library Totals
+  2864        256         52         24         16       2096   Library Totals
      8          0          0          0          4          0   (incl. Padding)
 
 ----------------------------------------------------------------------
@@ -71,10 +72,10 @@ Image component sizes
 
    186         16          0          0          0        428   c_w.l
   2064         94         52         16         12        920   libas.a
-   490        120          0          4          0        668   libee.a
+   606        146          0          8          0        748   libee.a
 
 ----------------------------------------------------------------------
-  2748        230         52         20         16       2016   Library Totals
+  2864        256         52         24         16       2096   Library Totals
 
 ----------------------------------------------------------------------
 
@@ -82,15 +83,15 @@ Image component sizes
 
   Code (inc. data)   RO Data    RW Data    ZI Data      Debug
 
-  3540        870       2124         40       1040       1220   Grand Totals
-  3540        870       2124         40       1040       1220   ELF Image Totals
-  3540        870       2124         40          0          0   ROM Totals
+  3852        914       2124         56       1040       1300   Grand Totals
+  3852        914       2124         56       1040       1300   ELF Image Totals
+  3852        914       2124         56          0          0   ROM Totals
 
 ==============================================================================
 
-Total RO  Size (Code + RO Data)                 5664 (   5.53kB)
-Total RW  Size (RW Data + ZI Data)              1080 (   1.05kB)
-Total ROM Size (Code + RO Data + RW Data)       5704 (   5.57kB)
+Total RO  Size (Code + RO Data)                 5976 (   5.84kB)
+Total RW  Size (RW Data + ZI Data)              1096 (   1.07kB)
+Total ROM Size (Code + RO Data + RW Data)       6032 (   5.89kB)
 
 ==============================================================================
 
