@@ -47,7 +47,8 @@
 #include <ee_irq.h>
 
 /* This file is needed only if System Timer is defined with a device */
-#if defined(ENABLE_SYSTEM_TIMER) && defined(EE_SYSTEM_TIMER_DEVICE)
+#if defined(ENABLE_SYSTEM_TIMER) && defined(EE_SYSTEM_TIMER_DEVICE) && \
+    !defined(MCU_SYSTEM_TIMER)
 
 /* Legit devices as system timer */
 #define EE_PPCE200ZX_DECREMENTER 1
@@ -73,7 +74,7 @@ ISR2_INT(EE_e200zx_system_timer_handler)
 }
 
 /* System Timer Initialization */
-void EE_e200zx_initialize_system_timer(void) {
+void EE_initialize_system_timer(void) {
 #ifdef EE_ISR_DYNAMIC_TABLE
   EE_e200z7_register_ISR(EE_DECREMENTER_LEVEL, EE_e200zx_system_timer_handler,
     EE_DECREMENTER_PRIORITY);
@@ -89,4 +90,4 @@ void EE_e200zx_initialize_system_timer(void) {
 #endif
 }
 
-#endif /* ENABLE_SYSTEM_TIMER && EE_SYSTEM_TIMER_DEVICE */
+#endif /* ENABLE_SYSTEM_TIMER && EE_SYSTEM_TIMER_DEVICE && MCU_SYSTEM_TIMER */
