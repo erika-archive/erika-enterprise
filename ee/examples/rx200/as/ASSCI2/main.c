@@ -149,7 +149,8 @@ int main(void)
 		break;
 		case SCI_RX_ERROR:
 		/* Rx Error Error */
-			Sci_ReadRxData(SCI_CHANNEL_0, &RxData);
+			Sci_DeInit(SCI_CONFIG_DEFAULT_PTR);
+			Sci_Init(SCI_CONFIG_DEFAULT_PTR);
 			TxData = ASCII_BELL;
 		break;
 		case SCI_OPERATIONAL:

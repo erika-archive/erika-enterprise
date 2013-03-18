@@ -1,4 +1,4 @@
-ASSCI2
+ASSCI3
 
  Simple project to test Sci_GetStatus(), Sci_ReadRxData() and Sci_WriteTxData()
  services.
