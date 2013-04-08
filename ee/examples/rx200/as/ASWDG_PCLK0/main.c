@@ -98,7 +98,6 @@ int main(void)
 {
 
 	Std_VersionInfoType	version;
-	Dio_PortLevelType	lvl;
 
 	EE_assert(EE_ASSERT_INIT, TRUE, EE_ASSERT_NIL);
 
@@ -106,7 +105,7 @@ int main(void)
 
 	EE_assert(EE_ASSERT_VERSION,(
 								(version.vendorID == 0) &&
-								(version.moduleID == 0x102) &&
+								(version.moduleID == 102) &&
 								(version.sw_major_version == 1) &&
 								(version.sw_minor_version == 0) &&
 								(version.sw_patch_version == 0)
