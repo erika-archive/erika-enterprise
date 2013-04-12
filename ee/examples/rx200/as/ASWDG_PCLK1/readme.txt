@@ -1,4 +1,4 @@
-ASWDG_PCLK0
+ASWDG_PCLK1
 
  Simple project to test the PCLK Clock WDG driver services using callback and
  standard watchdog NM interrupt without system reset.

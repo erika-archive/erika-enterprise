@@ -102,7 +102,11 @@ void Wdg_PCLK_Notification_Slow(void)
  */
 TASK(BackgroundTask)
 {
-
+/*
+ * Since the Watch Dog System can only be configured once, and this is done
+ * through Wdg_PCLK_Init(WDG_PCLK_CONFIG_DEFAULT_PTR), 
+ * Wdg_PCLK_SetMode(WDGIF_FAST_MODE) has not effect and returns E_OK.  
+ */
 	EE_assert(EE_ASSERT_WDG_SLOW_MODE, 
 			( Wdg_PCLK_SetMode(WDGIF_SLOW_MODE) == E_OK ),
 			EE_ASSERT_WDG_INIT);
@@ -113,8 +117,8 @@ TASK(BackgroundTask)
 
 			Wdg_PCLK_SetTriggerCondition(1000);	/* 1s */
 
-			if (Dio_ReadChannel(DIO_CHANNEL_USER_SWITCH_1) == TRUE)
-				wdgfeed = 0;
+			if (Dio_ReadChannel(DIO_CHANNEL_USER_SWITCH_1) == FALSE)
+				wdgfeed = FALSE;
 
 			counter = 2;
 

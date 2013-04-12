@@ -44,26 +44,30 @@
  * Author: 2013  Gianluca Franchino */
 #include "ee.h"
 
+
+
 /***************************************************************************
  *
- * Stack definition for Renesas RX200
+ * Stack definition for  R5F5210x, rx200
  *
  **************************************************************************/
-#define STACK_1_SIZE 128 // size = 512 bytes  
+    #define STACK_1_SIZE 256 /* size = 256 bytes */
 
-	int EE_rx200_stack_1[STACK_1_SIZE];	/* BackgroundTask */
-	
-    const EE_UREG EE_std_thread_tos[EE_MAX_TASK + 1] = {
-        0U,	 /* dummy */
-        1U,	 /* BackgroundTask*/
+    static int EE_stack_1[STACK_1_SIZE];	/* Task 0 (BackgroundTask) */
+
+    const EE_UREG EE_std_thread_tos[EE_MAX_TASK+1] = {
+        0U,	 /* dummy*/
+        1U 	 /* BackgroundTask*/
     };
 
-    struct EE_TOS EE_rx200_system_tos[EE_MAX_TASK + 1] = {
-        {0},	/* Task   (dummy) */
-        {(EE_ADDR)(&EE_rx200_stack_1[STACK_1_SIZE - RX200_INIT_TOS_OFFSET])},	/* Task 0 (Producer) */
+    struct EE_TOS EE_rx200_system_tos[2] = {
+        {0},	/* Task  (dummy) */
+        {(EE_ADDR)(&EE_stack_1[STACK_1_SIZE] - RX200_INIT_TOS_OFFSET)} 	/* Task 0 (BackgroundTask) */
     };
 
     EE_UREG EE_rx200_active_tos = 0U; /* dummy */
+
+
 
 /***************************************************************************
  *
@@ -103,27 +107,27 @@
         EE_NIL
     };
 
-  
-    EE_TYPEPRIO EE_th_nact[EE_MAX_TASK];
     /* The first stacked task */
     EE_TID EE_stkfirst = EE_NIL;
-
-    /* The first task into the ready queue */
-    EE_TID EE_rq_first  = EE_NIL;
 
     /* system ceiling */
     EE_TYPEPRIO EE_sys_ceiling= 0x0000U;
 
     /* remaining nact: init= maximum pending activations of a Task */
     /* MUST BE 1 for BCC1 and ECC1 */
-    EE_TYPENACT   EE_th_rnact[EE_MAX_TASK] = { 1U};
-	
-	#ifndef __OO_NO_CHAINTASK__
-    /* The next task to be activated after a ChainTask. initvalue=all EE_NIL */
-    EE_TID EE_th_terminate_nextask[EE_MAX_TASK] = {
-		EE_NIL
-    };
+    EE_TYPENACT   EE_th_rnact[EE_MAX_TASK] =
+        { 1U};
+
+    /* First task in the ready queue (initvalue = EE_NIL) */
+    EE_TID EE_rq_first  = EE_NIL;
+
+    #ifndef __OO_NO_CHAINTASK__
+        /* The next task to be activated after a ChainTask. initvalue=all EE_NIL */
+        EE_TID EE_th_terminate_nextask[EE_MAX_TASK] = {
+            EE_NIL
+        };
     #endif
+
 
 
 /***************************************************************************
@@ -145,3 +149,4 @@
     const struct EE_oo_autostart_task_type EE_oo_autostart_task_data[EE_MAX_APPMODE] = {
         { 1U, EE_oo_autostart_task_mode_OSDEFAULTAPPMODE}
     };
+

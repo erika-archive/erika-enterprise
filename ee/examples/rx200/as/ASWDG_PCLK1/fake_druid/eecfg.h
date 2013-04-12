@@ -38,18 +38,11 @@
  * Boston, MA 02110-1301 USA.
  * ###*E*### */
 
-/*
- * fake-druid eecfg.h
- *
- * Author: 2013  Gianluca Franchino
- */
-
-#ifndef __EECFG_H__
-#define __EECFG_H__
+#ifndef RTDH_EECFG_H
+#define RTDH_EECFG_H
 
 
-
-#define RTDRUID_CONFIGURATOR_NUMBER 1275
+#define RTDRUID_CONFIGURATOR_NUMBER 1277
 
 
 
@@ -58,6 +51,7 @@
  * Common defines ( CPU 0 )
  *
  **************************************************************************/
+
     /* TASK definition */
     #define EE_MAX_TASK 1
     #define BackgroundTask 0
@@ -78,7 +72,11 @@
     #define EE_MAX_CPU 1
     #define EE_CURRENTCPU 0
 
+    /* Number of isr 2 */
+    #define EE_MAX_ISR2 1
+
 #ifndef __DISABLE_EEOPT_DEFINES__
+
 
 /***************************************************************************
  *
@@ -93,9 +91,9 @@
 #define __AS_WDG_PCLK_DRIVER__
 #define __AS_CFG_WDG_PCLK_VERSION_INFO_API__
 #define __AS_CFG_WDG_PCLK_SLOW_MODE_NMI__
-#define __AS_CFG_WDG_PCLK_FAST_MODE_NMI__
-#define __AS_CFG_WDG_SYSCLK_SLOW_MODE_NOTIFICATION__
+#define __AS_CFG_WDG_PCLK_SLOW_MODE_NOTIFICATION__
 #define __ADD_LIBS__
+
 
 /***************************************************************************
  *
@@ -103,12 +101,12 @@
  *
  **************************************************************************/
 #define __RTD_CYGWIN__
-#define __RX200__
 #define __R5F5210x__
+#define __RX200__
 #define __CCRX__
 #define __OO_BCC1__
 #define __OO_EXTENDED_STATUS__
-#define __MONO__
+#define __MULTI__
 #define __OO_NO_ALARMS__
 #define __OO_NO_RESOURCES__
 #define __OO_AUTOSTART_TASK__
@@ -116,12 +114,15 @@
 
 #endif
 
+
+
 /***************************************************************************
  *
  * ISR definition
  *
  **************************************************************************/
-#define EE_RX200_NON_MASKABLE_INT EE_rx200_non_maskable_int
+#define EE_RX200_NON_MASKABLE_INT_ISR EE_RX200_NON_MASKABLE_INT
+
 
 #endif
 

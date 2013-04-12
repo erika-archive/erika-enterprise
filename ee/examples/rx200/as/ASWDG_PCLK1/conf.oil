@@ -39,8 +39,8 @@
  * ###*E*### */
 
 /*
- * Simple project to demonstrate that the PCLK WDG driver is integrated into the
- * makefiles and to test Wdg_PCLK_GetVersionInfo() service.
+ * Simple project to demonstrate that the PCLK WDG driver services using callback
+ * and standard watchdog NM interrupt without system reset.
  *
  * Author: 2013,  Gianluca Franchino
  */
@@ -72,7 +72,6 @@ CPU mySystem {
 		EE_OPT = "__AS_DIO_DRIVER__";
 		EE_OPT = "__AS_WDG_PCLK_DRIVER__";
 		EE_OPT = "__AS_CFG_WDG_PCLK_VERSION_INFO_API__";
-		EE_OPT = "__AS_CFG_WDG_PCLK_FAST_MODE_NMI__";
 		EE_OPT = "__AS_CFG_WDG_PCLK_SLOW_MODE_NMI__";
 		EE_OPT = "__AS_CFG_WDG_PCLK_SLOW_MODE_NOTIFICATION__";
 
