@@ -39,7 +39,7 @@
  * ###*E*### */
 
 /*
- * Simple project to demonstrate that the PCLK WDG driver services using callback
+ * Simple project to demonstrate that the IWDT WDG driver services using callback
  * and standard watchdog NM interrupt without system reset.
  *
  * Author: 2013,  Gianluca Franchino
@@ -57,7 +57,7 @@ CPU mySystem {
 			APP_SRC = "Mcu_Cfg.c";
 			APP_SRC = "Port_Cfg.c";
 			APP_SRC = "Dio_Cfg.c";
-			APP_SRC = "Wdg_PCLK_Cfg.c";
+			APP_SRC = "Wdg_IWDT_Cfg.c";
 			COMPILER_TYPE = CCRX; 
 			MULTI_STACK = TRUE;
 		};

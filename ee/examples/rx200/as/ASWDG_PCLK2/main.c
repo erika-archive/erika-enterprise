@@ -76,7 +76,7 @@ volatile int counter = 0;
 volatile boolean wdgfeed = TRUE;
 
 /*
- * Watchdog Slow Mode Notification Callback.
+ * Watchdog Fast Mode Notification Callback.
  */
 void Wdg_PCLK_Notification_Fast(void)
 {

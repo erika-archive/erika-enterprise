@@ -39,7 +39,7 @@
  * ###*E*### */
 
 /*
- * WdgPCLK.c Module source file.
+ * Wdg_PCLK.c Module source file.
  *
  * Peripheral Clock  AUTOSAR WDG (Watchdog) Driver Source File.
  *
@@ -182,9 +182,9 @@ static Std_ReturnType Wdg_PCLK_SetMode_Internal(WdgIf_ModeType	Mode)
 	if ( ret == E_OK ) {
 		Wdg_PCLK_Global.Expired = FALSE;
 		Wdg_PCLK_Global.Mode = Mode;
+			/*Start WDG */
+		WDG_PCLK_REFRESH();
 	}
-	/*Start WDG */
-	WDG_PCLK_REFRESH();
 	
 	return ret;
 
