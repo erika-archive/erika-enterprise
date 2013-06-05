@@ -47,6 +47,8 @@
 # Select object file format
 CG_OUT_EXTENSION := out
 
+CG_BIN_EXTENSION := bin
+
 BINDIR_CYG := /usr/bin
 
 #ARM_ROOT: Keil uVision ARM Installation Root Folder.
@@ -110,6 +112,10 @@ ifndef EE_AR
 EE_AR:=$(CG_BIN_DIR)/armar.exe
 endif
 
+ifndef EE_FROMELF
+EE_FROMELF:=$(CG_BIN_DIR)/fromelf.exe
+endif
+
 #Add application file to dependencies
 ifneq ($(ONLY_LIBS), TRUE)
 
@@ -117,7 +123,7 @@ ifneq ($(ONLY_LIBS), TRUE)
 ## Libraries from Keil-uVision-MKD-Lite.
 OPT_LIBS += $(ERIKALIB)
 
-TARGET = $(TARGET_NAME).$(CG_OUT_EXTENSION)
+TARGET = $(TARGET_NAME).$(CG_BIN_EXTENSION)
 
 else	# ONLY_LIBS
 
@@ -202,7 +208,7 @@ endif
 ## FIX ME.
 OPT_LINK += --strict --map --xref --callgraph  --symbols \
 	    --summary_stderr --info summarysizes --info sizes --info totals \
-	    --info unused --info veneers --info libraries
+	    --info unused --info veneers --info libraries 
 
 ifeq ($(call iseeopt, __STELLARIS__), yes)
 ifndef STELLARIS_LINKERSCRIPT
@@ -237,6 +243,10 @@ endif	# __STM32F4xx__
 # Specific option from the application makefile
 OPT_LINK += $(LDFLAGS)
 
+
+# Options for FROMELF
+
+OPT_FROMELF += --bin
 
 # Defining EEOPT Macros
 # Each identifier that is listed in EEOPT is also inserted as a 
