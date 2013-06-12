@@ -42,6 +42,7 @@
  * MCU register map
  * Author: 2011 Bernardo  Dal Seno
  *         2012 Francesco Esposito
+ *         2013 Eugen Kleinschmidt
  */
 
 #ifndef EE_E200ZX_MCU_REGS_H
@@ -55,6 +56,8 @@
 #include <mcu/freescale_mpc5674f/inc/ee_mpc5674f.h>
 #elif defined EE_MPC5643L
 #include <mcu/freescale_mpc5643l/inc/ee_mpc5643l.h>
+#elif defined EE_MPC5644A
+#include <mcu/freescale_mpc5644a/inc/ee_mpc5644a.h>
 #else
 #error "No known MCU found"
 #endif
