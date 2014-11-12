@@ -46,6 +46,7 @@
 #include "cpu/cortex_ax_xenpv/inc/xenincludes.h"
 #include "cpu/cortex_ax_xenpv/inc/xendebug.h"
 #include "cpu/cortex_ax_xenpv/inc/xengnttab.h"
+#include "cpu/cortex_ax_xenpv/inc/hyper-calls.h"
 
 #define MAX_GNTTAB	32
 #define XENMAPSPACE_grant_table 1
