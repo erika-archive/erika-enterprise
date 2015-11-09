@@ -43,21 +43,15 @@
  * Author: 2010 Fabio Checconi
  */
 
-#ifndef __INCLUDE_E200ZX_IRQ_INTERNAL_H__
-#define __INCLUDE_E200ZX_IRQ_INTERNAL_H__
+#ifndef PKG_CPU_E200ZX_INC_EE_IRQ_INTERNAL_H
+#define PKG_CPU_E200ZX_INC_EE_IRQ_INTERNAL_H
 
 #include "ee_internal.h"
 #include "ee_irq.h"
 
-/* Software ISR Table */
-#ifdef EE_ISR_DYNAMIC_TABLE
-extern EE_e200z7_ISR_handler EE_e200z7_ISR_table[];
-#else
-/* In case of static ISR table, it's made const so it can be put it in flash */
-extern const EE_e200z7_ISR_handler EE_e200z7_ISR_table[];
-#endif
+/* Software ISR Table - see cpu/e200zx/src/ee_irq.c */
 
 /* IRQ handler */
-void EE_e200z7_irq(EE_SREG level);
+void EE_e200z7_irq(EE_UREG level);
 
 #endif /* __INCLUDE_E200ZX_IRQ_INTERNAL_H__ */

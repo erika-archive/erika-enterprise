@@ -47,7 +47,7 @@
 
 #ifndef __PRIVATE_RQ2STK_EXCHANGE__
 
-#if defined(__OO_BCC1__) || defined(__OO_ECC1__)
+#if (defined(__OO_BCC1__)) || (defined(__OO_ECC1__))
 EE_TID EE_rq2stk_exchange(void)
 {
   EE_TID temp;
@@ -64,7 +64,7 @@ EE_TID EE_rq2stk_exchange(void)
 }
 #endif
 
-#if defined(__OO_BCC2__) || defined(__OO_ECC2__)
+#if (defined(__OO_BCC2__)) || (defined(__OO_ECC2__))
 EE_TID EE_rq2stk_exchange(void)
 {
   EE_INT8 x;    /* the first non-empty queue */
