@@ -309,7 +309,7 @@ void EE_TC_INTERRUPT_HANDER EE_TC_CHANGE_STACK_POINTER
       service_ptr = EE_syscall_table[tin];
       /* If the tin correspond to a IRQ handling service I have to handle it in
          a special way  */
-      if( tin <= EE_ID_interrupts_last ) {
+      if ( tin <= EE_ID_interrupts_last ) {
         /* Let the return be the new pcxi value */
         original_ucx_pcxi.reg =
           ((EE_as_IRQ_handling_func_ptr)service_ptr)( original_ucx_pcxi.reg );
@@ -423,28 +423,29 @@ void EE_TC_INTERRUPT_HANDER EE_tc_bus_handler ( EE_TIN tin )
 
   /* Actual PCXI is the one after svlcx: this handler is not called but
      jumped into. */
-  EE_PCXI pcxi;
+  EE_PCXI         pcxi;
+  /* Current CPU Priority Number */
+  EE_TYPEISR2PRIO ccpn;
   switch ( tin ) {
     /* TPS_TIMERX trap: timing protection budget expired */
     case EE_TRAPBUS_TAE:
       /* I need previous PCXI register to check PIE bit */
       pcxi = EE_tc_get_trap_PCXI();
+      /* I need actual ICR to check CCPN == PCPN */
+      ccpn = EE_tc_get_int_prio();
       /* Write zero on TPS_TIMER to reset TRAP request... */
       EE_tc_set_csfr(EE_CPU_REG_TPS_TIMER0, 0U);
       /* And update reset TTRAP to re-enable the TP. */
       EE_tc_tps_reset_ttrap();
       /* XXX: There is a small chance of race condition between TP and the
           beginning of a ISR2, following code handle that.
-          If the (PCXI.PIE == 0) && (EE_as_tp_active.active_tp <=
-          EE_RESOURCE_LOCK_BUDGET) means that we was entering in an ISR2, we
-          just postpone the budget expiration handling at the end of
+          If the (PCXI.PCPN != ICR.CCPN) means that we was entering in an ISR2,
+          we just postpone the budget expiration handling at the end of
           EE_tc_isr2_wrapper_body or EE_as_TerminateISR2.
           If the active tp is invalid means that we are here because Time
           Frame Reclamation budget: it is always harmless handle that. */
       if ( (EE_as_tp_active.active_tp == INVALID_TIMING_PROTECTION) ||
-          (pcxi.bits.PIE != 0U) || (EE_as_tp_budget_confs[EE_as_tp_active.
-            active_tp_RAM_ref->first_expiring].budget_type >
-              EE_RESOURCE_LOCK_BUDGET) )
+          (pcxi.bits.PCPN == ccpn)  )
       {
         EE_as_tp_active_budget_expired();
       }
