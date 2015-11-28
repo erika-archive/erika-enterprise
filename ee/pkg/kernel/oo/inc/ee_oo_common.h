@@ -1091,7 +1091,7 @@ typedef enum {
 /*[OS088] If an OS-Application makes a service call from the wrong context AND
   is currently not inside a Category 1 ISR the Operating System module shall
   not perform the requested action (the service call shall have no effect),
-  and return E_OS_CALLEVEL (see [12], section 13.1) or the “invalid value” of
+  and return E_OS_CALLEVEL (see [12], section 13.1) or the "invalid value" of
   the service. (BSW11009, BSW11013) */
 /** @typedef OS-Application contexts enum used to implement Autosar OS O0S88
     requirement */
