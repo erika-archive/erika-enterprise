@@ -58,9 +58,9 @@
 #define EE_E200ZX_MAX_EXT_IRQ 474U
 
 /* These are used for compatibility with multi-core CPUs */
-#define INTC_CPR (INTC.CPR)
-#define INTC_IACKR (INTC.IACKR)
-#define INTC_EOIR (INTC.EOIR)
+#define INTC_CPR (INTC.CPR.R)
+#define INTC_IACKR (INTC.IACKR.R)
+#define INTC_EOIR (INTC.EOIR.R)
 /* Default external interrupt priority */
 #define EE_E200ZX_INTC_CURRPROC 0U
 
