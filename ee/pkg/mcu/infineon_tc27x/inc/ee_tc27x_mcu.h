@@ -326,14 +326,14 @@ __INLINE__ EE_UREG __ALWAYS_INLINE__ EE_tc27x_stm_get_time_upper_word( void )
 }
 
 /** @brief Mask for STM OCDS suspension: SUS := 2, SUS_P := 1 */
-#define EE_TC2YX_STM_OCS_SUS_CTRL_MASK ((1U << 28U) | (2U << 24U))
+#define EE_TC27X_STM_OCS_SUS_CTRL_MASK ((1U << 28U) | (2U << 24U))
 
 /**
   * @brief  Used to set STM suspension when OCDS take control
   */
 __INLINE__ void __ALWAYS_INLINE__ EE_tc27x_stm_ocds_suspend_control( void )
 {
-  EE_STM_OCS.U = EE_TC2YX_STM_OCS_SUS_CTRL_MASK;
+  EE_STM_OCS.U = EE_TC27X_STM_OCS_SUS_CTRL_MASK;
 }
 
 /**

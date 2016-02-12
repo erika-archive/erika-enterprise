@@ -267,21 +267,26 @@ void EE_tc2Yx_stm_set_clockpersec(void)
 EE_STM_SR0_STORAGE void EE_tc2Yx_stm_set_sr0(EE_UINT32 usec,
     EE_TYPEISR2PRIO intvec)
 {
+  EE_UREG  us_in_ticks;
+  EE_UINT8 size_of_compare;
+
   /* I need to make this setup atomic */
   /* USING SUSPEND/RESUME IRQ WOULD BE BETTER (code executable even with isr
      disabled) BUT IS NOT COMPATIBLE WITH NOT-TRUSTED USER-1 PROFILE */
   EE_tc_disableIRQ();
 
-  /*  Evaluate next compare value (actual value + increment,
-      I don't need to handle wrap around) */
+  /* Get Interrupt period in ticks */
+  us_in_ticks = EE_tc2Yx_stm_us_ticks(usec);
+  /* Adjust the size of the mask */
+  size_of_compare = 31U - EE_tc_clz(us_in_ticks);
 
-  /* Set Compare Value Register */
-  EE_STM_CMP0.U = EE_tc2Yx_stm_us_ticks(usec) +
-    EE_tc2Yx_stm_get_time_lower_word();
+  /*  Set Compare Value Register (actual value + increment,
+      I don't need to handle wrap around) */
+  EE_STM_CMP0.U = us_in_ticks + EE_tc2Yx_stm_get_time_lower_word();
 
   if ( intvec != (EE_TYPEISR2PRIO)EE_ISR_UNMASKED ) {
     EE_STM_CMCON.B.MSTART0 = 0U;
-    EE_STM_CMCON.B.MSIZE0  = 31U;
+    EE_STM_CMCON.B.MSIZE0  = size_of_compare;
     /* Tie STM Service Request 0 with Compare Register 0 */
     EE_STM_ICR.B.CMP0OS = 0U;
     /* Enable STM Service Request Source */
@@ -319,18 +324,26 @@ EE_STM_SR0_STORAGE void EE_tc2Yx_stm_set_sr0_next_match(EE_UINT32 usec)
 EE_STM_SR1_STORAGE void EE_tc2Yx_stm_set_sr1(EE_UINT32 usec,
   EE_TYPEISR2PRIO intvec)
 {
+  EE_UREG  us_in_ticks;
+  EE_UINT8 size_of_compare;
+
   /* I need to make this setup atomic */
   /* USING SUSPEND/RESUME IRQ WOULD BE BETTER (code executable even with isr
      disabled) BUT IS NOT COMPATIBLE WITH NOT-TRUSTED USER-1 PROFILE */
   EE_tc_disableIRQ();
-  /*  Evaluate next compare value (actual value + increment,
+
+  /* Get Interrupt period in ticks */
+  us_in_ticks = EE_tc2Yx_stm_us_ticks(usec);
+  /* Adjust the size of the mask */
+  size_of_compare = 31U - EE_tc_clz(us_in_ticks);
+
+  /*  Set Compare Value Register (actual value + increment,
       I don't need to handle wrap around) */
-  EE_STM_CMP1.U = EE_tc2Yx_stm_us_ticks(usec) +
-    EE_tc2Yx_stm_get_time_lower_word();
+  EE_STM_CMP1.U = us_in_ticks + EE_tc2Yx_stm_get_time_lower_word();
 
   if ( intvec != (EE_TYPEISR2PRIO)EE_ISR_UNMASKED ) {
     EE_STM_CMCON.B.MSTART1 = 0U;
-    EE_STM_CMCON.B.MSIZE1  = 31U;
+    EE_STM_CMCON.B.MSIZE1  = size_of_compare;
     /* Tie STM Service Request 1 with Compare Register 1 */
     EE_STM_ICR.B.CMP1OS = 1U;
     /* Enable STM Service Request Source */
