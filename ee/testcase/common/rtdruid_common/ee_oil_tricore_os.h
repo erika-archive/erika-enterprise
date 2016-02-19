@@ -38,24 +38,30 @@
  * Boston, MA 02110-1301 USA.
  * ###*E*### */
 
-#ifdef tricore_tc27x
+#ifdef	tricore
 
 EE_OPT = "EE_EXECUTE_FROM_RAM";
 
 MCU_DATA = TRICORE {
+#ifdef	tricore_tc27x
     MODEL = TC27x;
+#endif	/* tricore_tc27x */
+#ifdef	tricore_tc29x
+    MODEL = TC29x;
+#endif	/* tricore_tc29x */
 };
 
 CPU_DATA = TRICORE {
     APP_SRC = "code.c";
-#ifdef USEIRQ
+#ifdef	USEIRQ
     APP_SRC = "../../common/tricore/test_irq.c";
-#endif /* USEIRQ */
+#endif	/* USEIRQ */
     SYS_STACK_SIZE=4096;
-#endif /* tricore_tc27x */
-#ifdef tasking
+#ifdef	tasking
     COMPILER_TYPE = TASKING;
-#endif
-#ifdef gnu
+#endif	/* tasking */
+#ifdef	gnu
     COMPILER_TYPE = GNU;
-#endif
+#endif	/* gnu */
+
+#endif	/* tricore */
