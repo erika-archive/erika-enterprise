@@ -122,7 +122,7 @@ INCLUDE_PATH :=	$(ARDUINO_SDK_ROOT)/hardware/arduino/variants/standard	\
 endif	# __ARDUINO_SDK_CC__ && __ARDUINO_SDK_ORG__
 endif	# __ARDUINO_UNO_328__
 
-ifeq	($(call iseeopt, __ARDUINO_NANO_V3__), yes)
+ifeq	($(call iseeopt, __ARDUINO_NANO_328__), yes)
 ifeq ($(or	\
 		$(call iseeopt, __ARDUINO_SDK_CC__),	\
 		$(call iseeopt, __ARDUINO_SDK_ORG__)	\
@@ -135,7 +135,7 @@ INCLUDE_PATH :=	\
 	$(ARDUINO_SDK_ROOT)/hardware/arduino/variants/eightanaloginputs	\
 	$(INCLUDE_PATH)
 endif	# __ARDUINO_SDK_CC__ && __ARDUINO_SDK_ORG__
-endif	# __ARDUINO_NANO_V3__
+endif	# __ARDUINO_NANO_320__
 
 ifeq	($(call iseeopt, __ARDUINO_SDK_SIMUL__), yes)
 EEOPT += F_CPU=1000000UL
