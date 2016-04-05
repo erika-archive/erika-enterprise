@@ -1,7 +1,7 @@
 # ###*B*###
 # ERIKA Enterprise - a tiny RTOS for small microcontrollers
 # 
-# Copyright (C) 2002-2014  Evidence Srl
+# Copyright (C) 2002-2016  Evidence Srl
 # 
 # This file is part of ERIKA Enterprise.
 # 
@@ -39,7 +39,7 @@
 # ###*E*###
 
 ## Makefile for Erika Arduino demos
-## Author: 2014,  Giuseppe Serano
+## Author: 2016,  Giuseppe Serano
 
 # Destination directory
 export OUTPUT_DIR = Debug
@@ -49,7 +49,12 @@ ifndef	ARDUINO_SDK_FILES
 ifeq	($(shell uname), Linux)
 export	ARDUINO_SDK_FILES = $(HOME)/arduino-1.0.5-r2
 else
-export	ARDUINO_SDK_FILES = C:/arduino-1.0.5-r2
+# For Old Arduino Support
+#export	ARDUINO_SDK_FILES = C:/arduino-1.0.5-r2
+# For Arduino.cc.
+#export	ARDUINO_SDK_FILES = C:/arduino-1.6.8
+# For Arduino.org.
+export	ARDUINO_SDK_FILES = C:/arduino-1.7.9
 endif
 endif
 
@@ -58,7 +63,7 @@ export AVR_TOOLS = $(ARDUINO_SDK_FILES)/hardware/tools/avr
 endif
 
 ifndef	ARDUINO_COM_PORT
-export	ARDUINO_COM_PORT = COM24
+export	ARDUINO_COM_PORT = COM62
 endif
 
 ifndef	ARDUINO_BAUDRATE

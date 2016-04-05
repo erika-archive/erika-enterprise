@@ -1,7 +1,7 @@
 # ###*B*###
 # ERIKA Enterprise - a tiny RTOS for small microcontrollers
 # 
-# Copyright (C) 2002-2013  Evidence Srl
+# Copyright (C) 2002-2016  Evidence Srl
 # 
 # This file is part of ERIKA Enterprise.
 # 
@@ -38,7 +38,7 @@
 # Boston, MA 02110-1301 USA.
 # ###*E*###
 
-## Author: 2013,  Giuseppe Serano
+## Author: 2016,  Giuseppe Serano
 
 # Enable verbose output from EE_OPT
 ifeq ($(call iseeopt, VERBOSE), yes)
@@ -120,9 +120,9 @@ include $(PKGBASE)/cfg/cfg.mk
 LIBEESRCS	+= $(EE_SRCS)
 LIBEEOBJS	:=							\
 	$(addprefix $(OBJDIR)/,						\
-		$(patsubst %.cpp,%.o,					\
-			$(patsubst %.c,%.o,				\
-				$(patsubst %.S,%.o,$(LIBEESRCS))	\
+		$(patsubst %.cpp,%.cpp.o,				\
+			$(patsubst %.c,%.c.o,				\
+				$(patsubst %.S,%.S.o,$(LIBEESRCS))	\
 			)						\
 		)							\
 	)
@@ -130,9 +130,9 @@ LIBEEOBJS	:=							\
 LIBEESRCS	+= $(LIB_SRCS)
 LIBOBJS		:=							\
 	$(addprefix $(OBJDIR)/,						\
-		$(patsubst %.cpp,%.o,					\
-			$(patsubst %.c,%.o,				\
-				$(patsubst %.S,%.o,$(LIBSRCS))		\
+		$(patsubst %.cpp,%.cpp.o,				\
+			$(patsubst %.c,%.c.o,				\
+				$(patsubst %.S,%.S.o,$(LIBSRCS))	\
 			)						\
 		)							\
 	)
@@ -140,9 +140,9 @@ LIBOBJS		:=							\
 SRCS		+= $(APP_SRCS)
 OBJS		:=							\
 	$(addprefix $(OBJDIR)/,						\
-		$(patsubst %.cpp,%.o,					\
-			$(patsubst %.c,%.o,				\
-				$(patsubst %.S,%.o, $(SRCS))		\
+		$(patsubst %.cpp,%.cpp.o,				\
+			$(patsubst %.c,%.c.o,				\
+				$(patsubst %.S,%.S.o, $(SRCS))		\
 			)						\
 		)							\
 	)
@@ -301,17 +301,17 @@ $(TARGET_NAME).elf: $(OBJS) $(LIBDEP)
 
 endif	# __ARDUINO_SDK__
 
-$(OBJDIR)/%.o: %.S
+$(OBJDIR)/%.S.o: %.S
 	$(VERBOSE_PRINTASM) $(EE_ASM) $(DEFS_ASM) $(COMPUTED_ALLINCPATH) \
 	$(COMPUTED_OPT_ASM) $(DEPENDENCY_OPT) -o $(TARGETFILE) $(SOURCEFILE)
 	$(QUIET)$(call make-depend, $(subst .o,.d,$(@)))
 
-$(OBJDIR)/%.o: %.c
+$(OBJDIR)/%.c.o: %.c
 	$(VERBOSE_PRINTCC) $(EE_CC) $(DEFS_CC) $(COMPUTED_ALLINCPATH) \
 	$(COMPUTED_OPT_CC) $(DEPENDENCY_OPT) -o $(TARGETFILE) $(SOURCEFILE)
 	$(QUIET)$(call make-depend, $(subst .o,.d,$(@)))
 
-$(OBJDIR)/%.o: %.cpp
+$(OBJDIR)/%.cpp.o: %.cpp
 	$(VERBOSE_PRINTCXX) $(EE_CXX) $(DEFS_CXX) $(COMPUTED_ALLINCPATH) \
 	$(COMPUTED_OPT_CXX) $(DEPENDENCY_OPT) -o $(TARGETFILE) $(SOURCEFILE)
 	$(QUIET)$(call make-depend, $(subst .o,.d,$(@)))
