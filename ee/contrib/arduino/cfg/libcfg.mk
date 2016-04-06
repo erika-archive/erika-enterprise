@@ -862,6 +862,10 @@ endif	# __ARDUINO_SDK_LIB_WIRE__
 
 endif	# __ARDUINO_SDK_CC__ && __ARDUINO_SDK_ORG__
 
+ifeq ($(and	\
+		$(call iseeopt, __ARDUINO_SDK__),	\
+		$(call iseeopt, __ARDUINO_SDK_CC__)	\
+	), yes)
 EE_OBJS_ARDUINO_SDK := 							       \
 	$(addprefix $(OBJDIR)/,						       \
 		$(patsubst %.cpp,%.cpp.o,				       \
@@ -870,6 +874,16 @@ EE_OBJS_ARDUINO_SDK := 							       \
 			)						       \
 		)							       \
 	)
+else	# __ARDUINO_SDK__ && __ARDUINO_SDK_CC__
+EE_OBJS_ARDUINO_SDK := 							       \
+	$(addprefix $(OBJDIR)/,						       \
+		$(patsubst %.cpp,%.o,					       \
+			$(patsubst %.c,%.o,				       \
+				$(patsubst %.S,%.o,$(EE_SRCS_ARDUINO_SDK))     \
+			)						       \
+		)							       \
+	)
+endif	# __ARDUINO_SDK__ && __ARDUINO_SDK_CC__
 
 LIBSRCS += $(EE_SRCS_ARDUINO_SDK)
 
