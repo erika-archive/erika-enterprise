@@ -270,11 +270,6 @@ EE_STM_SR0_STORAGE void EE_tc2Yx_stm_set_sr0(EE_UINT32 usec,
   EE_UREG  us_in_ticks;
   EE_UINT8 size_of_compare;
 
-  /* I need to make this setup atomic */
-  /* USING SUSPEND/RESUME IRQ WOULD BE BETTER (code executable even with isr
-     disabled) BUT IS NOT COMPATIBLE WITH NOT-TRUSTED USER-1 PROFILE */
-  EE_tc_disableIRQ();
-
   /* Get Interrupt period in ticks */
   us_in_ticks = EE_tc2Yx_stm_us_ticks(usec);
   /* Adjust the size of the mask */
@@ -304,21 +299,13 @@ EE_STM_SR0_STORAGE void EE_tc2Yx_stm_set_sr0(EE_UINT32 usec,
     EE_STM_ICR.B.CMP0EN = 0U;
     EE_STM_SR0.U = 0U;
   }
-
-  EE_tc_enableIRQ();
 }
 
 EE_STM_SR0_STORAGE void EE_tc2Yx_stm_set_sr0_next_match(EE_UINT32 usec)
 {
-  /* I need to make this setup atomic */
-  /* USING SUSPEND/RESUME IRQ WOULD BE BETTER (code executable even with isr
-     disabled) BUT IS NOT COMPATIBLE WITH NOT-TRUSTED USER-1 PROFILE */
-  EE_tc_disableIRQ();
   /* Evaluate next compare value (previous one + increment,
      I don't need to handle wrap around) */
   EE_STM_CMP0.U += EE_tc2Yx_stm_us_ticks(usec);
-
-  EE_tc_enableIRQ();
 }
 
 EE_STM_SR1_STORAGE void EE_tc2Yx_stm_set_sr1(EE_UINT32 usec,
@@ -326,11 +313,6 @@ EE_STM_SR1_STORAGE void EE_tc2Yx_stm_set_sr1(EE_UINT32 usec,
 {
   EE_UREG  us_in_ticks;
   EE_UINT8 size_of_compare;
-
-  /* I need to make this setup atomic */
-  /* USING SUSPEND/RESUME IRQ WOULD BE BETTER (code executable even with isr
-     disabled) BUT IS NOT COMPATIBLE WITH NOT-TRUSTED USER-1 PROFILE */
-  EE_tc_disableIRQ();
 
   /* Get Interrupt period in ticks */
   us_in_ticks = EE_tc2Yx_stm_us_ticks(usec);
@@ -361,21 +343,13 @@ EE_STM_SR1_STORAGE void EE_tc2Yx_stm_set_sr1(EE_UINT32 usec,
     EE_STM_ICR.B.CMP1EN = 0U;
     EE_STM_SR1.U = 0U;
   }
-
-  EE_tc_enableIRQ();
 }
 
 EE_STM_SR1_STORAGE void EE_tc2Yx_stm_set_sr1_next_match(EE_UINT32 usec)
 {
-  /* I need to make this setup atomic */
-  /* USING SUSPEND/RESUME IRQ WOULD BE BETTER (code executable even with isr
-     disabled) BUT IS NOT COMPATIBLE WITH NOT-TRUSTED USER-1 PROFILE */
-  EE_tc_disableIRQ();
   /* Evaluate next compare value (previous one + increment,
      I don't need to handle wrap around) */
   EE_STM_CMP1.U += EE_tc2Yx_stm_us_ticks(usec);
-
-  EE_tc_enableIRQ();
 }
 
 void EE_tc2Yx_delay( EE_UREG usec )
