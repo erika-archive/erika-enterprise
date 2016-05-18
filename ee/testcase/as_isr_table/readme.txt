@@ -1,1 +1,0 @@
-Simple testcase to test PPC ONLY Static and Dynamic ISR Table.

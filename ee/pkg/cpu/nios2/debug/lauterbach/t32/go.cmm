@@ -1,6 +1,0 @@
-; go to main() !!!
-
-;break.reset
-go main
-
-enddo

@@ -1,1 +1,0 @@
-Simple testcase to test OSEK/VDX ISR Level Resources Management.

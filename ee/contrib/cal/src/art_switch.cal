@@ -1,3 +1,0 @@
-actor switch(dynamicSZ) ==> int(size=dynamicSZ) outp:
-
-end
