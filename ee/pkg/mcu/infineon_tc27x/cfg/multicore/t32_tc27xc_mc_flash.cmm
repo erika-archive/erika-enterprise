@@ -102,9 +102,15 @@
     SYStem.RESet
 
     IF "&param_cpu"!=""
+    (
       SYStem.CPU &param_cpu
-    IF !CPUIS(TC27*)
+      IF !CPUIS(TC27*)
+        SYStem.CPU TC27*
+    )
+    ELSE
+    (
       SYStem.CPU TC27*
+    )
 
     CORE.select 0.        ; CPU0 is selected for flash programming.
 
