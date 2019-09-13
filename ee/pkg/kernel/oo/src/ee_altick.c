@@ -7,7 +7,7 @@
  *
  * ERIKA Enterprise is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation, 
+ * version 2 as published by the Free Software Foundation,
  * (with a special exception described below).
  *
  * Linking this code statically or dynamically with other modules is
@@ -199,7 +199,7 @@ static void EE_oo_handle_action_task(EE_oo_action_ROM_type const * const
 
 #if (defined(__OO_ECC1__)) || (defined(__OO_ECC2__))
 static void EE_oo_handle_action_event(EE_oo_action_ROM_type const * const p_action);
-  
+
 static void EE_oo_handle_action_event(EE_oo_action_ROM_type const * const
   p_action)
 {
@@ -237,7 +237,7 @@ static void EE_oo_handle_action_event(EE_oo_action_ROM_type const * const
   } else {
 #endif /* EE_AS_RPC__ || __RN_EVENT__ */
 
-#ifdef __OO_EXTENDED_STATUS__    
+#ifdef __OO_EXTENDED_STATUS__
     /* check if the task Id is valid */
     if ( (TaskID < 0) || (TaskID >= EE_MAX_TASK) ) {
       ev = E_OS_ID;
@@ -373,156 +373,175 @@ static void EE_oo_handle_action(EE_oo_action_ROM_type const * const p_action)
 
 #ifdef EE_AS_SCHEDULETABLES__
 #if (defined(EE_MAX_SCHEDULETABLE)) && (EE_MAX_SCHEDULETABLE > 0)
-static void  EE_as_handle_schedule_table( ScheduleTableType STId )
-{
+static void  EE_as_handle_schedule_table(ScheduleTableType STId) {
+  /* Get Schedule Table Configuration Structures */
+  EE_as_Schedule_Table_ROM_type const  *p_schedule_table_ROM =
+    &EE_as_Schedule_Table_ROM[STId];
+  EE_as_Schedule_Table_RAM_type        *p_schedule_table_RAM =
+    &EE_as_Schedule_Table_RAM[STId];
+
   do {
-    /* Index to traverse expiry point actions */
-    register EE_UREG                              i;
-    register TickType                             nextOffset;
-    /* Expiry point description */
-    register EE_as_Expiry_Point_ROM_type const    *p_expiry_point;
-    /* Get Schedule Table Configuration Structures */
-    register EE_as_Schedule_Table_ROM_type const  *p_schedule_table_ROM =
-      &EE_as_Schedule_Table_ROM[STId];
-    register EE_as_Schedule_Table_RAM_type        *p_schedule_table_RAM =
-      &EE_as_Schedule_Table_RAM[STId];
-    /* Expiry point position */
-    register ExpiryPointType expiry_position = p_schedule_table_RAM->position;
+    /* Get the next Schedule Table */
+    ScheduleTableType nextSTId = INVALID_SCHEDULETABLE;
 
-    /* This can happen:
-        - When a next schedule table is activated to stop the original
-          schedule table after the final delay
-        - When the original schedule table is repeating */
-    if ( expiry_position == INVALID_SCHEDULETABLE_POSITION ) {
-      /* Get the next Schedule Table */
-      ScheduleTableType const nextSTId = p_schedule_table_RAM->next_table;
+    do {
+      /* Expiry point position */
+      ExpiryPointType expiry_position = p_schedule_table_RAM->position;
 
-      if ( nextSTId != INVALID_SCHEDULETABLE ) {
-        p_schedule_table_RAM->status = SCHEDULETABLE_STOPPED;
-        /* This is needed to stop the underlying alarm tied to the schedule
-            table, otherwise the alarm handling cycle will be reschedule
-            this alarm */
-        EE_oo_counter_object_RAM[EE_MAX_ALARM + STId].cntcycle = 0;
-        p_schedule_table_RAM->next_table = INVALID_SCHEDULETABLE;
-
-        /* nextSTId handling */
-        p_schedule_table_ROM = &EE_as_Schedule_Table_ROM[nextSTId];
-        p_schedule_table_RAM = &EE_as_Schedule_Table_RAM[nextSTId];
-
-        p_schedule_table_RAM->status      = SCHEDULETABLE_RUNNING;
-
-        expiry_position = p_schedule_table_ROM->expiry_point_first;
-
-        p_schedule_table_RAM->position    = expiry_position;
-        p_schedule_table_RAM->next_table  = INVALID_SCHEDULETABLE;
-
-        nextOffset      = EE_as_Expiry_Point_ROM[expiry_position].offset;
-
-        /* Handle special case of some expiry points with offset equal to
-           zero */
-        if ( nextOffset > 0U ) {
-          /* Exit From The Loop */
-          STId = INVALID_SCHEDULETABLE;
-        } else {
-          /* Continue The Loop with the next Schedule Table expiry points:
-             before them, evaluate next alarm event offset to enable
-             underlying schedule table alarm (counter object). */
-          do {
-            ++expiry_position;
-            nextOffset = EE_as_Expiry_Point_ROM[expiry_position].offset;
-          } while ( (nextOffset == 0U) &&
-            (expiry_position < p_schedule_table_ROM->expiry_point_last) );
-          if ( nextOffset == 0U ) {
-            nextOffset = p_schedule_table_ROM->duration;
-          }
-          STId = nextSTId;
-        }
-        /* Schedule the alarm tied to the next Schedule Table */
-        EE_oo_handle_rel_counter_object_insertion(EE_MAX_ALARM + nextSTId,
-          nextOffset, 0U);
-      } else {
-        /* Reapiting schedule table */
-        expiry_position = p_schedule_table_ROM->expiry_point_first;
-        p_schedule_table_RAM->position = expiry_position;
-        nextOffset      = EE_as_Expiry_Point_ROM[expiry_position].offset;
-
-        if ( nextOffset > 0U ) {
-          /* This is an Hack to let alarm handling cycle reschedule the schedule
-             table alarm with the right offset (increment) */
-          EE_oo_counter_object_RAM[EE_MAX_ALARM + STId].cntcycle = nextOffset;
-          /* Exit From The Loop */
-          STId = INVALID_SCHEDULETABLE;
-        }
-      }
-    } else {
-      /* Get the Expiry point */
-      p_expiry_point =  &EE_as_Expiry_Point_ROM[expiry_position];
-      for ( i = p_expiry_point->actions_first;
-            i <= p_expiry_point->actions_last; ++i )
+      /* This can happen:
+         - If the Schedule Table has been started relatively
+         - If a Next Schedule Table is activated, to stop the original
+           Schedule Table after the final delay.
+         - If original schedule table is repeating */
+      if ((expiry_position & SCHEDULETABLE_FINAL_DELAY_POSITION) ==
+        SCHEDULETABLE_FINAL_DELAY_POSITION)
       {
-        /* Execute the action */
-        EE_oo_handle_action( &EE_oo_action_ROM[i] );
-      }
+        if (expiry_position == SCHEDULETABLE_FINAL_DELAY_POSITION) {
+          /* Get Eventual Next Schedule Table */
+          nextSTId = p_schedule_table_RAM->next_table;
+        }
 
-      /* Handle next expiry point insertion in alarm queue */
-      /* if it is the last expiry point and if this is not a repeating
-         schedule table, handle next schedule table or stop it */
-      if ( expiry_position == p_schedule_table_ROM->expiry_point_last )
-      {
-        /* We reached the end of schedule table so we stop it */
-        if ( (p_schedule_table_RAM->next_table == INVALID_SCHEDULETABLE) &&
-           (p_schedule_table_ROM->repeated == 0) )
+        if ((expiry_position == SCHEDULETABLE_STARTING_POSITION) ||
+            (p_schedule_table_ROM->repeated != 0))
         {
-          /* [SWS_Os_00009] If the schedule table is single-shot, the Operating
-             System module shall stop the processing of the schedule table
-             Final Delay ticks after the Final Expiry Point is processed. */
-          p_schedule_table_RAM->status     = SCHEDULETABLE_STOPPED;
-          /*  This is needed to stop the underlying alarm tied to the schedule
-              table, otherwise the alarm handling cycle will be reschedule this
-              alarm */
-          EE_oo_counter_object_RAM[EE_MAX_ALARM + STId].cntcycle = 0;
-          /* Exit From The Loop */
-          STId = INVALID_SCHEDULETABLE;
-        } else {
-          /* Schedule the final delay for original schedule table */
-          p_schedule_table_RAM->position = INVALID_SCHEDULETABLE_POSITION;
-          /* [OS427] If the schedule table is single-shot, the Operating System
-              module shall allow a Final Delay between
-              0 .. OsCounterMaxAllowedValue of the underlying counter. */
-          /* This is an Hack to let alarm handling cycle reschedule the schedule
-              table alarm with the right offset (increment) */
-          /* XXX: The final delay it's any value between
-              0 .. OsCounterMaxAllowedValue. This means that I could have a
-              EE_oo_counter_object_RAM.cycle variable wrap around if I would
-              sum an Initial Expiry Point Initial Offset directly here,
-              instead I will handle this case as I have done for the
-              'next table' */
-          if ( p_schedule_table_ROM->duration > p_expiry_point->offset ) {
-            EE_oo_counter_object_RAM[EE_MAX_ALARM + STId].cntcycle =
-              p_schedule_table_ROM->duration - p_expiry_point->offset;
-            /* Exit From The Loop */
+          TickType          nextOffset;
+          /* Schedule Table started relatively or Repeating Schedule Table */
+          expiry_position = p_schedule_table_ROM->expiry_point_first;
+
+          p_schedule_table_RAM->position = expiry_position;
+
+          nextOffset = EE_as_Expiry_Point_ROM[expiry_position].offset;
+
+          if (nextOffset > 0U) {
+            /* This is an Hack to let alarm handling cycle reschedule the
+               schedule table alarm with the right offset (increment) */
+            EE_oo_counter_object_RAM[EE_MAX_ALARM + STId].
+              cntcycle = nextOffset;
+            /* Exit From The Inner Loop */
             STId = INVALID_SCHEDULETABLE;
           }
-        }
-      } else {
-        if ( p_schedule_table_ROM->sync_strategy != EE_SCHEDTABLE_SYNC_NONE ) {
-          /* *** TODO: HANDLE SYNCRONIZATION *** */
-        }
-        /* Schedule the next expiry point */
-        ++expiry_position;
-        p_schedule_table_RAM->position = expiry_position;
-        nextOffset = EE_as_Expiry_Point_ROM[expiry_position].offset;
-        if ( nextOffset > p_expiry_point->offset ) {
-          /* This is an Hack to let alarm handling cycle reschedule the schedule
-             table alarm with the right offset (increment) */
-          EE_oo_counter_object_RAM[EE_MAX_ALARM + STId].cntcycle =
-            nextOffset - p_expiry_point->offset;
-          /* Exit From The Loop */
+          /* else (nextOffset == 0) the next loop iteration will handle the
+             first expiry point of the ST */
+        } else if (p_schedule_table_ROM->repeated == 0) {
+          /* We reached the end of schedule table so we stop it */
+          /* [SWS_Os_00009] If the schedule table is single-shot, the
+              Operating System module shall stop the processing of the
+              schedule table Final Delay ticks after the Final Expiry Point
+              is processed. */
+          p_schedule_table_RAM->status  = SCHEDULETABLE_STOPPED;
+          /* This is needed to stop the underlying counter object tied to the
+             schedule table, otherwise the alarm handling cycle will be
+             reschedule this schedule table */
+          EE_oo_counter_object_RAM[EE_MAX_ALARM + STId].cntcycle = 0;
+          /* Exit From The Inner Loop */
+          STId = INVALID_SCHEDULETABLE;
+        } else {
+          /* Exit From The Inner Loop */
           STId = INVALID_SCHEDULETABLE;
         }
+      } else {
+        /* Index to traverse expiry point actions */
+        EE_UREG         i;
+        /* Get the Expiry Point */
+        EE_as_Expiry_Point_ROM_type const *
+          p_expiry_point =  &EE_as_Expiry_Point_ROM[expiry_position];
+
+        for (i = p_expiry_point->actions_first;
+              i <= p_expiry_point->actions_last; ++i)
+        {
+          /* Execute the action */
+          EE_oo_handle_action(&EE_oo_action_ROM[i]);
+        }
+
+        /* Handle next expiry point insertion in alarm queue */
+
+        /* If it is the last expiry point and if this is not a repeating
+           schedule table, handle next schedule table or stop it */
+        if (expiry_position == p_schedule_table_ROM->expiry_point_last) {
+          /* Schedule the final delay for original schedule table */
+          p_schedule_table_RAM->position = SCHEDULETABLE_FINAL_DELAY_POSITION;
+          /* [SWS_Os_0427] If the schedule table is single-shot,
+             the Operating System module shall allow a Final Delay between
+             0 .. OsCounterMaxAllowedValue of the underlying counter. */
+          if (p_schedule_table_ROM->duration > p_expiry_point->offset) {
+            /* This is an Hack to let alarm handling cycle reschedule the
+               schedule table alarm with the right offset (increment) */
+            EE_oo_counter_object_RAM[EE_MAX_ALARM + STId].cntcycle =
+              p_schedule_table_ROM->duration - p_expiry_point->offset;
+            /* Exit From The Inner Loop */
+            STId = INVALID_SCHEDULETABLE;
+          }
+          /* else handle immediately the fake final delay position expiry
+             point */
+        } else {
+          TickType        nextOffset;
+          TickType const  prev_offset = p_expiry_point->offset;
+          /* Schedule the next expiry point */
+          ++expiry_position;
+          p_schedule_table_RAM->position = expiry_position;
+
+          nextOffset = EE_as_Expiry_Point_ROM[expiry_position].offset;
+
+          if (p_schedule_table_ROM->sync_strategy != EE_SCHEDTABLE_SYNC_NONE)
+          {
+            /* *** TODO: HANDLE SYNCRONIZATION *** */
+          }
+
+          /* Check if new expiry point is not simultaneous of the
+             previous one */
+          if (nextOffset > prev_offset) {
+            /* This is an Hack to let alarm handling cycle reschedule the
+              schedule table alarm with the right offset (increment) */
+            EE_oo_counter_object_RAM[EE_MAX_ALARM + STId].cntcycle =
+              nextOffset - prev_offset;
+            /* Exit From The Inner Loop */
+            STId = INVALID_SCHEDULETABLE;
+          }
+          /* else handle the next expiry point immediately */
+        }
       }
+    } while (STId != INVALID_SCHEDULETABLE);
+
+    /* Next ST Handling */
+    if (nextSTId != INVALID_SCHEDULETABLE) {
+      EE_UREG   expiry_position;
+
+      /* Set nextSTId as STId */
+      STId = nextSTId;
+
+      /* Get Schedule Table Configuration Structures */
+      p_schedule_table_ROM = &EE_as_Schedule_Table_ROM[STId];
+      p_schedule_table_RAM = &EE_as_Schedule_Table_RAM[STId];
+
+      p_schedule_table_RAM->status = SCHEDULETABLE_RUNNING;
+      p_schedule_table_RAM->next_table = INVALID_SCHEDULETABLE;
+
+      expiry_position = p_schedule_table_ROM->expiry_point_first;
+      p_schedule_table_RAM->position  = expiry_position;
+
+      do {
+        /* In any case I need to insert the new Counter Object in the counter
+           queue here.
+           I don't care about the fact that the cycle field of the counter
+           object will be dirtied by the the expiry point handling loop,
+           in any case the value will be changed from the first expiry
+           point with offset != 0 */
+        TickType const nextOffset =
+          EE_as_Expiry_Point_ROM[expiry_position].offset;
+
+        if (nextOffset > 0U) {
+          EE_oo_handle_rel_counter_object_insertion((EE_MAX_ALARM + STId),
+            nextOffset, 0U);
+          /* Exit From The Outer Loop if the first expiry point has a non
+             zero  offset */
+          if (expiry_position == p_schedule_table_ROM->expiry_point_first) {
+            STId = INVALID_SCHEDULETABLE;
+          }
+          break;
+        }
+      } while (expiry_position++ < p_schedule_table_ROM->expiry_point_last);
     }
-  } while ( STId != INVALID_SCHEDULETABLE );
+  } while (STId != INVALID_SCHEDULETABLE);
 }
 #endif /* EE_MAX_SCHEDULETABLE > 0 */
 #endif /* EE_AS_SCHEDULETABLES__ */

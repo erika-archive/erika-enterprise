@@ -80,6 +80,9 @@ void EE_thread_not_terminated(void)
 #ifdef EE_AS_USER_SPINLOCKS__
   (void)EE_as_release_all_spinlocks(current);
 #endif /* EE_AS_USER_SPINLOCKS__ */
+#ifndef __OO_NO_CHAINTASK__
+    EE_th_terminate_nextask[current] = EE_NIL;
+#endif /* __OO_NO_CHAINTASK__ */
 
   /* [OS052], [OS239]: terminate task + call PostTaskHook + ISRs counters reset
       in EE_thread_end_instance. Interrupts enabling is done by

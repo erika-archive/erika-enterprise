@@ -164,17 +164,35 @@ StatusType EE_as_StartScheduleTableRel( ScheduleTableType ScheduleTableID,
           <Offset> + Initial Offset ticks have elapsed on the underlying counter.
           The state of <ScheduleTableID> is set to SCHEDULETABLE_RUNNING before
           the service returns to the caller. */
-      EE_as_Schedule_Table_RAM[ScheduleTableID].status  = SCHEDULETABLE_RUNNING;
-      EE_as_Schedule_Table_RAM[ScheduleTableID].position    =
-        EE_as_Schedule_Table_ROM[ScheduleTableID].expiry_point_first;
+      /* Hold the delta value with which the counter object is inserted
+         in the queue */
+      TickType counter_obj_delta;
+      EE_UREG  position;
+
+      if (Offset != 0U) {
+        position          = SCHEDULETABLE_STARTING_POSITION;
+        counter_obj_delta = Offset;
+      } else {
+        position          = EE_as_Schedule_Table_ROM[ScheduleTableID].
+          expiry_point_first;
+        counter_obj_delta = EE_as_Expiry_Point_ROM[position].offset;
+        /* Handle the extreme case of starting Offset == 0 and first
+           expiry point == 0 */
+        if (counter_obj_delta == 0U) {
+          counter_obj_delta = 1U;
+          position          = SCHEDULETABLE_STARTING_POSITION;
+        }
+      }
+
+      EE_as_Schedule_Table_RAM[ScheduleTableID].status =
+        SCHEDULETABLE_RUNNING;
+      EE_as_Schedule_Table_RAM[ScheduleTableID].position    = position;
       EE_as_Schedule_Table_RAM[ScheduleTableID].deviation   = 0U;
       EE_as_Schedule_Table_RAM[ScheduleTableID].next_table  =
         INVALID_SCHEDULETABLE;
 
       /* Insert the alarm corresponding to this Schedule Table in alarm list */
-      EE_oo_handle_rel_counter_object_insertion(obj_id, Offset +
-        EE_as_Expiry_Point_ROM[EE_as_Schedule_Table_ROM[ScheduleTableID].
-          expiry_point_first].offset, 0U);
+      EE_oo_handle_rel_counter_object_insertion(obj_id, counter_obj_delta, 0U);
 
       ev = E_OK;
     }
@@ -315,21 +333,51 @@ StatusType EE_as_StartScheduleTableAbs( ScheduleTableType ScheduleTableID,
           before returning to the user. (The Initial Expiry Point will be
           processed when the underlying counter next equals
           <Start>+Initial Offset). */
+      TickType        first_absstart;
+      ExpiryPointType starting_position;
+      TickType  const first_offset = EE_as_Expiry_Point_ROM[
+        EE_as_Schedule_Table_ROM[ScheduleTableID].expiry_point_first].offset;
+
+      TickType    const cnt_maxallowedvalue =
+        EE_counter_ROM[EE_oo_counter_object_ROM[obj_id].c].maxallowedvalue;
+      EE_TYPEBOOL const modulo_valid = (cnt_maxallowedvalue < ((TickType)-1));
+      TickType    const cnt_modulo = cnt_maxallowedvalue + 1U;
+
+      if (modulo_valid) {
+        TickType const
+          cnt_value = EE_counter_RAM[EE_oo_counter_object_ROM[obj_id].c].value;
+        if (Start > cnt_value) {
+          if ((cnt_modulo - first_offset) >= (Start - cnt_value)) {
+            first_absstart = (Start + first_offset) % cnt_modulo;
+            starting_position = EE_as_Schedule_Table_ROM[ScheduleTableID].
+              expiry_point_first;
+          } else {
+            first_absstart    = Start;
+            starting_position = SCHEDULETABLE_STARTING_POSITION;
+          }
+        } else {
+          first_absstart    = (Start + first_offset) % cnt_modulo;
+          starting_position = EE_as_Schedule_Table_ROM[ScheduleTableID].
+            expiry_point_first;
+        }
+      } else {
+        first_absstart    = Start + first_offset;
+        starting_position = EE_as_Schedule_Table_ROM[ScheduleTableID].
+          expiry_point_first;
+      }
+
       EE_as_Schedule_Table_RAM[ScheduleTableID].status  =
         (EE_as_Schedule_Table_ROM[ScheduleTableID].
           sync_strategy == EE_SCHEDTABLE_SYNC_IMPLICIT) ?
             SCHEDULETABLE_RUNNING_AND_SYNCHRONOUS: SCHEDULETABLE_RUNNING;
 
-      EE_as_Schedule_Table_RAM[ScheduleTableID].position    =
-        EE_as_Schedule_Table_ROM[ScheduleTableID].expiry_point_first;
-      EE_as_Schedule_Table_RAM[ScheduleTableID].deviation   = 0U;
-      EE_as_Schedule_Table_RAM[ScheduleTableID].next_table  =
+      EE_as_Schedule_Table_RAM[ScheduleTableID].position   = starting_position;
+      EE_as_Schedule_Table_RAM[ScheduleTableID].deviation  = 0U;
+      EE_as_Schedule_Table_RAM[ScheduleTableID].next_table =
         INVALID_SCHEDULETABLE;
 
       /* Insert the alarm corresponding to this Schedule Table in alarm list */
-      EE_oo_handle_abs_counter_object_insertion(obj_id, Start +
-        EE_as_Expiry_Point_ROM[EE_as_Schedule_Table_ROM[ScheduleTableID].
-          expiry_point_first].offset, 0U);
+      EE_oo_handle_abs_counter_object_insertion(obj_id, first_absstart, 0U);
 
       ev = E_OK;
     }
@@ -354,7 +402,7 @@ StatusType EE_as_StartScheduleTableAbs( ScheduleTableType ScheduleTableID,
   }
 
   EE_ORTI_set_service_out(EE_SERVICETRACE_STARTSCHEDTABABS);
-  EE_OS_EXIT_CRITICAL_SECTION();  
+  EE_OS_EXIT_CRITICAL_SECTION();
 
   return ev;
 }
@@ -741,7 +789,7 @@ StatusType EE_as_NextScheduleTable( ScheduleTableType ScheduleTableID_From,
       <ScheduleTable_To> unchanged and return E_OS_STATE. */
   if ( (EE_oo_counter_object_ROM[EE_MAX_ALARM + ScheduleTableID_From].c !=
           EE_oo_counter_object_ROM[EE_MAX_ALARM + ScheduleTableID_To].c) ||
-       (EE_as_Schedule_Table_ROM[ScheduleTableID_From].sync_strategy != 
+       (EE_as_Schedule_Table_ROM[ScheduleTableID_From].sync_strategy !=
           EE_as_Schedule_Table_ROM[ScheduleTableID_To].sync_strategy) )
   {
     ev = E_OS_ID;
@@ -882,7 +930,7 @@ StatusType EE_as_SyncScheduleTable( ScheduleTableType ScheduleTableID,
     ev = E_OS_VALUE;
   } else if ( (EE_as_Schedule_Table_RAM[ScheduleTableID].
       status == SCHEDULETABLE_STOPPED) ||
-    (EE_as_Schedule_Table_RAM[ScheduleTableID].status == SCHEDULETABLE_NEXT) ) 
+    (EE_as_Schedule_Table_RAM[ScheduleTableID].status == SCHEDULETABLE_NEXT) )
   {
     ev = E_OS_STATE;
   } else
@@ -932,7 +980,7 @@ StatusType EE_as_SyncScheduleTable( ScheduleTableType ScheduleTableID,
           /* Shorten ep delay */
           next_ep_delay -=  shortening;
           /* Adjust deviation */
-          temp_deviation -= shortening; 
+          temp_deviation -= shortening;
         } else {
           /* Schedule Table is in delay */
           TickType max_lengthen = EE_as_Expiry_Point_ROM[
@@ -950,7 +998,7 @@ StatusType EE_as_SyncScheduleTable( ScheduleTableType ScheduleTableID,
         EE_oo_handle_rel_counter_object_insertion(obj_id, next_ep_delay, 0U);
       }
 
-      /* if st abs(deviation) < st precision -> synchronized! */  
+      /* if st abs(deviation) < st precision -> synchronized! */
       if ( EE_as_abs(temp_deviation) <
         EE_as_Schedule_Table_ROM[ScheduleTableID].precision )
       {

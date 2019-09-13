@@ -1508,7 +1508,11 @@ typedef struct {
   /** ID of next schedule table to be started */
   ScheduleTableType       next_table;
 } EE_as_Schedule_Table_RAM_type;
-#define INVALID_SCHEDULETABLE_POSITION ((EE_UREG)-1)
+#define INVALID_SCHEDULETABLE_POSITION      ((EE_UREG)-1)
+/** Expiry point index for a ScheduleTable starting  */
+#define SCHEDULETABLE_STARTING_POSITION ((EE_UREG)-1)
+/** Expiry point index for the final delay */
+#define SCHEDULETABLE_FINAL_DELAY_POSITION  (((EE_UREG)-1) - (EE_UREG)1U)
 
 /** @var Array of constant descriptors of Expiry accessed by
     #ScheduleTableType values*/
