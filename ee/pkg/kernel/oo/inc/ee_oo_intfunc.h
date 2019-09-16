@@ -63,7 +63,11 @@ extern EE_UREG EE_oo_IRQ_disable_count;
  ***************************************************************************/
 #ifndef EE_OLD_HAL
 extern EE_FREG EE_oo_IRQ_suspend_status;
-#endif /* EE_OLD_HAL */
+#if (defined(EE_REALLY_HANDLE_OS_IRQ))
+extern EE_UREG EE_oo_OS_IRQ_suspend_count;
+extern EE_FREG EE_oo_OS_IRQ_suspend_status;
+#endif /* EE_REALLY_HANDLE_OS_IRQ */
+#endif /* !EE_OLD_HAL */
 
 extern EE_TYPEAPPMODE EE_ApplicationMode;
 
@@ -409,8 +413,7 @@ __INLINE__ void __ALWAYS_INLINE__ EE_oo_fill_error_data_StartOS(AppModeType
     ((void)0)
 #define EE_oo_fill_error_data_SetAbsAlarm(AlarmID, start, cycle)    ((void)0)
 #define EE_oo_fill_error_data_CancelAlarm(AlarmID)                  ((void)0)
-#define EE_oo_fill_error_data_IncrementCounter(AlarmID, TaskID, ActionKind) \
-    ((void)0)
+#define EE_oo_fill_error_data_IncrementCounter(CounterID)           ((void)0)
 #define EE_oo_fill_error_data_with_mask_IncrementCounter(AlarmID, TaskID, \
     Mask, ActionKind) ((void)0)
 #define EE_oo_fill_error_data_GetCounterValue(CounterID, Value)     ((void)0)

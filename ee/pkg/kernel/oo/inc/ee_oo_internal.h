@@ -55,7 +55,7 @@
  ******************************************************************************/
 
 /* Error Parameters Utilities Macros */
-#define EE_OS_PARAM(param_name)   EE_os_param param_name
+#define EE_OS_PARAM(param_name)   EE_os_param (param_name)
 #define EE_OS_PARAM_VALUE(param_name, param_value)  \
   ((param_name).value_param = (param_value))
 
@@ -413,7 +413,11 @@ extern EE_UREG volatile EE_oo_started;
    'signed register type' because usually it is native integer type. */
 __INLINE__ EE_TYPEBOOL __ALWAYS_INLINE__ EE_oo_check_disableint_error(void)
 {
-  return ( EE_oo_IRQ_disable_count != 0U );
+  return ( EE_oo_IRQ_disable_count != 0U )
+#if (defined(EE_REALLY_HANDLE_OS_IRQ))
+    || ( EE_oo_OS_IRQ_suspend_count != 0U )
+#endif /* EE_REALLY_HANDLE_OS_IRQ */
+    ;
 }
 
 #if (defined(__OO_BCC2__)) || (defined(__OO_ECC2__))
@@ -689,6 +693,9 @@ __INLINE__ void __ALWAYS_INLINE__ EE_oo_preemption_point(void)
         /* Execute context SWITCH, this method return when we have a switch
            back on the previous TASK contest. */
         EE_oo_run_next_task();
+
+        /* After Returning on preempted TASK/STACK: monitor it */
+        EE_as_monitoring_the_stack();
       }
     }
   }
@@ -765,6 +772,9 @@ __INLINE__ void __ALWAYS_INLINE__ EE_oo_reschedule_on_block(void)
     /* Execute context SWITCH, this method return when we have a switch
        back on the previous TASK contest. */
     EE_oo_run_next_task();
+
+    /* After Returning on blocked TASK/STACK: monitor it */
+    EE_as_monitoring_the_stack();
   }
 }
 #endif /* (__OO_ECC1__ || __OO_ECC2__) && __MULTI__ */

@@ -50,30 +50,22 @@
  * active. Interrupts must be enabled/disabled when returning from the syscall
  * made from user space.
  */
-
-/* The variables below have the "EE_oo" prefix because they could be used also
- * for the OO kernel. */
-
-/* IRQ state at the time DisableAllInterrupts() is called.  This is global,
- * because it's used by other APIs to check if they are called inside a
- * Disable/Enable section. */
-EE_FREG EE_oo_all_irq_prev_state = EE_HAL_IRQSTATE_INVALID;
-
-/* IRQ state at the time the first SuspendAllInterrupts() is called */
-static EE_FREG EE_oo_res_all_irq_prev_state;
-
 EE_FREG EE_as_DisableAllInterrupts(EE_FREG prev)
 {
   EE_FREG next;
   EE_ORTI_set_service_in(EE_SERVICETRACE_DISABLEALLINTERRUPTS);
-  EE_oo_all_irq_prev_state = EE_hal_set_irq_valid_flag(prev);
+
+  EE_oo_IRQ_suspend_status = EE_hal_set_irq_valid_flag(prev);
   next = EE_hal_clear_irq_flag(prev);
+
   ++EE_oo_IRQ_disable_count;
 
   /* Enable DisableAllInterrupts TP budget, if needed */
   if ( EE_oo_IRQ_disable_count == 1U ) {
+    EE_as_tp_active_pause_and_update_budgets();
     EE_as_tp_active_activate_budget(EE_ALL_INTERRUPT_LOCK_BUDGET,
       INVALID_OBJECTID, EE_TRUE);
+    EE_as_tp_active_update_budgets_and_restart();
   }
 
   EE_ORTI_set_service_out(EE_SERVICETRACE_DISABLEALLINTERRUPTS);
@@ -83,22 +75,23 @@ EE_FREG EE_as_DisableAllInterrupts(EE_FREG prev)
 EE_FREG EE_as_EnableAllInterrupts(EE_FREG prev)
 {
   EE_FREG next;
-  EE_FREG prev_state;
   EE_ORTI_set_service_in(EE_SERVICETRACE_ENABLEALLINTERRUPTS);
+
   next = prev;
-  prev_state = EE_oo_all_irq_prev_state;
-  if ( prev_state == EE_HAL_IRQSTATE_INVALID ) {
+
+  if ( EE_oo_IRQ_disable_count == 0U ) {
     /* No previous DisableAllInterrupts(): do nothing */
   } else {
-    EE_oo_all_irq_prev_state = EE_HAL_IRQSTATE_INVALID;
-    next = EE_hal_copy_irq_flag(prev_state, next);
-    --EE_oo_IRQ_disable_count;
-  }
+    next = EE_hal_copy_irq_flag(EE_oo_IRQ_suspend_status, next);
 
-  /* Stop DisableAllInterrupts TP budget, if needed */
-  if ( EE_oo_IRQ_disable_count == 0U ) {
-    EE_as_tp_active_stop_budget(EE_ALL_INTERRUPT_LOCK_BUDGET, INVALID_OBJECTID,
-      EE_TRUE);
+    --EE_oo_IRQ_disable_count;
+    /* Stop DisableAllInterrupts TP budget, if needed */
+    if ( EE_oo_IRQ_disable_count == 0U ) {
+      EE_as_tp_active_pause_and_update_budgets();
+      EE_as_tp_active_stop_budget(EE_ALL_INTERRUPT_LOCK_BUDGET, INVALID_OBJECTID,
+        EE_TRUE);
+      EE_as_tp_active_update_budgets_and_restart();
+    }
   }
 
   EE_ORTI_set_service_out(EE_SERVICETRACE_ENABLEALLINTERRUPTS);
@@ -109,18 +102,21 @@ EE_FREG EE_as_SuspendAllInterrupts(EE_FREG prev)
 {
   EE_FREG next;
   EE_ORTI_set_service_in(EE_SERVICETRACE_SUSPENDALLINTERRUPTS);
+
   next = prev;
+
   if ( EE_oo_IRQ_disable_count == 0U ) {
     next = EE_hal_clear_irq_flag(next);
-    EE_oo_res_all_irq_prev_state = prev;
-  }
-  ++EE_oo_IRQ_disable_count;
+    EE_oo_IRQ_suspend_status = prev;
 
-  /* Enable DisableAllInterrupts TP budget, if needed */
-  if ( EE_oo_IRQ_disable_count == 1U ) {
+    /* Enable DisableAllInterrupts TP budget, if needed */
+    EE_as_tp_active_pause_and_update_budgets();
     EE_as_tp_active_activate_budget(EE_ALL_INTERRUPT_LOCK_BUDGET,
       INVALID_OBJECTID, EE_TRUE);
+    EE_as_tp_active_update_budgets_and_restart();
   }
+
+  ++EE_oo_IRQ_disable_count;
 
   EE_ORTI_set_service_out(EE_SERVICETRACE_SUSPENDALLINTERRUPTS);
   return next;
@@ -130,33 +126,74 @@ EE_FREG EE_as_ResumeAllInterrupts(EE_FREG prev)
 {
   EE_FREG next;
   EE_ORTI_set_service_in(EE_SERVICETRACE_RESUMEALLINTERRUPTS);
+
   next = prev;
+
   if ( EE_oo_IRQ_disable_count == 0U ) {
     /* No previous SuspendAllInterrupts(): do nothing */
   } else {
     --EE_oo_IRQ_disable_count;
     if ( EE_oo_IRQ_disable_count == 0U ) {
       next = EE_hal_copy_irq_flag(
-      EE_oo_res_all_irq_prev_state, next);
+        EE_oo_IRQ_suspend_status, next);
       /* Stop DisableAllInterrupts TP budget, if needed */
+      EE_as_tp_active_pause_and_update_budgets();
       EE_as_tp_active_stop_budget(EE_ALL_INTERRUPT_LOCK_BUDGET,
         INVALID_OBJECTID, EE_TRUE);
+      EE_as_tp_active_update_budgets_and_restart();
     }
   }
   EE_ORTI_set_service_out(EE_SERVICETRACE_RESUMEALLINTERRUPTS);
   return next;
 }
 
-/* FIXME: Currently ERIKA has not defined any HAL primitives to selectively
- * disable ISR2s. Therefore, SuspendOSInterrupts() suspends all interrupts. */
 EE_FREG EE_as_SuspendOSInterrupts(EE_FREG prev)
 {
-  return EE_as_SuspendAllInterrupts(prev);
+  EE_FREG next;
+  EE_ORTI_set_service_in(EE_SERVICETRACE_SUSPENDOSINTERRUPTS);
+
+  next = prev;
+
+  if ( EE_oo_OS_IRQ_suspend_count == 0U ) {
+    next = EE_hal_set_max_isr2_pri_flag(next);
+    EE_oo_OS_IRQ_suspend_status = prev;
+
+    /* Enable DisableAllInterrupts TP budget, if needed */
+    EE_as_tp_active_pause_and_update_budgets();
+    EE_as_tp_active_activate_budget(EE_OS_INTERRUPT_LOCK_BUDGET,
+      INVALID_OBJECTID, EE_TRUE);
+    EE_as_tp_active_update_budgets_and_restart();
+  }
+
+  ++EE_oo_OS_IRQ_suspend_count;
+
+  EE_ORTI_set_service_out(EE_SERVICETRACE_SUSPENDOSINTERRUPTS);
+  return next;
 }
 
 EE_FREG EE_as_ResumeOSInterrupts(EE_FREG prev)
 {
-  return EE_as_ResumeAllInterrupts(prev);
+  EE_FREG next;
+  EE_ORTI_set_service_in(EE_SERVICETRACE_RESUMEOSINTERRUPTS);
+
+  next = prev;
+
+  if ( EE_oo_OS_IRQ_suspend_count == 0U ) {
+    /* No previous Suspend[All|OS]Interrupts(): do nothing */
+  } else {
+    --EE_oo_OS_IRQ_suspend_count;
+    if ( EE_oo_OS_IRQ_suspend_count == 0U ) {
+      next = EE_hal_copy_pri_flag(EE_oo_OS_IRQ_suspend_status, next);
+
+      /* Stop DisableAllInterrupts TP budget, if needed */
+      EE_as_tp_active_pause_and_update_budgets();
+      EE_as_tp_active_stop_budget(EE_OS_INTERRUPT_LOCK_BUDGET,
+        INVALID_OBJECTID, EE_TRUE);
+      EE_as_tp_active_update_budgets_and_restart();
+    }
+  }
+  EE_ORTI_set_service_out(EE_SERVICETRACE_RESUMEOSINTERRUPTS);
+  return next;
 }
 
 /* If MemMap.h support is enabled (i.e. because memory protection): use it */
@@ -355,13 +392,16 @@ StatusType EE_as_CallTrustedFunction(TrustedFunctionIndexType FunctionIndex,
   {
     ev = E_OS_SERVICEID;
   } else {
+    /* Increment TRUSTED function call counter */
     ++app_RAM_ptr->TrustedFunctionCallsCounter;
-    /* Re-enable interrupts before call the TRUSTED Function */
+    /* Re-enable TP & interrupts before call the TRUSTED Function */
+    EE_as_tp_active_update_budgets_and_restart();
     EE_hal_enableIRQ();
     ev = ((EE_TRUSTEDFUNCTYPE)EE_syscall_table[FunctionIndex])(FunctionIndex,
       FunctionParams);
     /* Disable them again */
     EE_hal_disableIRQ();
+    EE_as_tp_active_pause_and_update_budgets();
     /* Decrement TRUSTED function call counter */
     --app_RAM_ptr->TrustedFunctionCallsCounter;
 

@@ -186,7 +186,7 @@ __OO_EXTENDED_STATUS__ */
     EE_ORTI_res_locker[ResID] = EE_NIL;
 #endif
 #endif
-    
+
     EE_sys_ceiling = EE_resource_oldceiling[ResID];
 
 #ifdef __OO_ORTI_PRIORITY__

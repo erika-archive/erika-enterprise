@@ -310,12 +310,16 @@ __INLINE__ void __ALWAYS_INLINE__ EE_as_tp_stop_budget (
 __INLINE__ void __ALWAYS_INLINE__ EE_as_tp_reset_budgets ( TimingProtectionType
  tp_id )
 {
-  BudgetType b_index;
-  for ( b_index = EE_as_tp_ROM_refs[tp_id]->budgets_begin_index;
-        b_index <= EE_as_tp_ROM_refs[tp_id]->budgets_end_index;
-        ++b_index )
-  {
-    EE_as_tp_stop_budget(EE_as_tp_RAM_refs[tp_id], b_index);
+  BudgetType                    b_index;
+  EE_as_tp_ROM_const_ref  const tp_ROM_ref  = EE_as_tp_ROM_refs[tp_id];
+  if ( tp_ROM_ref != NULL ) {
+    EE_as_tp_RAM_ref      const tp_RAM_ref  = EE_as_tp_RAM_refs[tp_id];
+    for ( b_index = tp_ROM_ref->budgets_begin_index;
+          b_index <= tp_ROM_ref->budgets_end_index;
+          ++b_index )
+    {
+      EE_as_tp_stop_budget(tp_RAM_ref, b_index);
+    }
   }
 }
 

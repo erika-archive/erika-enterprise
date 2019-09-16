@@ -151,16 +151,14 @@ void EE_as_monitoring_the_stack( void )
   }
 #else /* EE_AS_OSAPPLICATIONS__ */
 #ifdef __IRQ_STACK_NEEDED__
-  /* I cannot monitor ISR2 Stack In this Case */
-  /* TODO EG: Make RT-Druid Handle this configuration */
-#warning Stack Monitoring Enabled without OSApplication: In this State ISR2\
-  Stack is not monitorable
   if ( EE_IRQ_nesting_level > 0U ) {
-    return;
-  }
+    EE_as_check_and_handle_stack_overflow(EE_ISR2_TOS_ID);
+  } else
 #endif /* __IRQ_STACK_NEEDED__ */
-  EE_as_check_and_handle_stack_overflow(
-    EE_std_thread_tos[EE_stk_queryfirst() + 1] );
+  {
+    EE_as_check_and_handle_stack_overflow(
+      EE_std_thread_tos[EE_stk_queryfirst() + 1] );
+  }
 #endif /* EE_AS_OSAPPLICATIONS__ */
 }
 #endif /* EE_STACK_MONITORING__ */

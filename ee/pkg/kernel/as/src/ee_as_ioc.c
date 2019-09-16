@@ -379,10 +379,12 @@ EE_UINT8 parameter_number)
 	}
 }
 
-#ifdef EE_MASTER_CPU
+#if (defined(EE_CURRENTCPU)) && (EE_CURRENTCPU == EE_SHARED_VAR_DEF_CORE)
+
 /** @brief Flag used to signal a IOC request */
 EE_BIT EE_SHARED_UDATA EE_as_rpc_IOC[ EE_MAX_CPU ];
-#endif /* EE_MASTER_CPU */
+
+#endif /* EE_CURRENTCPU && EE_CURRENTCPU == EE_SHARED_VAR_DEF_CORE */
 
 void EE_as_IOC_signal_callbacks( EE_UINT8 id )
 {

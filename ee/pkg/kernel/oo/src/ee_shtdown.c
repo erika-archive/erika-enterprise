@@ -69,6 +69,12 @@
 #include "MemMap.h"
 #endif /* EE_SUPPORT_MEMMAP_H */
 
+#ifdef	EE_OO_SHUTDOWNOS_SYNC_BARRIER_CB
+extern void EE_OO_SHUTDOWNOS_SYNC_BARRIER_CB( void );
+#else
+#define	EE_OO_SHUTDOWNOS_SYNC_BARRIER_CB	NULL
+#endif
+
 static void EE_oo_shutdown(void);
 
 static void EE_oo_shutdown(void)
@@ -170,7 +176,11 @@ void EE_oo_ShutdownOS_internal(StatusType Error)
 
       /* [OS587]: Before calling the global ShutdownHook, all cores shall be
           synchronized. (BSW4080007) */
-      EE_hal_sync_barrier(&EE_shutdownos_barrier, &EE_as_shutdown_mask);
+      EE_hal_sync_barrier(
+        &EE_startos_before_hook_barrier,
+        &EE_as_core_mask,
+        EE_OO_SHUTDOWNOS_SYNC_BARRIER_CB
+      );
     } else {
       /* Remove this core from the waiting mask: this core has already reached
          the barrier */

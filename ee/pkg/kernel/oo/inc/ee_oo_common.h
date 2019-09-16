@@ -1670,7 +1670,7 @@ typedef struct EE_oo_ErrorHook_parameters_type {
   EE_os_param param3;
 } EE_oo_ErrorHook_parameters;
 
-#if (defined(__OO_HAS_ERRORHOOK__)) && (!defined(__OO_ERRORHOOK_NOMACROS__))
+#if (defined(__OO_HAS_ERRORHOOK__))
 
 /* If MemMap.h support is enabled (i.e. because memory protection): use it */
 #ifdef EE_SUPPORT_MEMMAP_H
@@ -1688,7 +1688,8 @@ extern EE_TYPEBOOL                EE_ErrorHook_nested_flag;
 #include "MemMap.h"
 #endif /* EE_SUPPORT_MEMMAP_H */
 
-#ifndef __MSRP__
+#if (!defined(__OO_ERRORHOOK_NOMACROS__))
+#if (!defined(__MSRP__))
 /* If MemMap.h support is enabled (i.e. because memory protection): use it */
 #ifdef EE_SUPPORT_MEMMAP_H
 /* The following variables belong to ERIKA OS section: ee_kernel_bss */
@@ -1728,7 +1729,12 @@ extern EE_oo_ErrorHook_parameters EE_SHARED_UDATA
 #define EE_oo_get_errorhook_data()        \
   (&EE_oo_ErrorHook_data[ EE_hal_get_core_id() ])
 #endif /* !__MSRP__ */
+#endif /* !__OO_ERRORHOOK_NOMACROS__ */
+#endif /* __OO_HAS_ERRORHOOK__ */
 
-#endif /* __OO_ERRORHOOK_NOMACROS__ && !__OO_HAS_ERRORHOOK__ */
+/* Provide a default for the Shared Variables Definition Core */
+#ifndef EE_SHARED_VAR_DEF_CORE
+#define EE_SHARED_VAR_DEF_CORE 0
+#endif /* !EE_SHARED_VAR_DEF_CORE */
 
 #endif /* __INCLUDE_OO_COMMON_H__ */

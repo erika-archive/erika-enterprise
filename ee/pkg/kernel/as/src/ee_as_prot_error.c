@@ -108,10 +108,11 @@ void EE_as_handle_protection_error( ApplicationType error_app,
         current_task    = EE_stk_queryfirst();
         if ( current_nesting > 0U ) {
 #if defined(EE_MAX_ISR2) && (EE_MAX_ISR2 > 0)
-        ISRType irq = EE_as_ISR_stack[current_nesting - 1U].ISR_ID;
+          ISRType irq = EE_as_ISR_stack[current_nesting - 1U].ISR_ID;
           if ( EE_as_ISR_ROM[irq].ApplID == error_app ) {
             /* I can terminate the ISR2 because it belong to the application
                that generate the error */
+            EE_as_restore_stack_canary(EE_as_Application_ROM[error_app].ISRTOS);
             EE_as_TerminateISR2();
           } else
 #endif /* EE_MAX_ISR2 > 0 */
@@ -139,6 +140,7 @@ void EE_as_handle_protection_error( ApplicationType error_app,
 #ifndef __OO_NO_CHAINTASK__
             EE_th_terminate_nextask[current_task] = EE_NIL;
 #endif /* __OO_NO_CHAINTASK__ */
+            EE_as_restore_stack_canary(EE_std_thread_tos[current_task + 1U]);
             EE_hal_terminate_task(current_task);
           } else if ( (error_app != INVALID_OSAPPLICATION) &&
               (error_app != KERNEL_OSAPPLICATION) ) {
@@ -263,6 +265,7 @@ void EE_as_handle_protection_error( StatusType error )
 #ifndef __OO_NO_CHAINTASK__
             EE_th_terminate_nextask[current_task] = EE_NIL;
 #endif /* __OO_NO_CHAINTASK__ */
+          EE_as_restore_stack_canary(EE_std_thread_tos[current_task + 1U]);
           EE_hal_terminate_task(current_task);
         } else {
           EE_oo_ShutdownOS_internal(error);

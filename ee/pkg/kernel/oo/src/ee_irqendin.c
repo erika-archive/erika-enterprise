@@ -210,6 +210,11 @@ void EE_IRQ_end_post_stub( void ) {
     EE_oo_notify_error_service(OSId_ISR2Body, E_OS_DISABLEDINT);
     /* Reset ISRs counter */
     EE_oo_IRQ_disable_count = 0U;
+#if (defined(EE_REALLY_HANDLE_OS_IRQ))
+    /* Reset Suspend/ResumeOSInterrupts Counters */
+    /* N.B. IPL level handling is done inside the porting for ISR2 */
+    EE_oo_OS_IRQ_suspend_count = 0U;
+#endif /* EE_REALLY_HANDLE_OS_IRQ */
   }
 
   /* [SWS_Os_00474] The Operating System module shall reset an ISR's

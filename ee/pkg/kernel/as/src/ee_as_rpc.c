@@ -51,7 +51,7 @@
 #include "ee_internal.h"
 #include "ee_api.h"
 
-#ifdef EE_MASTER_CPU
+#if (defined(EE_CURRENTCPU)) && (EE_CURRENTCPU == EE_SHARED_VAR_DEF_CORE)
 
 /** @brief Flag that a core is serving a RPCs */
 EE_BIT volatile EE_SHARED_UDATA EE_as_rpc_serving[EE_MAX_CPU];
@@ -75,7 +75,7 @@ EE_as_rpc_outparam EE_SHARED_UDATA EE_as_rpc_out_param2[EE_MAX_CPU];
 EE_as_rpc_outparam EE_SHARED_UDATA EE_as_rpc_out_param3[EE_MAX_CPU];
 #endif /* __EE_MEMORY_PROTECTION__ */
 
-#endif /* EE_MASTER_CPU */
+#endif /* EE_CURRENTCPU && EE_CURRENTCPU == EE_SHARED_VAR_DEF_CORE */
 
 /* If MemMap.h support is enabled (i.e. because memory protection): use it */
 #ifdef EE_SUPPORT_MEMMAP_H

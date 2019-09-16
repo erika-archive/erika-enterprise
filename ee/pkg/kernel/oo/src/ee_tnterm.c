@@ -60,6 +60,9 @@ void EE_thread_not_terminated(void)
      call EE_hal_end_nested_primitive) */
   EE_hal_disableIRQ();
 
+  /* Monitor the Terminated STACK. This is good place to find corruptions */
+  EE_as_monitoring_the_stack();
+
   current = EE_stk_queryfirst();
 
   /* [OS069]: If a task returns from its entry function without making a

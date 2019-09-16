@@ -395,6 +395,8 @@ __INLINE__ EE_TYPEBOOL __ALWAYS_INLINE__
  ******************************************************************************/
 #ifdef EE_STACK_MONITORING__
 
+#define EE_ISR2_TOS_ID EE_UREG_MINUS1
+
 #ifdef EE_AS_OSAPPLICATIONS__
 /* Functions used to check and handle Stack Overflow, with short cut to
    pass current application */
@@ -408,17 +410,22 @@ void EE_as_check_and_handle_stack_overflow( EE_UREG stktop );
 
 /* Used Internally in Kernel primitives */
 void EE_as_monitoring_the_stack( void );
+/* Restore Stack Canary in case of a TASK/OS-Application ProtectionHook
+   Termination */
+void EE_as_restore_stack_canary( EE_UREG stktop );
 
 #else /* EE_STACK_MONITORING__ */
 #ifdef EE_AS_OSAPPLICATIONS__
 __INLINE__ void __ALWAYS_INLINE__
-EE_as_check_and_handle_stack_overflow( ApplicationType appid, EE_UREG stktop ) {}
+EE_as_check_and_handle_stack_overflow(ApplicationType appid, EE_UREG stktop) {}
 #else /* EE_AS_OSAPPLICATIONS__ */
 __INLINE__ void __ALWAYS_INLINE__
 EE_as_check_and_handle_stack_overflow( EE_UREG stktop ) {}
 #endif /* EE_AS_OSAPPLICATIONS__ */
 
 __INLINE__ void __ALWAYS_INLINE__ EE_as_monitoring_the_stack( void ) {}
+
+__INLINE__ void __ALWAYS_INLINE__ EE_as_restore_stack_canary( EE_UREG stktop ){}
 #endif /* EE_STACK_MONITORING__ */
 
 /* Used to select witch system ERROR handling function call */

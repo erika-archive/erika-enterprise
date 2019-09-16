@@ -81,7 +81,16 @@ volatile EE_ORTI_runningisr2_type EE_ORTI_runningisr2;
 #endif /* __OO_ORTI_RUNNINGISR2__ */
 
 
-
+#ifdef	EE_OO_STARTOS_1ST_SYNC_BARRIER_CB
+extern void EE_OO_STARTOS_1ST_SYNC_BARRIER_CB( void );
+#else
+#define	EE_OO_STARTOS_1ST_SYNC_BARRIER_CB	NULL
+#endif
+#ifdef	EE_OO_STARTOS_2ND_SYNC_BARRIER_CB
+extern void EE_OO_STARTOS_2ND_SYNC_BARRIER_CB( void );
+#else
+#define	EE_OO_STARTOS_2ND_SYNC_BARRIER_CB	NULL
+#endif
 
 
 /* StartOS
@@ -354,7 +363,11 @@ StatusType EE_oo_StartOS(AppModeType Mode)
           StartCore but do not call StartOS may cause the system to hang.
           It is in the responsibility of the integrator to avoid such
           behavior." */
-      EE_hal_sync_barrier(&EE_startos_before_hook_barrier, &EE_as_core_mask);
+      EE_hal_sync_barrier(
+        &EE_startos_before_hook_barrier,
+        &EE_as_core_mask,
+        EE_OO_STARTOS_1ST_SYNC_BARRIER_CB
+      );
 
       /* Initialize Slaves Hardware after First syncronization point:
          This assure that all the Master Initializations have been done. */
@@ -449,8 +462,11 @@ StatusType EE_oo_StartOS(AppModeType Mode)
           synchronized within the StartOS function before the scheduling is
           started and after the global StartupHook is called.
           (BSW4080001, BSW4080006) */
-      EE_hal_sync_barrier(&EE_startos_before_scheduling_barrier,
-        &EE_as_core_mask);
+      EE_hal_sync_barrier(
+        &EE_startos_before_scheduling_barrier,
+        &EE_as_core_mask,
+        EE_OO_STARTOS_2ND_SYNC_BARRIER_CB
+      );
 #endif /* __MSRP__ && !EE_AS_MULTICORE_NO_SYNC */
 
       /* Check if there is a preemption.

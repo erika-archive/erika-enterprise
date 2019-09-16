@@ -84,6 +84,10 @@ void EE_thread_end_instance(void)
   EE_TID current, rqfirst;
   EE_TID ntask;
 
+  /* I cannot Monitor The stack Here: I will create a infinite loop in case
+     of PRO_TERMINATETASKISR or PRO_TERMINATEAPPL{_RESTART} policies in
+     ProtectionHook */
+
   current = EE_stk_queryfirst();
 
   EE_oo_call_PostTaskHook();
@@ -96,9 +100,17 @@ void EE_thread_end_instance(void)
 
   /* Reset ISRs counters */
   EE_oo_IRQ_disable_count = 0U;
+#if (defined(EE_REALLY_HANDLE_OS_IRQ))
+  /* Reset Suspend/ResumeOSInterrupts Counters */
+  EE_oo_OS_IRQ_suspend_count = 0U;
+  /* Set Back IPL priority to the TASK level (N.B. This works with
+     architectures global interrupt flag + IPL like PowerPC and TriCore the only
+     ones that actually "really handle OS IRQs" */
+  EE_hal_set_int_prio( EE_ISR_UNMASKED );
+#endif /* EE_REALLY_HANDLE_OS_IRQ */
 
   /* Increase the remaining activations...*/
-  EE_th_rnact[current]++;
+  ++EE_th_rnact[current];
 
 #ifndef __OO_NO_CHAINTASK__
   /* If we called a ChainTask, 

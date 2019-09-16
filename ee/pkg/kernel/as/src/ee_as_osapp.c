@@ -429,6 +429,7 @@ void EE_as_terminate_current_app_task( void )
   }
 #endif /* __OO_BCC2__ || __OO_ECC2__ */
 
+  EE_as_restore_stack_canary(EE_std_thread_tos[current_task + 1U]);
   EE_hal_terminate_task(current_task);
 }
 

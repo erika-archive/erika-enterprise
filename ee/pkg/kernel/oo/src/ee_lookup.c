@@ -49,9 +49,10 @@
 #ifndef __MSRP__
 OSServiceIdType                        EE_oo_ErrorHook_ServiceID;
 EE_oo_ErrorHook_parameters             EE_oo_ErrorHook_data;
-#elif (defined(EE_CURRENTCPU)) && (EE_CURRENTCPU == 0)
+#elif (defined(EE_CURRENTCPU)) && (EE_CURRENTCPU == EE_SHARED_VAR_DEF_CORE)
 OSServiceIdType EE_SHARED_UDATA        EE_oo_ErrorHook_ServiceID[EE_MAX_CPU];
 EE_oo_ErrorHook_parameters EE_SHARED_UDATA  EE_oo_ErrorHook_data[EE_MAX_CPU];
+
 #endif /* !__MSRP__ && (EE_CURRENTCPU != 0) */
 #endif /* __OO_HAS_ERRORHOOK__ && !__OO_ERRORHOOK_NOMACROS__ */
 
@@ -62,13 +63,17 @@ EE_UREG EE_oo_IRQ_disable_count;
  * The simbol EE_OLD_HAL marks architecture that do not implement new
  * HAL APIs (MUST be defined in the header ee_cpu.h of these architectures)
  ***************************************************************************/
-#ifndef EE_OLD_HAL
+#if (!defined(EE_OLD_HAL))
 EE_FREG EE_oo_IRQ_suspend_status;
-#endif /* EE_OLD_HAL */
+#if (defined(EE_REALLY_HANDLE_OS_IRQ))
+EE_UREG EE_oo_OS_IRQ_suspend_count;
+EE_FREG EE_oo_OS_IRQ_suspend_status;
+#endif /* EE_REALLY_HANDLE_OS_IRQ */
+#endif /* !EE_OLD_HAL */
 
-#if (defined(__OO_HAS_ERRORHOOK__)) && (!defined(__OO_ERRORHOOK_NOMACROS__))
+#if (defined(__OO_HAS_ERRORHOOK__))
 EE_TYPEBOOL EE_ErrorHook_nested_flag;
-#endif /* __OO_HAS_ERRORHOOK__ && !__OO_ERRORHOOK_NOMACROS__ */
+#endif /* __OO_HAS_ERRORHOOK__ */
 
 #if (defined(__OO_BCC2__)) || (defined(__OO_ECC2__))
 
