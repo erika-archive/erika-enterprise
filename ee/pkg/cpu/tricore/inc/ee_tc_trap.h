@@ -248,14 +248,14 @@ typedef void (*EE_tc_Trap_handler)(EE_TIN par);
 
 /* Register d15 holds the Trap Id Nr inside a Trap handler */
 #ifdef __TASKING__
-__INLINE__ EE_TIN __ALWAYS_INLINE__ EE_tc_get_TIN()
+__INLINE__ EE_TIN __ALWAYS_INLINE__ EE_tc_get_TIN(void)
 {
   EE_TIN tin = 0U;
   __asm volatile("mov  %0,d15;":"=d"(tin));
   return tin;
 }
 #elif defined(__GNUC__)
-__INLINE__ EE_TIN __ALWAYS_INLINE__ EE_tc_get_TIN()
+__INLINE__ EE_TIN __ALWAYS_INLINE__ EE_tc_get_TIN(void)
 {
   EE_TIN tin = 0U;
   __asm volatile("mov  %0,%%d15":"=d"(tin));
@@ -263,7 +263,7 @@ __INLINE__ EE_TIN __ALWAYS_INLINE__ EE_tc_get_TIN()
 }
 #elif defined(__DCC__)
 
-asm volatile EE_TIN EE_tc_get_TIN()
+__asm volatile static EE_TIN EE_TIN EE_tc_get_TIN(void)
 {
 ! "%d2"
   mov  %d2,%d15

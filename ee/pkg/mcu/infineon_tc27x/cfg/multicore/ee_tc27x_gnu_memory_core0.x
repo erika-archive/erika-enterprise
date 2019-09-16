@@ -76,7 +76,7 @@ MEMORY
   /* - Program Flash Memory (PFLASH0). I take 16k for absolute 18 bit
        addressing and for pflash_startup space to be divided between
        the 3 cores */
-  PMU_PFLASH (rx!p):  org = 0x80004000, len = 1984k
+  PMU_PFLASH (rx!p):  org = 0x80004000, len = 2032k
   /* - Data Flash Memory (DFLASH0) */
   PMU_DFLASH0 (r!xp):  org = 0xAF000000, len = 512k
   /* - Data Flash Memory (DFLASH0_1) */

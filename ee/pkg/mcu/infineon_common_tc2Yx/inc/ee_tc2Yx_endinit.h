@@ -84,82 +84,226 @@
 #ifndef __TASKING__
 #define SCU_WDTCPU0CON0_type Ifx_SCU_WDTCPU_CON0
 #endif
+
 /*************************************************************************
  *
- * FUNCTION:     endinit_set
+ * FUNCTION:	EE_tc2Yx_getCpuWatchdogPassword
  *
- * DESCRIPTION:  Sets or Clears the ENDINIT bit in the WDT_CON0 register
- *               in order to enabled or disable the write-protection for
- *               registers protected via the EndInit feature
- *               (ie. BTV, BIV, ISP, PCON0, DCON0).
+ * DESCRIPTION:	Retrieves the PW bits in the WDT_CON0 register.
  *
  *************************************************************************/
-__INLINE__ void __ALWAYS_INLINE__
-  EE_tc2Yx_endinit_set( EE_tc_endinit_t endinit_value )
+
+__INLINE__ EE_UINT16 __ALWAYS_INLINE__
+  EE_tc2Yx_getCpuWatchdogPassword(void)
 {
-  EE_UINT32 wdt_con0;
-  /*
-   * 1st step: Password access (create password and send to WDT_CON0)
-   */
-  wdt_con0 = EE_WDTCPUCON0.U;
+  EE_UINT16 password;
 
-  wdt_con0 &= 0xFFFFFF01U;        /* clear WDTLCK, WDTHPW0, WDTHPW1 */
-  wdt_con0 |= 0xF0U;              /* set WDTHPW1 to 0xf */
-  wdt_con0 |= 0x1U;               /* 1 must be written to ENDINIT for password
-                                     access (but this will not actually modify
-                                     the bit) */
-  EE_WDTCPUCON0.U = wdt_con0;
+  /* Read Password from CON0 register
+   * !!! NOTE: !!! when read bottom six bit of password are inverted so we have
+   * to toggle them before returning password */
+  password = EE_WDTCPUCON0.B.PW;
+  password ^= 0x003F;
 
-  /*
-   * 2nd step: Modify access, set the bit ENDINIT to 1 or 0 to allow access to
-   *           registers: WDT_CON1, BTV, BIV, ISP and mod_CLC
-   */
-  wdt_con0 &= 0xFFFFFFF0U;            /* clear WDTHPW0, WDTLCK, ENDINIT  */
-  /* WDTHPW0=0, WDTLCK=1, ENDINIT=endinit_value */
-  wdt_con0 |= 0x02U | endinit_value;
-  EE_tc_isync();
-  EE_WDTCPUCON0.U = wdt_con0;
-
-  EE_WDTCPUCON0.U;                  /* read is required */
+  return password;
 }
 
-/**************************************************************************
+/*************************************************************************
  *
- * FUNCTION:     safety_endinit_set
+ * FUNCTION:	EE_tc2Yx_setCpuEndinit
  *
- * DESCRIPTION:  Sets or Clears the ENDINIT bit in the WDTSCON0 register
- *               in order to enabled or disable the write-protection for
- *               safety-critical registers protected via the EndInit feature.
+ * DESCRIPTION:	Sets the ENDINIT bit in the WDT_CON0 register.
  *
  *************************************************************************/
 
 __INLINE__ void __ALWAYS_INLINE__
-  EE_tc2Yx_safety_endinit_set( EE_tc_endinit_t endinit_value )
+  EE_tc2Yx_setCpuEndinit(EE_UINT16 password)
 {
-  EE_UINT32 wdtscon0;
+    /* Read Config_0 register */
+    Ifx_SCU_WDTCPU_CON0 wdt_con0 = EE_WDTCPUCON0;
 
-  /*
-   * 1st step: Password access (create password and send to WDTSCON0)
-   */
-  wdtscon0 = SCU_WDTSCON0.U;
+    if (wdt_con0.B.LCK)
+    {
+        /* see Table 1 (Password Access Bit Pattern Requirements) */
+        wdt_con0.B.ENDINIT = 1;
+        wdt_con0.B.LCK     = 0;
+        wdt_con0.B.PW      = password;
 
-  wdtscon0 &= 0xFFFFFF01U;         /* Clear WDTLCK, WDTHPW0, WDTHPW1 */
-  wdtscon0 |= 0xF0U;               /* Set WDTHPW1 to 0xf */
-  wdtscon0 |= 0x1U;                /* 1 must be written to ENDINIT for password
-                                      access(but this will not actually modify
-                                      the bit) */
-  SCU_WDTSCON0.U = wdtscon0;
+        /* Password ready. Store it to WDT_CON0 to unprotect the register */
+        EE_WDTCPUCON0.U = wdt_con0.U;
+    }
 
-  /*
-   * 2nd step: Modify access, set the bit ENDINIT to 1 or 0 to allow access to
-   *           registers: SCU_WDTSCON1, BTV, BIV, ISP and mod_CLC
-   */
-  wdtscon0 &= 0xFFFFFFF0U;        /* clear WDTHPW0, WDTLCK, ENDINIT  */
-  /* WDTHPW0=0, WDTLCK=1, ENDINIT=endinit_value */
-  wdtscon0 |= 0x02U | (EE_UINT32)endinit_value;
-  EE_tc_isync();
-  SCU_WDTSCON0.U = wdtscon0;
-  SCU_WDTSCON0.U;                 /* read is required */
+    /* Set ENDINT and set LCK bit in Config_0 register */
+    wdt_con0.B.ENDINIT = 1;
+    wdt_con0.B.LCK     = 1;
+    EE_WDTCPUCON0.U   = wdt_con0.U;
+
+    /* read back ENDINIT and wait until it has been set */
+    while (EE_WDTCPUCON0.B.ENDINIT == 0)
+    {}
+
+    /*
+     * FIXME: old version: removed this line after check:
+     * watchdog->CON0.U; */ /* read is required */ /*
+     */
+}
+
+/*************************************************************************
+ *
+ * FUNCTION:	EE_tc2Yx_clearCpuEndinit
+ *
+ * DESCRIPTION:	Clears the ENDINIT bit in the WDT_CON0 register.
+ *
+ *************************************************************************/
+
+__INLINE__ void __ALWAYS_INLINE__
+  EE_tc2Yx_clearCpuEndinit(EE_UINT16 password)
+{
+    /* Read Config_0 register */
+    Ifx_SCU_WDTCPU_CON0 wdt_con0 = EE_WDTCPUCON0;
+
+    if (wdt_con0.B.LCK)
+    {
+        /* see Table 1 (Pass.word Access Bit Pattern Requirements) */
+        wdt_con0.B.ENDINIT = 1;
+        wdt_con0.B.LCK     = 0;
+        wdt_con0.B.PW      = password;
+
+        /* Password ready. Store it to WDT_CON0 to unprotect the register */
+        EE_WDTCPUCON0.U = wdt_con0.U;
+    }
+
+    /* Clear ENDINT and set LCK bit in Config_0 register */
+    wdt_con0.B.ENDINIT = 0;
+    wdt_con0.B.LCK     = 1;
+    EE_WDTCPUCON0.U   = wdt_con0.U;
+
+    /* read back ENDINIT and wait until it has been cleared */
+    while (EE_WDTCPUCON0.B.ENDINIT == 1)
+    {}
+}
+
+/*************************************************************************
+ *
+ * FUNCTION:	EE_tc2Yx_disableCpuWatchdog
+ *
+ * DESCRIPTION:	Desables the CPU Watchdog.
+ *
+ *************************************************************************/
+
+__INLINE__ void __ALWAYS_INLINE__
+  EE_tc2Yx_disableCpuWatchdog(EE_UINT16 password)
+{
+    EE_tc2Yx_clearCpuEndinit(password);
+    EE_WDTCPUCON1.B.DR = 1;	/* Set DR bit in Config_1 register */
+    EE_tc2Yx_setCpuEndinit(password);
+}
+
+/*************************************************************************
+ *
+ * FUNCTION:	EE_tc2Yx_getSafetyWatchdogPassword
+ *
+ * DESCRIPTION:	Retrieves the PW bits in the WDT_CON0 register.
+ *
+ *************************************************************************/
+
+__INLINE__ EE_UINT16 __ALWAYS_INLINE__
+  EE_tc2Yx_getSafetyWatchdogPassword(void)
+{
+  EE_UINT16 password;
+
+  /* Read Password from CON0 register
+   * !!! NOTE: !!! when read bottom six bit of password are inverted so we have
+   * to toggle them before returning password */
+  password = SCU_WDTSCON0.B.PW;
+  password ^= 0x003F;
+
+  return password;
+}
+
+/*************************************************************************
+ *
+ * FUNCTION:	EE_tc2Yx_setSafetyEndinit
+ *
+ * DESCRIPTION:	Sets the ENDINIT bit in the WDT_CON0 register.
+ *
+ *************************************************************************/
+
+__INLINE__ void __ALWAYS_INLINE__
+  EE_tc2Yx_setSafetyEndinit(EE_UINT16 password)
+{
+    /* Read Config_0 register */
+    Ifx_SCU_WDTS_CON0 wdt_con0 = SCU_WDTSCON0;
+
+    if (wdt_con0.B.LCK)
+    {
+        /* see Table 1 (Password Access Bit Pattern Requirements) */
+        wdt_con0.B.ENDINIT = 1;
+        wdt_con0.B.LCK     = 0;
+        wdt_con0.B.PW      = password;
+
+        /* Password ready. Store it to WDT_CON0 to unprotect the register */
+        SCU_WDTSCON0.U = wdt_con0.U;
+    }
+
+    /* Set ENDINT and set LCK bit in Config_0 register */
+    wdt_con0.B.ENDINIT = 1;
+    wdt_con0.B.LCK     = 1;
+    SCU_WDTSCON0.U   = wdt_con0.U;
+
+    /* read back ENDINIT and wait until it has been set */
+    while (SCU_WDTSCON0.B.ENDINIT == 0)
+    {}
+}
+
+/*************************************************************************
+ *
+ * FUNCTION:	EE_tc2Yx_clearSafetyEndinit
+ *
+ * DESCRIPTION:	Clears the ENDINIT bit in the WDT_CON0 register.
+ *
+ *************************************************************************/
+
+__INLINE__ void __ALWAYS_INLINE__
+  EE_tc2Yx_clearSafetyEndinit(EE_UINT16 password)
+{
+    /* Read Config_0 register */
+    Ifx_SCU_WDTS_CON0 wdt_con0 = SCU_WDTSCON0;
+
+    if (wdt_con0.B.LCK)
+    {
+        /* see Table 1 (Password Access Bit Pattern Requirements) */
+        wdt_con0.B.ENDINIT = 1;
+        wdt_con0.B.LCK     = 0;
+        wdt_con0.B.PW      = password;
+
+        /* Password ready. Store it to WDT_CON0 to unprotect the register */
+        SCU_WDTSCON0.U = wdt_con0.U;
+    }
+
+    /* Clear ENDINT and set LCK bit in Config_0 register */
+    wdt_con0.B.ENDINIT = 0;
+    wdt_con0.B.LCK     = 1;
+    SCU_WDTSCON0.U   = wdt_con0.U;
+
+    /* read back ENDINIT and wait until it has been set */
+    while (SCU_WDTSCON0.B.ENDINIT == 1)
+    {}
+}
+
+/*************************************************************************
+ *
+ * FUNCTION:	EE_tc2Yx_disableSafetyWatchdog
+ *
+ * DESCRIPTION:	Desables the CPU Watchdog.
+ *
+ *************************************************************************/
+
+__INLINE__ void __ALWAYS_INLINE__
+  EE_tc2Yx_disableSafetyWatchdog(EE_UINT16 password)
+{
+    EE_tc2Yx_clearSafetyEndinit(password);
+    SCU_WDTSCON1.B.DR = 1;	/* Set DR bit in Config_1 register */
+    EE_tc2Yx_setSafetyEndinit(password);
 }
 
 #endif /* INCLUDE_EE_TC2YX_ENDINIT_H__ */

@@ -152,19 +152,63 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc_set_os_app_prot_set_from_task_utid(
 
 #endif /* EE_AS_OSAPPLICATIONS__ */
 
-#if defined(EE_STACK_MONITORING__) && defined(EE_AS_OSAPPLICATIONS__)
-__INLINE__ void __ALWAYS_INLINE__
+#if (defined(EE_STACK_MONITORING__))
+/* Used to handle Stack Monitoring */
+#if (defined(EE_AS_OSAPPLICATIONS__))
+__INLINE__ void __ALWAYS_INLINE__ EE_TC_CHANGE_STACK_POINTER
   EE_tc_check_and_handle_stack_overflow_with_sp( ApplicationType appid,
     EE_UREG tos, EE_ADDR sp )
 {
-  if ( EE_tc_check_stack_overflow_with_sp(tos, sp) ) {
+  if ( EE_tc_check_stack_overflow_with_sp(tos, sp) )
+  {
+    /* Just be sure to handle the overflow with the interrupts disabled */
+    EE_hal_disableIRQ();
+#if (defined(EE_AS_PROTECTIONHOOK_HAS_STACK__))
+    /* The stack is corrupted I have to switch to a new one */
+    EE_tc_set_SP(EE_tc_prot_hook_tos.SYS_tos);
+#elif (defined(__IRQ_STACK_NEEDED__))
+    /* The stack is corrupted I have to switch to a new one.
+       I can use ISR stack, because as effect of ProtectionHook. I will
+       Terminate the active ISR/TASK at least.
+       Without OS-Applications if the STACK corrupted is The ISR Stack
+       ProtectionHook will Shutdown the execution, since it's not possible
+       to terminate an ISR2 whitout them. */
+    EE_tc_set_SP((EE_ADDR)EE_tc_get_csfr(EE_CPU_REG_ISP));
+#endif /* EE_AS_PROTECTIONHOOK_HAS_STACK__ || __IRQ_STACK_NEEDED__ */
     EE_as_call_protection_error( appid, E_OS_STACKFAULT );
   }
 }
+#else /* EE_AS_OSAPPLICATIONS__ */
+__INLINE__ void __ALWAYS_INLINE__  EE_TC_CHANGE_STACK_POINTER
+  EE_tc_check_and_handle_stack_overflow_with_sp( EE_UREG tos, EE_ADDR sp )
+{
+  if ( EE_tc_check_stack_overflow_with_sp(tos, sp) ) {
+    /* Just be sure to handle the overflow with the interrupts disabled */
+    EE_hal_disableIRQ();
+#if (defined(__IRQ_STACK_NEEDED__))
+    /* The stack is corrupted I have to switch to a new one.
+       I can use ISR stack, because as effect of ProtectionHook. I will
+       Terminate the active ISR/TASK at least.
+       Without OS-Applications if the STACK corrupted is The ISR Stack
+       ProtectionHook will Shutdown the execution, since it's not possible
+       to terminate an ISR2 whitout them. */
+    EE_tc_set_SP((EE_ADDR)EE_tc_get_csfr(EE_CPU_REG_ISP));
+#endif /* __IRQ_STACK_NEEDED__ */
+    /* appid doesn't exist but it's filtered by the macro */
+    EE_as_call_protection_error( appid, E_OS_STACKFAULT );
+  }
+}
+#endif /* EE_AS_OSAPPLICATIONS__ */
 
-#else /* EE_STACK_MONITORING__ && EE_AS_OSAPPLICATIONS__ */
+#else /* EE_STACK_MONITORING__ */
+
+#if (defined(EE_AS_OSAPPLICATIONS__))
 #define EE_tc_check_and_handle_stack_overflow_with_sp(appid, tos, sp)\
   ((void)0U)
+#else /* EE_AS_OSAPPLICATIONS__ */
+#define EE_tc_check_and_handle_stack_overflow_with_sp(tos, sp)\
+  ((void)0U)
+#endif /* EE_AS_OSAPPLICATIONS__  */
 #endif /* EE_STACK_MONITORING__ && EE_AS_OSAPPLICATIONS__ */
 
 #endif /* INCLUDE_EE_TC_MEM_PROT_INTERNAL_H__ */

@@ -445,7 +445,7 @@ void __NEVER_INLINE__ JUMP EE_TC2YX_START( void )
    * to disable the write-protection for registers protected
    * via the EndInit feature (for example: WDT_CON1).
    */
-  EE_tc2Yx_endinit_set(EE_TC_ENDINIT_DISABLE);
+  EE_tc2Yx_clearCpuEndinit(EE_tc2Yx_getCpuWatchdogPassword());
 
   /*
    * Disable the Watchdog if requested. Watchdog is enabled by default.
@@ -459,7 +459,7 @@ void __NEVER_INLINE__ JUMP EE_TC2YX_START( void )
    * to disable the write-protection for safety-critical registers
    * protected via the safety EndInit feature.
    */
-  EE_tc2Yx_safety_endinit_set(EE_TC_ENDINIT_DISABLE);
+  EE_tc2Yx_clearSafetyEndinit(EE_tc2Yx_getSafetyWatchdogPassword());
 
   /*
    * Disable the safety watchdog if requested. Safety watchdog
@@ -501,7 +501,7 @@ void __NEVER_INLINE__ JUMP EE_TC2YX_START( void )
 #if (!defined(__OO_BCC1__)) && (!defined(__OO_BCC2__)) && \
     (!defined(__OO_ECC1__)) && (!defined(__OO_ECC2__))
 /* Clock Initialization needed for non OSEK Kernels */
-#if defined(EE_MASTER_CPU) && defined(EE_CPU_CLOCK)
+#if (defined(EE_MASTER_CPU)) && (defined(EE_CPU_CLOCK))
 /******** Configure CCU Clock Control. ********/
   EE_tc2Yx_configure_clock_ctrl();
 
@@ -515,19 +515,26 @@ void __NEVER_INLINE__ JUMP EE_TC2YX_START( void )
      here because I cannot CALL a fuction before configuring CSA
      (thing done later) */
   EE_tc2Yx_configure_clock_internal(EE_CPU_CLOCK);
+#endif /* !__OO_BCC1__ && !__OO_BCC2__ && !__OO_ECC1__ && !__OO_ECC2__ */
 
-#ifdef __TASKING__
+#endif /* EE_MASTER_CPU && EE_CPU_CLOCK */
+#if defined (__MULTI__) && defined(__IRQ_STACK_NEEDED__)
+  /*
+   * Load interrupt stack pointer.
+   * Disable this if not started from RESET vector. (E.g.
+   * ROM monitors require to keep in control of vectors)
+   */
+  /* EE_UINT32 isp = (EE_UINT32)(_lc_ue_istack) & EE_STACK_ALIGN; */
+  isp = (EE_UINT32)EE_tc_IRQ_tos.SYS_tos & EE_STACK_ALIGN;
+  EE_tc_set_csfr(EE_CPU_REG_ISP, isp);
+#endif /* __MULTI__ &&  __IRQ_STACK_NEEDED__ */
+
   /*
    * Enable the GTM to get MCS memory access,
    * required for MCS initialization which
    * is performed by _c_init. (TASKING)
    */
   GTM_CLC.U = 0U;
-#endif /* __TASKING__ */
-#endif /* !__OO_BCC1__ && !__OO_BCC2__ && !__OO_ECC1__ && !__OO_ECC2__ */
-
-#endif /* EE_MASTER_CPU && EE_CPU_CLOCK */
-
   /*
    * Inititialize global address registers a0/a1 to support
    * __a0/__a1 storage qualifiers of the C compiler.
@@ -548,26 +555,22 @@ void __NEVER_INLINE__ JUMP EE_TC2YX_START( void )
   EE_tc2Yx_setareg(a9, EE_A9_DATA);
 #endif /* __TASKING__ */
 
-  /* Setup the context save area linked list. This MUST be inline because
-     you cannot make a real function call before initialize CSAs lists */
-  EE_tc2Yx_csa_init();
-
-#if defined (__MULTI__) && defined(__IRQ_STACK_NEEDED__)
-  /*
-   * Load interrupt stack pointer.
-   * Disable this if not started from RESET vector. (E.g.
-   * ROM monitors require to keep in control of vectors)
-   */
-  /* EE_UINT32 isp = (EE_UINT32)(_lc_ue_istack) & EE_STACK_ALIGN; */
-  isp = (EE_UINT32)EE_tc_IRQ_tos.SYS_tos & EE_STACK_ALIGN;
-  EE_tc_set_csfr(EE_CPU_REG_ISP, isp);
-#endif /* __MULTI__ &&  __IRQ_STACK_NEEDED__ */
-
   /*
    * Set the ENDINIT bit in the WDT_CON0 register again
    * to enable the write-protection.
    */
-  EE_tc2Yx_endinit_set(EE_TC_ENDINIT_ENABLE);
+  EE_tc_endint_enable();
+#ifdef EE_MASTER_CPU
+  /*
+   * Set the ENDINIT bit in the WDTSCON0 register to enable the
+   * safety-critical register write-protection.
+   */
+  EE_tc_safety_endinit_enable();
+#endif /* EE_MASTER_CPU */
+
+  /* Setup the context save area linked list. This MUST be inline because
+     you cannot make a real function call before initialize CSAs lists */
+  EE_tc2Yx_csa_init();
 
   /*
    * Initialize and clear C variables.
@@ -578,30 +581,27 @@ void __NEVER_INLINE__ JUMP EE_TC2YX_START( void )
   EE_C_INIT_TC();      /* initialize core specific data */
 #endif /* EE_C_INIT_TC */
 
-#ifdef EE_MASTER_CPU
-  /*
-   * Set the ENDINIT bit in the WDTSCON0 register to enable the
-   * safety-critical register write-protection.
-   */
-  EE_tc2Yx_safety_endinit_set(EE_TC_ENDINIT_ENABLE);
-#endif /* EE_MASTER_CPU */
-
 #ifdef EE_START_UP_USER_ENDINIT
   /*  Call the user callback to let him do initial configuration with
       endinit & safe_endinit protections disabled. Beware that protected
       registers are unlocked for the duration of the Time-out
       Period only! */
-  EE_tc2Yx_endinit_set(EE_TC_ENDINIT_DISABLE);
+  EE_tc_endint_disable();
 #ifdef EE_MASTER_CPU
-  EE_tc2Yx_safety_endinit_set(EE_TC_ENDINIT_DISABLE);
+  EE_tc_safety_endinit_disable();
 #endif /* EE_MASTER_CPU */
   EE_START_UP_USER_ENDINIT();
-  EE_tc2Yx_endinit_set(EE_TC_ENDINIT_ENABLE);
+  EE_tc_endint_enable();
 #ifdef EE_MASTER_CPU
-  EE_tc2Yx_safety_endinit_set(EE_TC_ENDINIT_ENABLE);
+  EE_tc_safety_endinit_enable();
 #endif /* EE_MASTER_CPU */
 #endif /* EE_START_UP_USER_ENDINIT */
 
+  EE_tc_cpu_wdg_disable();
+#ifdef	EE_MASTER_CPU
+  EE_tc_safety_wdg_disable();
+#endif	/* EE_MASTER_CPU */
+  
   /*
    * Call C main program.
    */

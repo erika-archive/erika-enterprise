@@ -1,185 +1,212 @@
-; initialize Kernel Tracing creating markers
-symbol.marker.create KEXIT   EE_hal_terminate_savestk
-symbol.marker.create KENTRY  EE_thread_not_terminated
-symbol.marker.create KBACKDOOR  EE_hal_terminate_task
+; ###*B*###
+; ERIKA Enterprise - a tiny RTOS for small microcontrollers
+; 
+; Copyright (C) 2002-2016 Evidence Srl
+; 
+; This file is part of ERIKA Enterprise.
+; 
+; ERIKA Enterprise is free software; you can redistribute it
+; and/or modify it under the terms of the GNU General Public License
+; version 2 as published by the Free Software Foundation, 
+; (with a special exception described below).
+; 
+; Linking this code statically or dynamically with other modules is
+; making a combined work based on this code.  Thus, the terms and
+; conditions of the GNU General Public License cover the whole
+; combination.
+; 
+; As a special exception, the copyright holders of this library give you
+; permission to link this code with independent modules to produce an
+; executable, regardless of the license terms of these independent
+; modules, and to copy and distribute the resulting executable under
+; terms of your choice, provided that you also meet, for each linked
+; independent module, the terms and conditions of the license of that
+; module.  An independent module is a module which is not derived from
+; or based on this library.  If you modify this code, you may extend
+; this exception to your version of the code, but you are not
+; obligated to do so.  If you do not wish to do so, delete this
+; exception statement from your version.
+; 
+; ERIKA Enterprise is distributed in the hope that it will be
+; useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+; of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License version 2 for more details.
+; 
+; You should have received a copy of the GNU General Public License
+; version 2 along with ERIKA Enterprise; if not, write to the
+; Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+; Boston, MA 02110-1301 USA.
+; ###*E*###
 
-if Symbol.exist(EE_tc_isr2_global_wrapper)
+; Author: Errico Guidieri 2012
+;         Giuseppe Serano 2016
+
+; Markers for task switch and kernel recognition
+sYmbol.MARKER.RESet
+
+; Nesting analysis
+GOSUB IGNORE_SYM EE_thread_end_instance
+
+; [GS]:	This line causes Lauterbach script crashes because of
+; 	EE_std_run_task_code symbol non recognized.
+;GOSUB IGNORE_SYM EE_std_run_task_code
+
+; Nesting analysis and kernel recognition
+sYmbol.MARKER.Create CLEANUP KFBACKDOOR EE_oo_TerminateTask
+
+; Kernel recognition
+sYmbol.MARKER.Create KFBACKDOOR EE_thread_not_terminated
+sYmbol.MARKER.Create KFBACKDOOR EE_oo_StartOS
+Data.FindCODE EE_oo_StartOS RETURN "sYmbol.MARKER.Create KLEAVE *"
+sYmbol.MARKER.Create KFBACKDOOR EE_hal_terminate_task
+Data.FindCODE EE_hal_terminate_task RETURN "sYmbol.MARKER.Create KLEAVE *"
+Data.FindCODE EE_hal_terminate_savestk RETURN "sYmbol.MARKER.Create KLEAVE *"
+
+if sYmbol.EXIST(EE_tc_isr2_global_wrapper)
 (
-  symbol.marker.create KENTRY  EE_tc_isr2_global_wrapper
-  symbol.marker.create KEXIT EE_tc_isr2_global_wrapper
+  sYmbol.MARKER.Create KFBACKDOOR EE_tc_isr2_global_wrapper
+  Data.FindCODE EE_tc_isr2_global_wrapper RETURN "sYmbol.MARKER.Create KLEAVE *"
 )
-
-if Symbol.exist(EE_tc_isr2_call_handler)
+if sYmbol.EXIST(EE_tc_syscall_handler)
 (
-  symbol.marker.create KEXIT  EE_tc_isr2_call_handler
-  symbol.marker.create KENTRY symbol.exit(EE_tc_isr2_call_handler)
+  sYmbol.MARKER.Create KFBACKDOOR sYmbol.exit(EE_tc_syscall_handler)
+  Data.FindCODE EE_tc_syscall_handler RETURN "sYmbol.MARKER.Create KLEAVE *"
 )
-
-if Symbol.exist(EE_tc_syscall_handler)
+if sYmbol.EXIST(EE_tc_isr2_call_handler)
 (
-  symbol.marker.create KEXIT  EE_tc_syscall_handler
-  symbol.marker.create KENTRY symbol.exit(EE_tc_syscall_handler)
+  sYmbol.MARKER.Create KFBACKDOOR EE_tc_isr2_call_handler
+  Data.FindCODE EE_tc_isr2_call_handler RETURN "sYmbol.MARKER.Create KLEAVE *"
 )
+if sYmbol.EXIST(EE_as_TerminateISR2)
+  Data.FindCODE EE_as_TerminateISR2 RETURN "sYmbol.MARKER.Create KLEAVE *"
 
-if Symbol.exist(EE_as_TerminateISR2)
+; Services recognition
+if sYmbol.EXIST(EE_oo_ActivateTask)
 (
-  symbol.marker.create KEXIT  symbol.exit(EE_as_TerminateISR2)
+  sYmbol.MARKER.Create KFBACKDOOR EE_oo_ActivateTask
+  Data.FindCODE EE_oo_ActivateTask RETURN "sYmbol.MARKER.Create KLEAVE *"
 )
-
-symbol.marker.create KBACKDOOR  EE_oo_StartOS
-;symbol.marker.create KEXIT symbol.exit(EE_oo_StartOS)
-
-if Symbol.exist(EE_oo_ActivateTask)
+if sYmbol.EXIST(EE_oo_ChainTask)
+  sYmbol.MARKER.Create KFBACKDOOR EE_oo_ChainTask
+if sYmbol.EXIST(EE_oo_Schedule)
 (
-  symbol.marker.create KBACKDOOR  EE_oo_ActivateTask
-  symbol.marker.create KEXIT      symbol.exit(EE_oo_ActivateTask)
+  sYmbol.MARKER.Create KFBACKDOOR EE_oo_Schedule
+  Data.FindCODE EE_oo_Schedule RETURN "sYmbol.MARKER.Create KLEAVE *"
 )
-
-if Symbol.exist(EE_oo_TerminateTask)
+if sYmbol.EXIST(EE_oo_GetTaskID)
 (
-  symbol.marker.create KBACKDOOR  EE_oo_TerminateTask
+  sYmbol.MARKER.Create KFBACKDOOR EE_oo_GetTaskID
+  Data.FindCODE EE_oo_GetTaskID RETURN "sYmbol.MARKER.Create KLEAVE *"
 )
-
-if Symbol.exist(EE_oo_ChainTask)
+if sYmbol.EXIST(EE_oo_GetTaskState)
 (
-  symbol.marker.create KENTRY  EE_oo_ChainTask
+  sYmbol.MARKER.Create KFBACKDOOR EE_oo_GetTaskState
+  Data.FindCODE EE_oo_GetTaskState RETURN "sYmbol.MARKER.Create KLEAVE *"
 )
-
-if Symbol.exist(EE_oo_Schedule)
+if sYmbol.EXIST(EE_oo_GetResource)
 (
-  symbol.marker.create KBACKDOOR  EE_oo_Schedule
-  symbol.marker.create KEXIT      symbol.exit(EE_oo_Schedule)
+  sYmbol.MARKER.Create KFBACKDOOR EE_oo_GetResource
+  Data.FindCODE EE_oo_GetResource RETURN "sYmbol.MARKER.Create KLEAVE *"
 )
-
-if Symbol.exist(EE_oo_GetTaskID)
+if sYmbol.EXIST(EE_oo_ReleaseResource)
 (
-  symbol.marker.create KBACKDOOR  EE_oo_GetTaskID
-  symbol.marker.create KEXIT      symbol.exit(EE_oo_GetTaskID)
+  sYmbol.MARKER.Create KFBACKDOOR EE_oo_ReleaseResource
+  Data.FindCODE EE_oo_ReleaseResource RETURN "sYmbol.MARKER.Create KLEAVE *"
 )
-
-if Symbol.exist(EE_oo_GetTaskState)
+if sYmbol.EXIST(EE_oo_SetEvent)
 (
-  symbol.marker.create KBACKDOOR  EE_oo_GetTaskState
-  symbol.marker.create KEXIT      symbol.exit(EE_oo_GetTaskState)
+  sYmbol.MARKER.Create KFBACKDOOR EE_oo_SetEvent
+  Data.FindCODE EE_oo_SetEvent RETURN "sYmbol.MARKER.Create KLEAVE *"
 )
-
-if Symbol.exist(EE_oo_GetResource)
+if sYmbol.EXIST(EE_oo_ClearEvent)
 (
-  symbol.marker.create KBACKDOOR  EE_oo_GetResource
-  symbol.marker.create KEXIT      symbol.exit(EE_oo_GetResource)
+  sYmbol.MARKER.Create KFBACKDOOR EE_oo_ClearEvent
+  Data.FindCODE EE_oo_ClearEvent RETURN "sYmbol.MARKER.Create KLEAVE *"
 )
-
-if Symbol.exist(EE_oo_ReleaseResource)
+if sYmbol.EXIST(EE_oo_GetEvent)
 (
-  symbol.marker.create KBACKDOOR  EE_oo_ReleaseResource
-  symbol.marker.create KEXIT      symbol.exit(EE_oo_ReleaseResource)
+  sYmbol.MARKER.Create KFBACKDOOR EE_oo_GetEvent
+  Data.FindCODE EE_oo_GetEvent RETURN "sYmbol.MARKER.Create KLEAVE *"
 )
-
-if Symbol.exist(EE_oo_SetEvent)
+if sYmbol.EXIST(EE_oo_WaitEvent)
 (
-  symbol.marker.create KBACKDOOR  EE_oo_SetEvent
-  symbol.marker.create KEXIT      symbol.exit(EE_oo_SetEvent)
+  sYmbol.MARKER.Create KFBACKDOOR EE_oo_WaitEvent
+  Data.FindCODE EE_oo_WaitEvent RETURN "sYmbol.MARKER.Create KLEAVE *"
 )
-
-if Symbol.exist(EE_oo_ClearEvent)
+if sYmbol.EXIST(EE_oo_GetAlarmBase)
 (
-  symbol.marker.create KENTRY  EE_oo_ClearEvent
-  symbol.marker.create KEXIT   symbol.exit(EE_oo_ClearEvent)
+  sYmbol.MARKER.Create KFBACKDOOR EE_oo_GetAlarmBase
+  Data.FindCODE EE_oo_GetAlarmBase RETURN "sYmbol.MARKER.Create KLEAVE *"
 )
-
-if Symbol.exist(EE_oo_GetEvent)
+if sYmbol.EXIST(EE_oo_GetAlarm)
 (
-  symbol.marker.create KBACKDOOR  EE_oo_GetEvent
-  symbol.marker.create KEXIT      symbol.exit(EE_oo_GetEvent)
+  sYmbol.MARKER.Create KFBACKDOOR EE_oo_GetAlarm
+  Data.FindCODE EE_oo_GetAlarm RETURN "sYmbol.MARKER.Create KLEAVE *"
 )
-
-if Symbol.exist(EE_oo_WaitEvent)
+if sYmbol.EXIST(EE_oo_SetRelAlarm)
 (
-  symbol.marker.create KBACKDOOR  EE_oo_WaitEvent
-  symbol.marker.create KEXIT      symbol.exit(EE_oo_WaitEvent)
+  sYmbol.MARKER.Create KFBACKDOOR EE_oo_SetRelAlarm
+  Data.FindCODE EE_oo_SetRelAlarm RETURN "sYmbol.MARKER.Create KLEAVE *"
 )
-
-if Symbol.exist(EE_oo_GetAlarmBase)
+if sYmbol.EXIST(EE_oo_SetAbsAlarm)
 (
-  symbol.marker.create KBACKDOOR  EE_oo_GetAlarmBase
-  symbol.marker.create KEXIT      symbol.exit(EE_oo_GetAlarmBase)
+  sYmbol.MARKER.Create KFBACKDOOR EE_oo_SetAbsAlarm
+  Data.FindCODE EE_oo_SetAbsAlarm RETURN "sYmbol.MARKER.Create KLEAVE *"
 )
-
-if Symbol.exist(EE_oo_GetAlarm)
+if sYmbol.EXIST(EE_oo_CancelAlarm)
 (
-  symbol.marker.create KBACKDOOR  EE_oo_GetAlarm
-  symbol.marker.create KEXIT      symbol.exit(EE_oo_GetAlarm)
+  sYmbol.MARKER.Create KFBACKDOOR EE_oo_CancelAlarm
+  Data.FindCODE EE_oo_CancelAlarm RETURN "sYmbol.MARKER.Create KLEAVE *"
 )
-
-if Symbol.exist(EE_oo_SetRelAlarm)
+if sYmbol.EXIST(EE_oo_ShutdownOS)
 (
-  symbol.marker.create KBACKDOOR  EE_oo_SetRelAlarm
-  symbol.marker.create KEXIT      symbol.exit(EE_oo_SetRelAlarm)
+  sYmbol.MARKER.Create KFBACKDOOR EE_oo_ShutdownOS
+  Data.FindCODE EE_oo_ShutdownOS RETURN "sYmbol.MARKER.Create KLEAVE *"
 )
-
-if Symbol.exist(EE_oo_SetAbsAlarm)
+if sYmbol.EXIST(EE_oo_IncrementCounter)
 (
-  symbol.marker.create KBACKDOOR  EE_oo_SetAbsAlarm
-  symbol.marker.create KEXIT      symbol.exit(EE_oo_SetAbsAlarm)
+  sYmbol.MARKER.Create KFBACKDOOR EE_oo_IncrementCounter
+  Data.FindCODE EE_oo_IncrementCounter RETURN "sYmbol.MARKER.Create KLEAVE *"
 )
-
-if Symbol.exist(EE_oo_CancelAlarm)
+if sYmbol.EXIST(EE_oo_GetCounterValue)
 (
-  symbol.marker.create KBACKDOOR  EE_oo_CancelAlarm
-  symbol.marker.create KEXIT      symbol.exit(EE_oo_CancelAlarm)
+  sYmbol.MARKER.Create KFBACKDOOR EE_oo_GetCounterValue
+  Data.FindCODE EE_oo_GetCounterValue RETURN "sYmbol.MARKER.Create KLEAVE *"
 )
-
-if Symbol.exist(EE_oo_ShutdownOS)
+if sYmbol.EXIST(EE_oo_GetElapsedValue)
 (
-  symbol.marker.create KBACKDOOR  EE_oo_ShutdownOS
-  ;symbol.marker.create KEXIT      symbol.exit(EE_oo_ShutdownOS)
+  sYmbol.MARKER.Create KFBACKDOOR EE_oo_GetElapsedValue
+  Data.FindCODE EE_oo_GetElapsedValue RETURN "sYmbol.MARKER.Create KLEAVE *"
 )
-
-if Symbol.exist(EE_oo_IncrementCounter)
+if sYmbol.EXIST(EE_as_TerminateApplication)
 (
-  symbol.marker.create KBACKDOOR  EE_oo_IncrementCounter
-  symbol.marker.create KEXIT      symbol.exit(EE_oo_IncrementCounter)
+  sYmbol.MARKER.Create KFBACKDOOR EE_as_TerminateApplication
+  Data.FindCODE EE_as_TerminateApplication RETURN "sYmbol.MARKER.Create KLEAVE *"
 )
-
-if Symbol.exist(EE_oo_GetCounterValue)
+if sYmbol.EXIST(EE_as_AllowAccess)
 (
-  symbol.marker.create KBACKDOOR  EE_oo_GetCounterValue
-  symbol.marker.create KEXIT      symbol.exit(EE_oo_GetCounterValue)
+  sYmbol.MARKER.Create KFBACKDOOR EE_as_AllowAccess
+  Data.FindCODE EE_as_AllowAccess RETURN "sYmbol.MARKER.Create KLEAVE *"
 )
-
-if Symbol.exist(EE_oo_GetElapsedValue)
+if sYmbol.EXIST(EE_as_GetApplicationState)
 (
-  symbol.marker.create KBACKDOOR  EE_oo_GetElapsedValue
-  symbol.marker.create KEXIT      symbol.exit(EE_oo_GetElapsedValue)
+  sYmbol.MARKER.Create KFBACKDOOR EE_as_GetApplicationState
+  Data.FindCODE EE_as_GetApplicationState RETURN "sYmbol.MARKER.Create KLEAVE *"
 )
-
-if Symbol.exist(EE_as_TerminateApplication)
+if sYmbol.EXIST(CheckTaskMemoryAccess)
 (
-  symbol.marker.create KBACKDOOR  EE_as_TerminateApplication
-  symbol.marker.create KEXIT      symbol.exit(EE_as_TerminateApplication)
+  sYmbol.MARKER.Create KFBACKDOOR CheckTaskMemoryAccess
+  Data.FindCODE CheckTaskMemoryAccess RETURN "sYmbol.MARKER.Create KLEAVE *"
 )
-
-if Symbol.exist(EE_as_AllowAccess)
+if sYmbol.EXIST(CheckISRMemoryAccess)
 (
-  symbol.marker.create KBACKDOOR  EE_as_AllowAccess
-  symbol.marker.create KEXIT      symbol.exit(EE_as_AllowAccess)
-)
-
-if Symbol.exist(EE_as_GetApplicationState)
-(
-  symbol.marker.create KBACKDOOR  EE_as_GetApplicationState
-  symbol.marker.create KEXIT      symbol.exit(EE_as_GetApplicationState)
-)
-
-if Symbol.exist(CheckTaskMemoryAccess)
-(
-  symbol.marker.create KBACKDOOR  CheckTaskMemoryAccess
-  symbol.marker.create KEXIT      symbol.exit(CheckTaskMemoryAccess)
-)
-
-if Symbol.exist(CheckISRMemoryAccess)
-(
-  symbol.marker.create KBACKDOOR  CheckISRMemoryAccess
-  symbol.marker.create KEXIT      symbol.exit(CheckISRMemoryAccess)
+  sYmbol.MARKER.Create KFBACKDOOR CheckISRMemoryAccess
+  Data.FindCODE CheckISRMemoryAccess RETURN "sYmbol.MARKER.Create KLEAVE *"
 )
 enddo
+
+IGNORE_SYM:
+  ENTRY &sym
+  sYmbol.MARKER.Create IGNOREFROM &sym
+  sYmbol.MARKER.Create IGNORETO y.end(&sym)
+  return

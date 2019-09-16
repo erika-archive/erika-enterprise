@@ -42,6 +42,8 @@
   *  @brief  MCU-dependent internal part of HAL
   *  @author Errico Guidieri
   *  @date 2012
+  *  @author Giuseppe Serano
+  *  @date 2016
   */
 #ifndef INCLUDE_EE_TC2YX_INTERNAL_H__
 #define INCLUDE_EE_TC2YX_INTERNAL_H__
@@ -51,8 +53,8 @@
 /* Board inclusion for Oscillator Frequency Define EE_TC2YX_BOARD_FOSC */
 /* TODO: Protect this with some kind of selector */
 
-#if defined (EE_TRIBOARD_TC2X5)
-#include "board/infineon_TriBoard_TC2X5/inc/ee_tc2x5_board.h"
+#if ( defined(EE_TRIBOARD_TC2X5) || defined(EE_TRIBOARD_TC2XN) )
+#include "board/infineon_TriBoard_TC2XN/inc/ee_tc2xN_board.h"
 #define EE_SCU_CCUCON0 (EE_TC2YX_CCUCON0_BAUD1DIV(1U) |\
   EE_TC2YX_CCUCON0_SRI(1U) | EE_TC2YX_CCUCON0_SPB(2U) |\
   EE_TC2YX_CCUCON0_FSI2(2U) | EE_TC2YX_CCUCON0_FSI(2U) |\
@@ -74,12 +76,31 @@
   EE_TC2YX_CCUCON0_CLKSEL(1U))
 #endif
 
+/* Configure EVR (backup clock) frequency */
+#if (!defined(EE_EVR_OSC_FREQUENCY))
+#define EE_EVR_OSC_FREQUENCY 100000000U
+#endif /* !EE_EVR_OSC_FREQUENCY */
+
+/******************************************************************************
+               Handle CPU Clock in case of PLL configuration Bypass
+*******************************************************************************/
+#if (defined(EE_BYPASS_CLOCK_CONFIGURATION)) && (!defined(EE_MM_OPT))
+#if (defined(EE_CPU_CLOCK))
+#if (EE_CPU_CLOCK != EE_EVR_OSC_FREQUENCY)
+#error If EE_BYPASS_CLOCK_CONFIGURATION is configured, CPU_CLOCK have to be\
+ equal to EE_EVR_OSC_FREQUENCY (default: 100.0 Mhz)
+#endif /* EE_CPU_CLOCK != EE_EVR_OSC_FREQUENCY */
+#else
+#define EE_CPU_CLOCK  EE_EVR_OSC_FREQUENCY
+#endif /* EE_CPU_CLOCK */
+#endif /* EE_BYPASS_CLOCK_CONFIGURATION && !EE_MM_OPT */
+
 /** Interrupt table */
 extern void EE_tc_interrupt_table ( void );
 /** Trap table */
 extern void EE_tc_trap_table ( void );
 
-#ifdef  EE_MASTER_CPU
+#if (defined(EE_MASTER_CPU)) && (!defined(EE_BYPASS_CLOCK_CONFIGURATION))
 /*****************************************************************************
                           CCU Clock Control Support
  ****************************************************************************/
@@ -116,94 +137,169 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc2Yx_configure_osc_ctrl ( void )
 /******************************************************************************
                                 SCU PLL Support
  *****************************************************************************/
+#define EE_TC2YX_FPLL_KSTEP   240000000U
+#define EE_TC2YX_FREF_MAX      24000000U
+#define EE_TC2YX_FREF_MIN       8000000U
+#define EE_TC2YX_FVCO_MAX     800000000U
+#define EE_TC2YX_FVCO_MIN     400000000U
+#define EE_TC2YX_P_MAX               16U  /* '4 bits */
+#define EE_TC2YX_P_MIN                1U
+#define EE_TC2YX_K2_MAX              28U  /* '7 bits */
+#define EE_TC2YX_K2_MIN               1U
+#define EE_TC2YX_N_MAX              128U  /* '7 bits */
+#define EE_TC2YX_N_MIN                1U
 
-/*  I will use n=80 and p=2. Because I can get al the
-    needed values */
-#define EE_TC2YX_PLL_NDIV           80U
-#define EE_TC2YX_PLL_PDIV           2U
+#define EE_TC2YX_DEV_ALLOWED          2U
 
-/* This function accept fpll in HZ */
- __INLINE__ void __ALWAYS_INLINE__ EE_tc2Yx_configure_clock_internal(
+__INLINE__ void __ALWAYS_INLINE__ EE_tc2Yx_configure_clock_internal (
     EE_UREG fpll)
 {
-  /* k2 divider value */
-  EE_UINT32 k2;
-  /* Adjust fcpu if needed */
-  if(fpll > EE_TC2YX_CLOCK_MAX) {
-      fpll = EE_TC2YX_CLOCK_MAX;
-  } else if (fpll < EE_TC2YX_CLOCK_MIN) {
-      fpll = EE_TC2YX_CLOCK_MIN;
-  }
-  else {
-      /* Empty else to comply with MISRA 14.10 */
-  }
+  /*
+   * Dynamic PLL calculation Alg:
+   *
+   * fPLL = (N /( P * K2))  * fOSC
+   *
+   */
+  EE_UINT32	p;
+  EE_UINT32	n;
+  EE_UINT32	k2;
+  EE_UINT32	k2Steps;
+  EE_UINT32	bestK2 = 0;
+  EE_UINT32	bestN = 0;
+  EE_UINT32	bestP = 0;
 
-  /* Because fpll =  (fosc * n) / (k2 * p(=2)). k2 is ... */
-  k2 = (((EE_TC2YX_BOARD_FOSC / EE_MEGA) * EE_TC2YX_PLL_NDIV) /
-      ((fpll / EE_MEGA) * EE_TC2YX_PLL_PDIV)) - 1U;
+  EE_UINT64	fRef;
+  EE_UINT64	fVco;
+  EE_UINT64	fPllLeastError;
+  EE_UINT64	fPllError;
 
-  /* Divide by K2DIV + 1 */
-  SCU_PLLCON1.B.K2DIV = (EE_UINT8)k2;
+  fPllLeastError = EE_TC2YX_CLOCK_MAX;
+  fPllError = EE_TC2YX_CLOCK_MAX;
 
-  while( SCU_PLLSTAT.B.K2RDY == 0U ) {
-    ; /* Wait until K2-Divider is ready to operate */
-  }
+  /* K2+1 div should be even for 50% duty cycle */
+  k2Steps = 2;
 
-  /* K1 divider default value */
-
-  /* Enabled the VCO Bypass Mode */
-  SCU_PLLCON0.B.VCOBYP = 1U;
-
-  while( SCU_PLLSTAT.B.VCOBYST == 0U ) {
-    ; /* Wait until prescaler mode is entered */
+  if (fpll > EE_TC2YX_FPLL_KSTEP)
+  {
+      k2Steps = 1;
   }
 
-  /*  I will use n=80 and p=2. Because I can get al the
-      needed values */
-  SCU_PLLCON0.B.PDIV= EE_TC2YX_PLL_PDIV - 1U;
-  SCU_PLLCON0.B.NDIV= EE_TC2YX_PLL_NDIV - 1U;
+  for (
+    p = EE_TC2YX_P_MAX;
+    ( ( p >= EE_TC2YX_P_MIN ) && ( fPllError != 0 ) );
+    p--
+  )
+  {
+    fRef = (EE_TC2YX_BOARD_FOSC / p);
 
-  /* power down VCO Normal Behaviour */
-  SCU_PLLCON0.B.VCOPWD = 0U;
+    if ((fRef >= EE_TC2YX_FREF_MIN) && (fRef <= EE_TC2YX_FREF_MAX))
+    {
+      for (
+          k2 = EE_TC2YX_K2_MIN;
+          ( ( k2 <= EE_TC2YX_K2_MAX  ) && ( fPllError != 0 ) );
+          k2 += k2Steps
+        )
+      {
+        fVco = ((EE_UINT64)fpll) * k2;
 
-  /***** Configure PLL normal mode. *****/
+        if ((fVco >= EE_TC2YX_FVCO_MIN) && (fVco <= EE_TC2YX_FVCO_MAX))
+        {
+          for (
+              n = EE_TC2YX_N_MIN;
+              ( ( n <= EE_TC2YX_N_MAX ) && ( fPllError != 0 ) );
+              n++
+            )
+          {
+            fPllError = (
+              (((n) / (p * k2)) * EE_TC2YX_BOARD_FOSC) - fpll
+            );
 
-  /* Automatic oscillator disconnect disabled */
-  SCU_PLLCON0.B.OSCDISCDIS = 1U;
-  /* Connect VCO to the oscillator */
-  SCU_PLLCON0.B.CLRFINDIS = 1U;
+            if (fPllError == 0)
+            {
+              fPllLeastError = fPllError;
+              bestK2         = k2;
+              bestN          = n;
+              bestP          = p;
+            }
 
-  while ( SCU_PLLSTAT.B.FINDIS == 1U ) {
-    ; /* Wait until oscillator is connected to the VCO */
+            if (fPllLeastError > fPllError)
+            {
+              fPllLeastError = fPllError;
+              bestK2         = k2;
+              bestN          = n;
+              bestP          = p;
+            }
+          }
+        }
+      }
+    }
   }
 
-  /* Restart VCO lock detection */
-  SCU_PLLCON0.B.RESLD = 1U;
+  /* percent ALLOWED_DEVIATION error allowed */
+  if ((fPllLeastError) < ((fpll * EE_TC2YX_DEV_ALLOWED) / 100))
+  {
+    /* Divide by K2DIV + 1 */
+    SCU_PLLCON1.B.K2DIV = (EE_UINT8)(bestK2 - 1);
 
-  while ( SCU_PLLSTAT.B.VCOLOCK == 0U ) {
-    ; /* Wait until the VCO becomes locked */
+    while ( SCU_PLLSTAT.B.K2RDY == 0U ) {
+      ; /* Wait until K2-Divider is ready to operate */
+    }
+
+    /* K1 divider default value */
+
+    /* Enabled the VCO Bypass Mode */
+    SCU_PLLCON0.B.VCOBYP = 1U;
+
+    while ( SCU_PLLSTAT.B.VCOBYST == 0U ) {
+      ; /* Wait until prescaler mode is entered */
+    }
+
+    /* I will use n=80 and p=2. Because I can get al the
+       needed values */
+    SCU_PLLCON0.B.PDIV = (EE_UINT8)(bestP - 1);
+    SCU_PLLCON0.B.NDIV = (EE_UINT8)(bestN - 1);
+
+    /* power down VCO Normal Behaviour */
+    SCU_PLLCON0.B.VCOPWD = 0U;
+
+    /***** Configure PLL normal mode. *****/
+
+    /* Automatic oscillator disconnect disabled */
+    SCU_PLLCON0.B.OSCDISCDIS = 1U;
+    /* Connect VCO to the oscillator */
+    SCU_PLLCON0.B.CLRFINDIS = 1U;
+
+    while ( SCU_PLLSTAT.B.FINDIS == 1U ) {
+      ; /* Wait until oscillator is connected to the VCO */
+    }
+
+    /* Restart VCO lock detection */
+    SCU_PLLCON0.B.RESLD = 1U;
+
+    while ( SCU_PLLSTAT.B.VCOLOCK == 0U ) {
+      ; /* Wait until the VCO becomes locked */
+    }
+
+    /* Disable the VCO Bypass Mode */
+    SCU_PLLCON0.B.VCOBYP = 0U;
+
+    while ( SCU_PLLSTAT.B.VCOBYST == 1U ) {
+      ; /* Wait until normal mode is entered */
+    }
+
+    /* Automatic oscillator disconnect enabled */
+    SCU_PLLCON0.B.OSCDISCDIS = 0U;
   }
-
-  /* Disable the VCO Bypass Mode */
-  SCU_PLLCON0.B.VCOBYP = 0U;
-
-  while ( SCU_PLLSTAT.B.VCOBYST == 1U ) {
-    ; /* Wait until normal mode is entered */
-  }
-
-  /* Automatic oscillator disconnect enabled */
-  SCU_PLLCON0.B.OSCDISCDIS = 0U;
-}
-
-#else
-#define EE_tc2Yx_configure_clock_ctrl() ((void)0)
-#define EE_tc2Yx_configure_osc_ctrl()   ((void)0)
-#define EE_tc2Yx_configure_clock()      ((void)0)
-
-#endif /* EE_MASTER_CPU */
+} /* EE_tc2Yx_configure_clock_internal() */
+#else /* EE_MASTER_CPU && !EE_BYPASS_CLOCK_CONFIGURATION */
+__INLINE__ void __ALWAYS_INLINE__ EE_tc2Yx_configure_clock_ctrl ( void ) {}
+__INLINE__ void __ALWAYS_INLINE__ EE_tc2Yx_configure_osc_ctrl ( void ) {}
+__INLINE__ void __ALWAYS_INLINE__
+  EE_tc2Yx_configure_clock_internal ( EE_UREG fpll ) {}
+#endif  /* EE_MASTER_CPU && !EE_BYPASS_CLOCK_CONFIGURATION */
 
 /*******************************************************************************
-  Erika internal software free running counter HAL support (STM implementation)
+            Software Free Running Timer (SWFRT) (STM implementation)
  ******************************************************************************/
 #if (!defined(EE_SWFRT_CCNT))
 
@@ -280,7 +376,7 @@ __INLINE__ void __ALWAYS_INLINE__ EE_hal_tp_set_expiration ( EE_UREG
      EE_TC2YX_STMDIV_VALUE value of: 1,2,4,8; that are not all the allowed
      values. 5,6,10,12,15 cannot be used */
   EE_tc_set_csfr(EE_CPU_REG_TPS_TIMER0,
-    (expiration << (EE_TC2YX_STMDIV_VALUE - 1U)));
+    (expiration * EE_TC2YX_STMDIV_VALUE));
 }
 #endif /* !EE_SWFRT_CCNT */
 #endif /* EE_TIMING_PROTECTION__ */
@@ -316,7 +412,7 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc2Yx_fill_stacks( void )
   for(stack_fill_ptr = EE_B_USTACK;
       stack_fill_ptr < EE_E_USTACK; ++stack_fill_ptr)
   {
-    *stack_fill_ptr = EE_TC_STACK_FILL_PATTERN;
+    *stack_fill_ptr = EE_STACK_FILL_PATTERN;
   }
 
 
@@ -342,14 +438,15 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc2Yx_fill_stacks( void )
     stack_length = stack_length / (EE_UINT32)sizeof(*stack_fill_ptr);
 
     while ( stack_length ) {
-      *stack_fill_ptr = EE_TC_STACK_FILL_PATTERN;
+      *stack_fill_ptr = EE_STACK_FILL_PATTERN;
       stack_length--;
       stack_fill_ptr++;
     }
     /* Prepare to access to next entry on stacks table */
     stack_table_ptr++;
   }
-#elif ((!defined(__GNUC__)) && (!defined(__DCC__)) && (!defined(__TASKING__))) && (!defined(EE_EXECUTE_FROM_RAM))
+#elif ((!defined(__GNUC__)) && (!defined(__DCC__)) && (!defined(__TASKING__)))\
+  && (!defined(EE_EXECUTE_FROM_RAM))
 #error Fix Stack Filling code in Other compiler Than GNUC and DCC !
 #endif /* (!__GNUC__ && !EE_EXECUTE_FROM_RAM) ||  __DCC__ */
 }
@@ -369,6 +466,9 @@ void EE_tc2Yx_initialize_system_timer(void);
 #define EE_tc2Yx_initialize_system_timer() ((void) 0)
 #endif /* ENABLE_SYSTEM_TIMER && EE_SYSTEM_TIMER_DEVICE */
 
+/** Initialize a global variable with STM frequency. */
+extern void EE_tc2Yx_stm_set_clockpersec ( void );
+
 __INLINE__ EE_TYPEBOOL __ALWAYS_INLINE__ EE_cpu_startos( void )
 {
 #if (defined(__EE_MEMORY_PROTECTION__) || defined(EE_TIMING_PROTECTION__)) &&\
@@ -380,9 +480,10 @@ __INLINE__ EE_TYPEBOOL __ALWAYS_INLINE__ EE_cpu_startos( void )
   EE_tc_endint_enable();
 #endif /* (__EE_MEMORY_PROTECTION__ || EE_TIMING_PROTECTION__) &&
    (EE_USE_CUSTOM_STARTUP_CODE || EE_MM_OPT) */
-#ifdef EE_MASTER_CPU
-/* If a CPU CLOCK frequency is defined configure the SCU registers */
-#if defined(EE_CPU_CLOCK) && (!defined(EE_MM_OPT))
+#if (defined(EE_MASTER_CPU))
+#if (!defined(EE_BYPASS_CLOCK_CONFIGURATION))
+  /* If a CPU CLOCK frequency is defined configure the SCU registers */
+#if (defined(EE_CPU_CLOCK))
   /* Disable SAFETY ENDINIT Protection */
   EE_tc_safety_endinit_disable();
 
@@ -395,7 +496,8 @@ __INLINE__ EE_TYPEBOOL __ALWAYS_INLINE__ EE_cpu_startos( void )
 
   /* Re-enable SAFETY ENDINIT Protection */
   EE_tc_safety_endinit_enable();
-#endif /* EE_CPU_CLOCK && !EE_MM_OPT */
+#endif /* EE_CPU_CLOCK */
+#endif /* !EE_BYPASS_CLOCK_CONFIGURATION */
 
   /* Initialize intercore IRQs (in multicore environment) */
   EE_tc2Yx_setup_inter_irqs();
@@ -411,12 +513,17 @@ __INLINE__ EE_TYPEBOOL __ALWAYS_INLINE__ EE_cpu_startos( void )
   /* Initialize stdlib time reference (or internal variable) with STM
       frequency. */
   EE_tc2Yx_stm_set_clockpersec();
-#ifdef	ENABLE_SYSTEM_TIMER
-#ifdef	EE_DEBUG
+#if (defined(ENABLE_SYSTEM_TIMER))
+#if (defined(EE_DEBUG))
   EE_tc2Yx_stm_ocds_suspend_control();
-#endif	/* EE_DEBUG */
+#endif /* EE_DEBUG */
   EE_tc2Yx_initialize_system_timer();
-#endif	/* ENABLE_SYSTEM_TIMER */
+#endif /* ENABLE_SYSTEM_TIMER */
+
+#if (defined(__IRQ_STACK_NEEDED__))
+  /* Set User Stack for TASks, in case this is not done in start-up code */
+  EE_tc_set_psw_user_stack();
+#endif /* __IRQ_STACK_NEEDED__ */
 
   return 0;
 }

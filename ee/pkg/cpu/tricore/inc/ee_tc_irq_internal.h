@@ -7,7 +7,7 @@
  *
  * ERIKA Enterprise is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation, 
+ * version 2 as published by the Free Software Foundation,
  * (with a special exception described below).
  *
  * Linking this code statically or dynamically with other modules is
@@ -56,6 +56,9 @@
 #include "cpu/common/inc/ee_irqstub.h"
 /* Plus I need TriCore IRQ handling defines */
 #include "cpu/tricore/inc/ee_tc_irq.h"
+/* Include Kernel Data Structures Declarations + Change Protection Set Code +
+   Stack Monitoring */
+#include "cpu/tricore/inc/ee_tc_mem_prot_internal.h"
 
 /* Labels for Kernel Tracing. It has been used an utility function to generate
    only one copy of Tracing Labels.
@@ -68,13 +71,7 @@
 #include "MemMap.h"
 #endif /* EE_SUPPORT_MEMMAP_H */
 
-void __NEVER_INLINE__ EE_tc_isr2_call_handler( EE_tc_ISR_handler f )
-{
-  /* Call The ISR User Handler */
-  if ( f != NULL ) {
-    f();
-  }
-}
+void __NEVER_INLINE__ EE_tc_isr2_call_handler( EE_tc_ISR_handler f );
 
 /* If MemMap.h support is enabled (i.e. because memory protection): use it */
 #ifdef EE_SUPPORT_MEMMAP_H
@@ -96,11 +93,10 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc_isr2_call_handler( EE_tc_ISR_handler f )
 
 #ifdef EE_AS_OSAPPLICATIONS__
 
+#include "kernel/as/inc/ee_as_internal.h"
+
 /* ISR2 support have to be configured when OS Applications are used */
 #if defined(EE_MAX_ISR_ID) && (EE_MAX_ISR_ID > 0)
-
-/* Include Kernel Data Structures Declarations + Change Protection Set Code */
-#include "cpu/tricore/inc/ee_tc_mem_prot_internal.h"
 
 /*
  * With memory protection ISR2 are somehow tricky: we need to execute them in
@@ -122,7 +118,7 @@ __INLINE__ void __ALWAYS_INLINE__ EE_TC_CHANGE_STACK_POINTER
   /* Get NEW ISR2 Stack Data Structures. The following Data Structures is used
      to save SP and OS-Application for an interrupted ISR2/TASK.
      It is accessed via EE_IRQ_nesting_level (not incremented). */
-  register EE_as_ISR_RAM_type * const isr_stack_ptr = 
+  register EE_as_ISR_RAM_type * const isr_stack_ptr =
     &EE_as_ISR_stack[EE_hal_get_IRQ_nesting_level()];
 
   /* The ISR2 ROM is accessed via isr_id */
@@ -245,11 +241,8 @@ __INLINE__ void __ALWAYS_INLINE__ EE_TC_CHANGE_STACK_POINTER
 
     /* Enable IRQ if nesting  is allowed (It works even with memory protection,
        because User Tasks run in User-1 mode that has ISR handling enabled) */
-#if (defined(EE_SERVICE_PROTECTION__))
-    /* In case of Service Protection we don't want to make Kernel ISR2
-       preemptables to not handle previous Execution Context. */
+    /* We don't want to make Kernel ISR2 preemptables */
     if ( app_to != KERNEL_OSAPPLICATION )
-#endif /* EE_SERVICE_PROTECTION__ */
     {
       EE_std_enableIRQ_nested();
     }
@@ -271,7 +264,9 @@ __INLINE__ void __ALWAYS_INLINE__ EE_TC_CHANGE_STACK_POINTER
     EE_tc_syscall( EE_ID_TerminateISR2 );
 #endif /* !__EE_MEMORY_PROTECTION__ */
   } else {
-    /* Restart old TP's first expiring budget */
+    /* Restart old TP's first expiring budget.
+       I cannot check and update here because if the budget would be
+       terminated I wouldn't be on the right stack to handle it. */
     EE_as_tp_active_set_from_id_with_restart(EE_as_tp_active.active_tp);
   }
 }
@@ -339,6 +334,10 @@ __INLINE__ void __ALWAYS_INLINE__ EE_TC_CHANGE_STACK_POINTER
 #define EE_as_set_execution_context(ctx)  ((void)0)
 #endif /* !__OO_BCC1__ && !__OO_BCC2__ && !__OO_ECC1__ && !__OO_ECC2__ */
 
+#if (defined(EE_STACK_MONITORING__)) && (defined(EE_ERIKA_ISR_HANDLING_OFF))
+extern void EE_as_monitoring_the_stack( void );
+#endif /* EE_STACK_MONITORING__ && EE_ERIKA_ISR_HANDLING_OFF */
+
 __INLINE__ void __ALWAYS_INLINE__ EE_tc_isr2_wrapper_body( EE_tc_ISR_handler f )
 {
   /* This macro generate the local variables eventually needed */
@@ -346,6 +345,21 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc_isr2_wrapper_body( EE_tc_ISR_handler f )
   /* Update interrupted TP and Pause it, plus save a local reference to
      restore it at the ISR2 end, in case of ISR2 nesting */
   EE_tp_active_pause_update_and_save();
+  /* Monitor the preempted stack */
+#if (defined(EE_STACK_MONITORING__))
+#if (defined(__IRQ_STACK_NEEDED__))
+  if (EE_IRQ_nesting_level > 0U) {
+    EE_tc_check_and_handle_stack_overflow_with_sp(EE_ISR2_TOS_ID,
+      EE_tc_get_SP());
+  } else {
+    EE_tc_check_and_handle_stack_overflow_with_sp(
+      EE_std_thread_tos[EE_stk_queryfirst() + 1], EE_tc_get_prev_stack());
+  }
+#else /* __IRQ_STACK_NEEDED__ */
+  EE_tc_check_and_handle_stack_overflow_with_sp(
+    EE_std_thread_tos[EE_stk_queryfirst() + 1], EE_tc_get_SP());
+#endif /* __IRQ_STACK_NEEDED__ */
+#endif /* EE_STACK_MONITORING__ */
   /* [SWS_Os_00470]: The Operating System module shall limit the inter-arrival
       time of Category 2 ISRs to one per OsIsrTimeFrame. (SRS_Os_11008) */
   /* [SWS_Os_00471]: The Operating System module shall measure the start of an
@@ -356,7 +370,7 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc_isr2_wrapper_body( EE_tc_ISR_handler f )
       provided ISR AND shall call the ProtectionHook() with
       E_OS_PROTECTION_ARRIVAL. (SRS_Os_11008) */
   /* Check the interarrival */
-  if ( EE_as_tp_handle_interarrival(EE_AS_TP_ID_FROM_ISR2(isr2_id)) )
+  if (EE_as_tp_handle_interarrival(EE_AS_TP_ID_FROM_ISR2(isr2_id)))
   {
     /* Keep the old ORTI ISR2 and switch to new one */
     EE_ORTI_running_isr2_begin(f);
@@ -367,18 +381,30 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc_isr2_wrapper_body( EE_tc_ISR_handler f )
     /* Start TP protection for this ISR2 */
     EE_as_tp_active_start_for_ISR2(isr2_id);
     /* Enable IRQ if nesting  is allowed */
-#if (defined(EE_SERVICE_PROTECTION__))
-    /* In case of Service Protection we don't want to make Kernel ISR2
-       preemptables to not handle previous Execution Context. */
-#if (defined(EE_SYSTEM_TIMER)) && (defined(__MSRP__))
-    if ( EE_tc_get_int_prio() > 2U )
-#elif (defined(EE_SYSTEM_TIMER)) || (defined(__MSRP__))
-    if ( EE_tc_get_int_prio() > 1U )
-#endif /* EE_SYSTEM_TIMER {&&,||} MSRP */
-#endif /* EE_SERVICE_PROTECTION__ */
+    /* We don't want to make Kernel ISR2 preemptables */
     {
-      EE_std_enableIRQ_nested();
+#if	(defined(EE_SYSTEM_TIMER)) || (defined(__MSRP__))
+      EE_TYPEBOOL	EE_std_is_disableIRQ_nested = EE_FALSE;
+#if (defined(EE_SYSTEM_TIMER))
+      EE_std_is_disableIRQ_nested |= (
+        EE_tc_get_int_prio() == EE_ISR2_ID_EE_tc_system_timer_handler
+      );
+#endif  /* EE_SYSTEM_TIMER */
+#if (defined(__MSRP__))
+      EE_std_is_disableIRQ_nested |= (EE_tc_get_int_prio() == EE_ISR_PRI_1);
+#endif /* MSRP */
+      if (!EE_std_is_disableIRQ_nested)
+#endif  /* EE_SYSTEM_TIMER || MSRP */
+      {
+        EE_std_enableIRQ_nested();
+      }
     }
+#if (defined(__IRQ_STACK_NEEDED__))
+    if (EE_IRQ_nesting_level == 1U) {
+      /* Switch on NEW ISR2 User Stack */
+      EE_tc_set_SP(EE_tc_IRQ_tos.SYS_tos);
+    }
+#endif /* __IRQ_STACK_NEEDED__ */
     /* Call The ISR User Handler */
     EE_tc_isr2_call_handler(f);
 
@@ -398,14 +424,18 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc_isr2_wrapper_body( EE_tc_ISR_handler f )
     /* If the ISR at the lowest level is ended, restore old
        SP, reset CCPN and call the scheduler. */
     /* Check for scheduling point */
-    if ( EE_is_inside_ISR_call() == 0 ) {
+    if (EE_is_inside_ISR_call() == 0) {
       /* Set CCPN to unmask next IRQ, it would have been
          done by RFE but we are not returning yet */
-      EE_tc_set_int_prio( (EE_TYPEISR2PRIO)EE_ISR_UNMASKED );
+      EE_tc_set_int_prio((EE_TYPEISR2PRIO)EE_ISR_UNMASKED);
       /* Restore task stack pointer if needed */
       EE_tc_set_prev_stack_back();
       /* Call the scheduler */
       EE_std_after_IRQ_schedule();
+#if (defined(EE_STACK_MONITORING__))
+      /* Monitor The returning Stack */
+      EE_as_monitoring_the_stack();
+#endif /* EE_STACK_MONITORING__ */
     }
   }
   /* Restore the interrupted timing protection set and restart it */

@@ -64,7 +64,7 @@
 #define EE_SHARED_CDATA  EE_COMPILER_SECTION("ee_mcglobalc, \"a\", @progbits #")
 #define EE_SHARED_UDATA  EE_COMPILER_SECTION("ee_mcglobald")
 #define EE_SHARED_IDATA  EE_COMPILER_SECTION("ee_mcglobald")
-#define EE_SHARED_TDATA  EE_COMPILER_SECTION("ee_mcglobalt")
+#define EE_SHARED_TDATA  EE_COMPILER_SECTION("ee_mcglobalt, \"ax\", @progbits #")
 #endif
 
 #else /* EE_AS_OSAPPLICATIONS__ */
@@ -126,7 +126,7 @@ extern EE_TYPEBARRIER EE_SHARED_UDATA EE_tc_kernel_barrier;
 
 /* The following are added here to fulfil some Autosar kernel requirements that
    are architecture dependent */
-#ifdef EE_TC27X__
+#if	( defined(EE_TC27X__) || defined(EE_TC29X__) )
 #define EE_NUMBER_OF_CORES    3
 #elif defined(EE_TC26X__)
 #define EE_NUMBER_OF_CORES    2
@@ -216,6 +216,7 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc_start_core( EE_TYPECOREID core_id,
 __INLINE__ EE_UINT32 __ALWAYS_INLINE__ EE_tc_cmpswapw( EE_UINT32 * const p_var,
   EE_UINT32 new_val, EE_UINT32 expected_val )
 {
+#if (!defined (__STRICT_ANSI__))
   /* The following force new_val in da with a even and expected_val in d(a+1) */
   register /*__extension__ */ EE_UINT64 e_reg = ((EE_UINT64)expected_val << 32U)
     | new_val;
@@ -226,6 +227,16 @@ __INLINE__ EE_UINT32 __ALWAYS_INLINE__ EE_tc_cmpswapw( EE_UINT32 * const p_var,
   __asm volatile ("cmpswap.w [%1]0, %A0" : "+d"(e_reg) : "a"(p_var) : "memory");
 
   return (EE_UINT32)e_reg;
+#else	/* __STRICT_ANSI__ */
+ __asm volatile (
+    "mov %%e2, %1, %0\t\n"
+    "cmpswap.w [%2]0, %%e2 \t\n"
+    "mov %0, %%d2"
+    : "+d"(new_val)
+    : "d"(expected_val), "a"(p_var)
+    : "d2", "d3", "memory");
+  return new_val;
+#endif	/* __STRICT_ANSI__ */
 }
 #elif defined (__DCC__)
   /* extern void _cmpswapw( unsigned long long,  void*, const unsigned int) 
@@ -478,21 +489,6 @@ __INLINE__ EE_BIT __ALWAYS_INLINE__ EE_tc_try_to_spin_in( EE_TYPESPIN spin_id )
 /* Map RN signaling functions */
 #define EE_hal_IRQ_interprocessor_served(cpu)   EE_tc_ack_signal(cpu)
 #define EE_hal_IRQ_interprocessor(cpu)          EE_tc_signal_cpu(cpu)
-
-/* Multicore name remapping */
-#ifdef EE_MASTER_CPU
-/* Symbol remapping not needed */
-#elif (EE_CURRENTCPU == 1)
-#define EE_tc_IRQ_tos                           EE_tc_cpu1_IRQ_tos
-#define EE_tc_endint_disable                    EE_tc_cpu1_endint_disable
-#define EE_tc_endint_enable                     EE_tc_cpu1_endint_enable
-#elif (EE_CURRENTCPU == 2)
-#define EE_tc_IRQ_tos                           EE_tc_cpu2_IRQ_tos
-#define EE_tc_endint_disable                    EE_tc_cpu2_endint_disable
-#define EE_tc_endint_enable                     EE_tc_cpu2_endint_enable
-#else
-#error Unknown CPU ID
-#endif /* EE_MASTER_CPU */
 
 #endif /* __CORE_TC16X__ || __TC161__ */
 

@@ -42,7 +42,7 @@ SECTIONS
   /*
    * Section for interrupt table
    */
-  CORE_SEC(.inttab) : ALIGN(32) FLAGS(ax)
+  CORE_SEC(.inttab) : ALIGN(8192) FLAGS(ax)
   {
     PROVIDE(__inttab_start = .);
     KEEP (*(.inttab));
@@ -391,7 +391,7 @@ END_EACH_APP
   /*
    * Section for ustack
    */  
-  CORE_SEC(.ustack) : ALIGN(8)
+  CORE_SEC(.ustack) (NOLOAD) : ALIGN(8) FLAGS(aw)
   {
      __USTACK_BEGIN = . ;
     . += __USTACK_SIZE ;
@@ -403,7 +403,7 @@ END_EACH_APP
   /*
    * Section for istack
    */  
-  CORE_SEC(.istack) : ALIGN(8)
+  CORE_SEC(.istack) (NOLOAD) : ALIGN(8) FLAGS(aw)
   {
      __ISTACK_BEGIN = . ;
     . += __ISTACK_SIZE ;
@@ -415,7 +415,7 @@ END_EACH_APP
   /*
    * Section for heap
    */  
-  CORE_SEC(.heap) : ALIGN(8)
+  CORE_SEC(.heap) (NOLOAD) : ALIGN(8) FLAGS(aw)
   {
      __HEAP_BEGIN = . ;
      __HEAP = . ;
@@ -427,7 +427,7 @@ END_EACH_APP
   /*
    * Section for CSA
    */  
-  CORE_SEC(.csa) : ALIGN(64)
+  CORE_SEC(.csa) (NOLOAD) : ALIGN(64) FLAGS(aw)
   {
      __CSA_BEGIN = . ;
      __CSA = . ;
@@ -440,7 +440,7 @@ END_EACH_APP
   /* ERIKA API Sections */
 
   /* ERIKA API public unitializated data section */
-  CORE_SEC(.ee_api_bss) :  ALIGN(8) FLAGS(aw) {
+  CORE_SEC(.ee_api_bss) (NOLOAD) :  ALIGN(8) FLAGS(aw) {
     /* begin ERIKA API public unitializated data section symbol */
     PROVIDE(ee_sbss_api = .);
     *(ee_api_bss)
@@ -473,7 +473,7 @@ END_EACH_APP
   /* ERIKA Kernel Sections */
 
   /* ERIKA Kernel private unitializated data section */
-  CORE_SEC(.ee_kernel_bss) : ALIGN(8) FLAGS(aw) {
+  CORE_SEC(.ee_kernel_bss) (NOLOAD) : ALIGN(8) FLAGS(aw) {
     /* begin ERIKA Kernel private unitializated data section symbol */
     PROVIDE(ee_sbss_kernel = .);
     *(ee_kernel_bss)
@@ -504,7 +504,7 @@ END_EACH_APP
 
   /* ERIKA Kenel Stacks (Don't belong to any OS-Applications, special section
      is needed to handle memory protection and stack monitoring) */
-  CORE_SEC(.ee_kernel_stack) : ALIGN(8) {
+  CORE_SEC(.ee_kernel_stack) (NOLOAD) : ALIGN(8) FLAGS(aw) {
     PROVIDE(ee_sstack_kernel = .);
     KEEP(*(ee_kernel_stack))
     /* Put the first OS-Application Section 16 forward respect the system
@@ -527,7 +527,7 @@ FOR_EACH_APP
   /* ee_ssec_${APP_NAME} = ${APP_BASE}; */
 
   /* OS-Application Section Private Stack */
-  CORE_SEC(.ee_${APP_NAME}_stack) /* (${APP_BASE}) */ : ALIGN(16) {
+  CORE_SEC(.ee_${APP_NAME}_stack) (NOLOAD) : ALIGN(16) FLAGS(aw) {
     /* The begin of an OS-Application section "group" is aligned to 16 to
        ensure space requiremente for cross sections access protection.
        (Read the Note: at page 9-5 of
@@ -542,7 +542,7 @@ FOR_EACH_APP
   } > DMI_DSPR
 
   /* OS-Application Section Private Unitializated DATA */
-  CORE_SEC(.ee_${APP_NAME}_bss) : ALIGN(4) {
+  CORE_SEC(.ee_${APP_NAME}_bss) (NOLOAD) : ALIGN(4) FLAGS(aw) {
     PROVIDE(ee_sbss_${APP_NAME} = .);
     *(ee_${APP_NAME}_bss)
     PROVIDE(ee_ebss_${APP_NAME} = .);

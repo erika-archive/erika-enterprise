@@ -209,7 +209,7 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc27x_fill_stacks( void )
   for(stack_fill_ptr = EE_B_USTACK;
       stack_fill_ptr < EE_E_USTACK; ++stack_fill_ptr)
   {
-    *stack_fill_ptr = EE_TC_STACK_FILL_PATTERN;
+    *stack_fill_ptr = EE_STACK_FILL_PATTERN;
   }
 
 #if (defined(__GNUC__) && (!defined(EE_EXECUTE_FROM_RAM))) || defined(__DCC__)
@@ -477,9 +477,17 @@ __INLINE__ EE_TYPEBOOL __ALWAYS_INLINE__ EE_cpu_startos( void )
   /* Initialize stdlib time reference (or internal variable) with STM
       frequency. */
   EE_tc27x_stm_set_clockpersec();
-  /* If there's no OCDS enabled, the following is a nop */
+#if (defined(ENABLE_SYSTEM_TIMER))
+#if (defined(EE_DEBUG))
   EE_tc27x_stm_ocds_suspend_control();
+#endif /* EE_DEBUG */
   EE_tc27x_initialize_system_timer();
+#endif /* ENABLE_SYSTEM_TIMER */
+
+#if (defined(__IRQ_STACK_NEEDED__))
+  /* Set User Stack for TASks, in case this is not done in start-up code */
+  EE_tc_set_psw_user_stack();
+#endif /* __IRQ_STACK_NEEDED__ */
 
   return 0;
 }

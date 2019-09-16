@@ -48,6 +48,13 @@
 #include "cpu/tricore/inc/ee_tc_trap.h"
 
 #ifdef __TASKING__
+
+#if (defined(EE_TC_TURN_ON_TRAP_WORKAROUND))
+#define EE_TC_TRAP_WORKAROUND() EE_tc_disableIRQ()
+#else
+#define EE_TC_TRAP_WORKAROUND() ((void)0)
+#endif /* EE_TC_TURN_ON_TRAP_WORKAROUND */
+
 /* libc support needed for default handler */
 #pragma weak exit
 #pragma extern _Exit
@@ -83,7 +90,9 @@ extern void EE_tc_bus_handler 			( EE_TIN tin );
  */
 void EE_TRAP( EE_CLASS_TRAPMMU ) EE_VECTOR_TABLE EE_COMPILER_EXPORT EE_tc_trap_mmu( void )
 {
-	EE_TIN tin = EE_tc_get_TIN();
+	EE_TIN tin;
+	EE_TC_TRAP_WORKAROUND();
+	tin = EE_tc_get_TIN();
 #if defined(__EE_MEMORY_PROTECTION__) && defined(__EE_USE_MMU__)
 	EE_tc_mmu_handler(tin);
 #elif defined(EE_TC_TRAP_MMU_TRAP)
@@ -100,7 +109,9 @@ void EE_TRAP( EE_CLASS_TRAPMMU ) EE_VECTOR_TABLE EE_COMPILER_EXPORT EE_tc_trap_m
  */
 void EE_TRAP( EE_CLASS_TRAPPROT ) EE_VECTOR_TABLE EE_COMPILER_EXPORT EE_tc_trap_protection( void )
 {
-	EE_TIN tin = EE_tc_get_TIN();
+	EE_TIN tin;
+	EE_TC_TRAP_WORKAROUND();
+	tin = EE_tc_get_TIN();
 #if defined(__EE_MEMORY_PROTECTION__)
 	EE_tc_protection_handler(tin);
 #elif defined(EE_TC_TRAP_PROT_TRAP)
@@ -117,7 +128,9 @@ void EE_TRAP( EE_CLASS_TRAPPROT ) EE_VECTOR_TABLE EE_COMPILER_EXPORT EE_tc_trap_
  */
 void EE_TRAP( EE_CLASS_TRAPINST ) EE_VECTOR_TABLE EE_COMPILER_EXPORT EE_tc_trap_instruction( void )
 {
-	EE_TIN tin = EE_tc_get_TIN();
+	EE_TIN tin;
+	EE_TC_TRAP_WORKAROUND();
+	tin = EE_tc_get_TIN();
 #if defined(EE_TC_TRAP_INST_TRAP)
 	EE_TC_TRAP_INST_TRAP (tin);
 #elif defined(__EE_MEMORY_PROTECTION__) || defined(EE_TIMING_PROTECTION__)
@@ -132,7 +145,9 @@ void EE_TRAP( EE_CLASS_TRAPINST ) EE_VECTOR_TABLE EE_COMPILER_EXPORT EE_tc_trap_
  */
 void EE_TRAP( EE_CLASS_TRAPCONT ) EE_VECTOR_TABLE EE_COMPILER_EXPORT EE_tc_trap_context( void )
 {
-	EE_TIN tin = EE_tc_get_TIN();
+	EE_TIN tin;
+	EE_TC_TRAP_WORKAROUND();
+	tin = EE_tc_get_TIN();
 #if defined(EE_TC_TRAP_CONT_TRAP)
 	EE_TC_TRAP_CONT_TRAP(tin);
 #elif defined(__EE_MEMORY_PROTECTION__) || defined(EE_TIMING_PROTECTION__)
@@ -148,7 +163,9 @@ void EE_TRAP( EE_CLASS_TRAPCONT ) EE_VECTOR_TABLE EE_COMPILER_EXPORT EE_tc_trap_
 
 void EE_TRAP( EE_CLASS_TRAPBUS ) EE_VECTOR_TABLE EE_COMPILER_EXPORT EE_tc_trap_bus( void )
 {
-	EE_TIN tin = EE_tc_get_TIN();
+	EE_TIN tin;
+	EE_TC_TRAP_WORKAROUND();
+	tin = EE_tc_get_TIN();
 #if defined(EE_TIMING_PROTECTION__)
 	EE_tc_bus_handler ( tin );
 #elif defined(EE_TC_TRAP_BUS_TRAP)
@@ -165,7 +182,9 @@ void EE_TRAP( EE_CLASS_TRAPBUS ) EE_VECTOR_TABLE EE_COMPILER_EXPORT EE_tc_trap_b
  */
 void EE_TRAP( EE_CLASS_TRAPASS ) EE_VECTOR_TABLE EE_COMPILER_EXPORT EE_tc_trap_assertion( void )
 {
-	EE_TIN tin = EE_tc_get_TIN();
+	EE_TIN tin;
+	EE_TC_TRAP_WORKAROUND();
+	tin = EE_tc_get_TIN();
 #if defined(EE_TC_TRAP_ASS_TRAP)
 	EE_TC_TRAP_ASS_TRAP(tin);
 #elif defined(__EE_MEMORY_PROTECTION__) || defined(EE_TIMING_PROTECTION__)
@@ -186,7 +205,9 @@ void EE_TRAP( EE_CLASS_TRAPASS ) EE_VECTOR_TABLE EE_COMPILER_EXPORT EE_tc_trap_a
 #else
 void EE_TRAP( EE_CLASS_TRAPSYS ) EE_VECTOR_TABLE EE_COMPILER_EXPORT EE_tc_trap_system( void )
 {
-	EE_TIN tin = EE_tc_get_TIN();
+	EE_TIN tin;
+	EE_TC_TRAP_WORKAROUND();
+	tin = EE_tc_get_TIN();
 #if defined(EE_TC_TRAP_SYS_TRAP)
 	EE_TC_TRAP_SYS_TRAP(tin);
 #elif defined(EE_TIMING_PROTECTION__)
@@ -202,7 +223,9 @@ void EE_TRAP( EE_CLASS_TRAPSYS ) EE_VECTOR_TABLE EE_COMPILER_EXPORT EE_tc_trap_s
  */
 void EE_TRAP( EE_CLASS_TRAPNMI ) EE_VECTOR_TABLE EE_COMPILER_EXPORT EE_tc_trap_nmi( void )
 {
-	EE_TIN tin = EE_tc_get_TIN();
+	EE_TIN tin;
+	EE_TC_TRAP_WORKAROUND();
+	tin = EE_tc_get_TIN();
 #if defined(EE_TC_TRAP_NMI_TRAP)
 	EE_TC_TRAP_NMI_TRAP(tin);
 #elif defined(__EE_MEMORY_PROTECTION__) || defined(EE_TIMING_PROTECTION__)
@@ -216,9 +239,17 @@ void EE_TRAP( EE_CLASS_TRAPNMI ) EE_VECTOR_TABLE EE_COMPILER_EXPORT EE_tc_trap_n
 #elif defined (__GNUC__) || defined(__DCC__)
 
 #if defined(__GNUC__)
+
+#if (defined(EE_TC_TURN_ON_TRAP_WORKAROUND))
+#define EE_TC_TRAP_WORKAROUND() __asm ("disable")
+#else
+#define EE_TC_TRAP_WORKAROUND() __asm ("")
+#endif /* EE_TC_TURN_ON_TRAP_WORKAROUND */
+
 #define EE_TRAP_DEFINITION2(t,h)                      \
   __asm (".globl " EE_PREPROC_STRING(t));             \
   __asm (EE_PREPROC_STRING(t) ":");                   \
+  EE_TC_TRAP_WORKAROUND();                            \
   __asm ("svlcx");                                    \
   __asm ("movh.a %a15,hi:" EE_PREPROC_STRING(h));     \
   __asm ("lea %a15,[%a15]lo:" EE_PREPROC_STRING(h));  \
@@ -232,6 +263,7 @@ void EE_TRAP( EE_CLASS_TRAPNMI ) EE_VECTOR_TABLE EE_COMPILER_EXPORT EE_tc_trap_n
 #define EE_TRAP_DEFINITION_WITH_CALL(t,h)             \
   __asm (".globl " EE_PREPROC_STRING(t));             \
   __asm (EE_PREPROC_STRING(t) ":");                   \
+  EE_TC_TRAP_WORKAROUND();                            \
   __asm ("svlcx");                                    \
   __asm ("movh.a %a15,hi:" EE_PREPROC_STRING(h));     \
   __asm ("lea %a15,[%a15]lo:" EE_PREPROC_STRING(h));  \
@@ -245,6 +277,7 @@ void EE_TRAP( EE_CLASS_TRAPNMI ) EE_VECTOR_TABLE EE_COMPILER_EXPORT EE_tc_trap_n
 #define EE_TRAP_DEFAULT(t)                \
   __asm (".globl " EE_PREPROC_STRING(t)); \
   __asm (EE_PREPROC_STRING(t) ":");       \
+  EE_TC_TRAP_WORKAROUND();                \
   __asm ("debug");                        \
   __asm ("j " EE_PREPROC_STRING(t));      \
   __asm (".align 5");
@@ -252,12 +285,13 @@ void EE_TRAP( EE_CLASS_TRAPNMI ) EE_VECTOR_TABLE EE_COMPILER_EXPORT EE_tc_trap_n
 #define EE_TRAP_DEFAULT(t)                \
   __asm (".globl " EE_PREPROC_STRING(t)); \
   __asm (EE_PREPROC_STRING(t) ":");       \
+  EE_TC_TRAP_WORKAROUND();                \
   __asm ("j _exit");                      \
   __asm (".align 5");
 #endif /* EE_DEBUG */
 
 __asm ("                                \n\
-  .section .traptab, \"ax\", @progbits \n\
+  .section .traptab, \"ax\", @progbits  \n\
   .align 8                              \n\
   .globl _exit                          \n\
   .globl EE_tc_trap_table               \n\
@@ -265,9 +299,16 @@ EE_tc_trap_table:                       \n\
 ");
 #elif defined (__DCC__)
 
+#if (defined(EE_TC_TURN_ON_TRAP_WORKAROUND))
+#define EE_TC_TRAP_WORKAROUND() __asm ("  disable")
+#else
+#define EE_TC_TRAP_WORKAROUND() __asm ("  ")
+#endif /* EE_TC_TURN_ON_TRAP_WORKAROUND */
+
 #define EE_TRAP_DEFINITION2(t,h)                          \
   __asm ("  .globl " EE_PREPROC_STRING(t));               \
   __asm (EE_PREPROC_STRING(t) ":");                       \
+  EE_TC_TRAP_WORKAROUND();                                \
   __asm ("  svlcx");                                      \
   __asm ("  movh.a %a15," EE_PREPROC_STRING(h) "@ha" );   \
   __asm ("  lea %a15,[%a15]" EE_PREPROC_STRING(h) "@l");  \
@@ -281,6 +322,7 @@ EE_tc_trap_table:                       \n\
 #define EE_TRAP_DEFINITION_WITH_CALL(t,h)                   \
   __asm ("  .globl " EE_PREPROC_STRING(t));                 \
   __asm (EE_PREPROC_STRING(t) ":");                         \
+  EE_TC_TRAP_WORKAROUND();                                  \
   __asm ("  svlcx");                                        \
   __asm ("  movh.a %a15," EE_PREPROC_STRING(h) "@ha" );     \
   __asm ("  lea %a15,[%a15]" EE_PREPROC_STRING(h) "@l");    \
@@ -294,6 +336,7 @@ EE_tc_trap_table:                       \n\
 #define EE_TRAP_DEFAULT(t)                  \
   __asm ("  .globl " EE_PREPROC_STRING(t)); \
   __asm (EE_PREPROC_STRING(t) ":");         \
+  EE_TC_TRAP_WORKAROUND();                  \
   __asm ("  debug");                        \
   __asm ("  j " EE_PREPROC_STRING(t));      \
   __asm ("  .align 5");
@@ -301,6 +344,7 @@ EE_tc_trap_table:                       \n\
 #define EE_TRAP_DEFAULT(t)                  \
   __asm ("  .globl " EE_PREPROC_STRING(t)); \
   __asm (EE_PREPROC_STRING(t) ":");         \
+  EE_TC_TRAP_WORKAROUND();                  \
   __asm ("  j _exit");                      \
   __asm ("  .align 5");
 #endif /* EE_DEBUG */
@@ -374,15 +418,20 @@ EE_TRAP_DEFAULT(EE_tc_trap_assertion)
 
 #if defined(__EE_MEMORY_PROTECTION__)
 
+#if (defined(EE_TC_TURN_ON_TRAP_WORKAROUND))
+#define EE_TC_TRAP_WORKAROUND_STR "disable"
+#else
+#define EE_TC_TRAP_WORKAROUND_STR ""
+#endif /* EE_TC_TURN_ON_TRAP_WORKAROUND */
 /* Generate the call to system call handler in case of memory protection
    active: Save in d12 and d13 two pcxi value for saved Upper/Lower Context
    respectively, used inside EE_tc_syscall_handler for stack, ISR status
-   restoring and for return value.
- */
+   restoring and for return value. */
 #ifdef __GNUC__
 __asm ("                                      \n\
   .globl EE_tc_trap_system                    \n\
 EE_tc_trap_system:                            \n\
+  "EE_TC_TRAP_WORKAROUND_STR"                 \n\
   mfcr %d12," EE_STRINGIFY(EE_CPU_REG_PCXI) " \n\
   svlcx                                       \n\
   mfcr %d13," EE_STRINGIFY(EE_CPU_REG_PCXI) " \n\
@@ -395,6 +444,7 @@ EE_tc_trap_system:                            \n\
 __asm ("                                      \n\
   .globl EE_tc_trap_system                    \n\
 EE_tc_trap_system:                            \n\
+  "EE_TC_TRAP_WORKAROUND_STR"                 \n\
   mfcr %d12," EE_STRINGIFY(EE_CPU_REG_PCXI) " \n\
   svlcx                                       \n\
   mfcr %d13," EE_STRINGIFY(EE_CPU_REG_PCXI) " \n\

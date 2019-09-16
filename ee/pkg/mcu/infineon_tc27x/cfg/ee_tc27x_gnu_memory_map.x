@@ -62,12 +62,8 @@ MEMORY
   PMI_PSPR2        (w!xp): org = 0x50100000, len = 24k
 
   /* - Program Flash Memory (PFLASH0) */
-  PMU_PFLASH0       (rx!p): org = 0x80000000, len = 2M
-  PMU_PFALSH0_NC    (rx!p): org = 0xA0000000, len = 2M
-
-  /* - Program Flash Memory (PFLASH0) -Not used to allocate and sections- */
-  PMU_PFLASH1       (rx!p): org = 0x80200000, len = 2M
-  PMU_PFALSH1_NC    (rx!p): org = 0xA0200000, len = 2M
+  PMU_PFLASH0       (rx!p): org = 0x80000000, len = 4M
+  PMU_PFALSH0_NC    (rx!p): org = 0xA0000000, len = 4M
 
   /* - Data Flash Memory (DFLASH0) */
   PMU_DFLASH0       (w!xp): org = 0xAF000000, len = 1M
@@ -87,7 +83,6 @@ MEMORY
 
 /* Map non-cached global memory addresses into cached */
 REGION_MAP( GLOBAL , ORIGIN(PMU_PFALSH0_NC), LENGTH(PMU_PFALSH0_NC), ORIGIN(PMU_PFLASH0))
-REGION_MAP( GLOBAL , ORIGIN(PMU_PFALSH1_NC), LENGTH(PMU_PFALSH1_NC), ORIGIN(PMU_PFLASH1))
 REGION_MAP( GLOBAL , ORIGIN(BROM_NC), LENGTH(BROM_NC), ORIGIN(BROM))
 REGION_MAP( GLOBAL , ORIGIN(PMU_EDMEM_NC), LENGTH(PMU_EDMEM_NC), ORIGIN(PMU_EDMEM))
 /* REGION_MAP( GLOBAL , ORIGIN(LMU_SRAM_NC), LENGTH(LMU_SRAM_NC), ORIGIN(LMU_SRAM)) */

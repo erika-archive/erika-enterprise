@@ -49,7 +49,11 @@
 EE_TYPEBARRIER EE_SHARED_UDATA EE_tc_kernel_barrier;
 #endif /* EE_MASTER_CPU (EE_CURRENTCPU == 0) */
 
-void EE_hal_sync_barrier( EE_TYPEBARRIER * bar, EE_UREG volatile * p_wait_mask )
+void EE_hal_sync_barrier(
+  EE_TYPEBARRIER *    bar,
+  EE_UREG volatile *  p_wait_mask,
+  EE_VOID_CALLBACK    p_cb
+)
 {
   /* Not OK for MISRA: taken as reference
   EE_UINT32 const exit_mask  = (0xFFFFFFFFU << EE_MAX_CPU); */
@@ -61,7 +65,10 @@ void EE_hal_sync_barrier( EE_TYPEBARRIER * bar, EE_UREG volatile * p_wait_mask )
 
   if ( (bar != NULL) && (p_wait_mask != NULL) ) {
     while( (bar->value & exit_mask) != 0U ) {
-      ; /* If the barrier is still not completed exited: wait */
+      /* If the barrier is still not completed exited: wait */
+      if (p_cb != NULL) {
+        p_cb();
+      }
     }
     /* I need a spinlock so I will reuse spinlock for core 0 */
     EE_hal_spin_in(EE_SPINLOCK_CORE0);
@@ -69,6 +76,9 @@ void EE_hal_sync_barrier( EE_TYPEBARRIER * bar, EE_UREG volatile * p_wait_mask )
     bar->value |= ((EE_UINT32)1U << EE_CURRENTCPU);
     EE_hal_spin_out(EE_SPINLOCK_CORE0);
     do {
+      if (p_cb != NULL) {
+        p_cb();
+      }
       wait_mask = (*p_wait_mask);
       /* Wait for all other cores/CPUs */
     } while ( (bar->value & wait_mask) != wait_mask );
@@ -88,7 +98,7 @@ void EE_hal_sync_barrier( EE_TYPEBARRIER * bar, EE_UREG volatile * p_wait_mask )
 void EE_tc_sync_barrier( EE_TYPEBARRIER * bar )
 {
   EE_UINT32 all_entered = ((EE_UINT32)1U << EE_MAX_CPU) - 1U;
-  EE_hal_sync_barrier(bar, &all_entered);
+  EE_hal_sync_barrier(bar, &all_entered, NULL);
 }
 
 /* Prototype in scope required */

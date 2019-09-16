@@ -224,10 +224,10 @@ void EE_tc_enable_protections( void )
     EE_UREG trusted = 0U;
     app_ROM_ptr = &EE_as_Application_ROM[1];
 
-    if( app_ROM_ptr->Mode == EE_MEMPROT_TRUST_MODE )
+    if ( app_ROM_ptr->Mode == EE_MEMPROT_TRUST_MODE )
     {
       /* Add "Kernel" ranges at trusted application */
-      trusted = EE_TC_ERIKA_SHARED | EE_TC_ALL_RAM;
+      trusted = EE_TC_ALL_RAM;
     }
 
     /* Range Registers 3 are Range Registers for OS-Application 1 */
@@ -235,9 +235,15 @@ void EE_tc_enable_protections( void )
     EE_tc_set_csfr(EE_TC_OSAPP1_U, (EE_UREG)app_ROM_ptr->sec_info.ram_end);
 
     /* Set 1 of Protection Registers are reserved for OS-Applications 1 */
+    /* N.B EE_MP_PREVENT_RAM_READ IS NOT CONFIGURED READS ALL OVER THE MEMORY
+         ARE ALLOWED, SO "All RAM range" (EE_BIT(0U)) IS ADDED TO ALL DPRE */
     EE_tc_set_csfr(EE_TC_OSAPP1_R, EE_TC_PERIPHERAL | EE_TC_ERIKA_DATA |
       EE_TC_SHARED_CONST | EE_TC_ERIKA_SHARED | EE_TC_OSAPP1 |
-      EE_TC_ERIKA_API_DATA | EE_TC_CONST | trusted);
+      EE_TC_ERIKA_API_DATA | EE_TC_CONST | trusted
+#if (!defined(EE_MP_PREVENT_ALL_RAM_READ))
+      | EE_TC_ALL_RAM
+#endif /* !EE_MP_PREVENT_ALL_RAM_READ */
+    );
 
     EE_tc_set_csfr(EE_TC_OSAPP1_W, EE_TC_PERIPHERAL | EE_TC_OSAPP1 |
       EE_TC_ERIKA_API_DATA | trusted);
@@ -252,10 +258,10 @@ void EE_tc_enable_protections( void )
     EE_UREG trusted = 0U;
     app_ROM_ptr = &EE_as_Application_ROM[2];
 
-    if( app_ROM_ptr->Mode == EE_MEMPROT_TRUST_MODE )
+    if ( app_ROM_ptr->Mode == EE_MEMPROT_TRUST_MODE )
     {
       /* Add "Kernel" ranges at trusted application */
-      trusted = EE_TC_ERIKA_SHARED | EE_TC_ALL_RAM;
+      trusted = EE_TC_ALL_RAM;
     }
 
     /* Range Registers 4 are Range Registers for OS-Application 2 */
@@ -263,9 +269,15 @@ void EE_tc_enable_protections( void )
     EE_tc_set_csfr(EE_TC_OSAPP2_U, (EE_UREG)app_ROM_ptr->sec_info.ram_end);
 
     /* Set 2 of Protection Registers are reserved for OS-Applications 1 */
+    /* N.B EE_MP_PREVENT_RAM_READ IS NOT CONFIGURED READS ALL OVER THE MEMORY
+         ARE ALLOWED, SO "All RAM range" (EE_BIT(0U)) IS ADDED TO ALL DPRE */
     EE_tc_set_csfr(EE_TC_OSAPP2_R, EE_TC_PERIPHERAL | EE_TC_ERIKA_DATA |
       EE_TC_SHARED_CONST | EE_TC_ERIKA_SHARED | EE_TC_OSAPP2 |
-      EE_TC_ERIKA_API_DATA | EE_TC_CONST | trusted);
+      EE_TC_ERIKA_API_DATA | EE_TC_CONST | trusted
+#if (!defined(EE_MP_PREVENT_ALL_RAM_READ))
+      | EE_TC_ALL_RAM
+#endif /* !EE_MP_PREVENT_ALL_RAM_READ */
+    );
 
     EE_tc_set_csfr(EE_TC_OSAPP2_W, EE_TC_PERIPHERAL | EE_TC_OSAPP2 |
       EE_TC_ERIKA_API_DATA | trusted);
@@ -280,10 +292,10 @@ void EE_tc_enable_protections( void )
     EE_UREG trusted = 0U;
     app_ROM_ptr = &EE_as_Application_ROM[3];
 
-    if( app_ROM_ptr->Mode == EE_MEMPROT_TRUST_MODE )
+    if ( app_ROM_ptr->Mode == EE_MEMPROT_TRUST_MODE )
     {
-      /* Add "Kernel" ranges at trusted application protection set */
-      trusted = EE_TC_ERIKA_SHARED | EE_TC_ALL_RAM;
+      /* Add "Kernel" ranges at trusted application */
+      trusted = EE_TC_ALL_RAM;
     }
 
     /* Range Registers 5 are Range Registers for OS-Application 3 */
@@ -291,11 +303,15 @@ void EE_tc_enable_protections( void )
     EE_tc_set_csfr(EE_TC_OSAPP3_U, (EE_UREG)app_ROM_ptr->sec_info.ram_end);
 
     /* Set 3 of Protection Registers are reserverd for OS-Applications 1 */
-    /* N.B IN ANY CASE READS ALL OVER THE MEMORY ARE ALLOWED SO
-       "Kernel RAM range" (EE_BIT(0U)) IS ADDED TO ALL DPRE */
+    /* N.B EE_MP_PREVENT_RAM_READ IS NOT CONFIGURED READS ALL OVER THE MEMORY
+         ARE ALLOWED, SO "All RAM range" (EE_BIT(0U)) IS ADDED TO ALL DPRE */
     EE_tc_set_csfr(EE_TC_OSAPP3_R, EE_TC_PERIPHERAL | EE_TC_ERIKA_DATA |
       EE_TC_SHARED_CONST | EE_TC_ERIKA_SHARED | EE_TC_OSAPP3 |
-      EE_TC_ERIKA_API_DATA | EE_TC_CONST | trusted);
+      EE_TC_ERIKA_API_DATA | EE_TC_CONST | trusted
+#if (!defined(EE_MP_PREVENT_ALL_RAM_READ))
+      | EE_TC_ALL_RAM
+#endif /* !EE_MP_PREVENT_ALL_RAM_READ */
+    );
 
     EE_tc_set_csfr(EE_TC_OSAPP3_W, EE_TC_PERIPHERAL | EE_TC_OSAPP3 |
       EE_TC_ERIKA_API_DATA | trusted);
@@ -334,11 +350,16 @@ void EE_tc_enable_protections( void )
 #ifdef __EE_MEMORY_PROTECTION__
   /* Set 1 of Data Protection Registers are reserved for OS-Applications ->
      enable ranges 2-1 registers (RAM and FLASH) for Read Access.
-     N.B IN ANY CASE READS ALL OVER THE MEMORY ARE ALLOWED SO
-     "All RAM range" (EE_BIT(0U)) IS ADDED TO DPRE_1 bitmask */
+     N.B IF EE_MP_PREVENT_RAM_READ IS NOT CONFIGURED READS ALL OVER THE MEMORY
+         ARE ALLOWED, SO "All RAM range" (EE_BIT(0U))
+         IS ADDED TO DPRE_1 bitmask */
   EE_tc_set_csfr(EE_TC_OSAPPS_R,EE_TC_PERIPHERAL | EE_TC_ERIKA_DATA |
     EE_TC_SHARED_CONST | EE_TC_ERIKA_SHARED | EE_TC_OSAPPS |
-    EE_TC_ERIKA_API_DATA | EE_TC_CONST | EE_TC_ALL_RAM);
+    EE_TC_ERIKA_API_DATA | EE_TC_CONST
+#if (!defined(EE_MP_PREVENT_ALL_RAM_READ))
+    | EE_TC_ALL_RAM
+#endif /* !EE_MP_PREVENT_ALL_RAM_READ */
+    );
 
   /* Set 1 of Data Protection Registers are reserved for OS-Applications ->
      enable ranges 2 registers (RAM) for Write Access */

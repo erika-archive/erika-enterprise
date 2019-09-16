@@ -41,6 +41,7 @@
 ##
 ## Author: 2012,  Errico Guidieri
 ## Modified: 2012 Francesco Esposito (added Lin support)
+## Modified: 2016 Giuseppe Serano (added TC29x support)
 ##
 
 
@@ -88,12 +89,18 @@ endif # ONLY_LIBS
 OPT_INCLUDE = $(foreach d,$(INCLUDE_PATH),$(addprefix -I,$(call short_native_path,$d)))
 
 # Tricore model remapping (TASKING and TRICORE have a different naming convention for model names :( )
-ifeq ($(TRICORE_MODEL),tc27x)
+ifeq ($(TRICORE_MODEL),tc29x)
+CFLAGS  += -D__CPU__=$(TRICORE_MODEL)
+ASFLAGS += -D__CPU__=$(TRICORE_MODEL)
+GNUC_TRICORE_MODEL := tc29xx
+endif
 
+ifeq ($(TRICORE_MODEL),tc27x)
 CFLAGS  += -D__CPU__=$(TRICORE_MODEL)
 ASFLAGS += -D__CPU__=$(TRICORE_MODEL)
 GNUC_TRICORE_MODEL := tc27xx
 endif
+
 ifeq ($(TRICORE_MODEL),tc26x)
 CFLAGS  += -D__CPU__=$(TRICORE_MODEL)
 ASFLAGS += -D__CPU__=$(TRICORE_MODEL)
@@ -214,7 +221,7 @@ EE_LINKERMEMORY += $(EE_LINKERSCRIPT_MODEL_FOLDER)/ee_$(TRICORE_MODEL)_gnu_memor
 
 EE_RECOLLECT_LINKERSCRIPTS += $(PKGBASE)/mcu/infineon_common_tc2Yx/cfg/multicore/ee_tc2Yx_gnu_$(EE_LINKERSCRIPT_PREFIX)_startup_recollect.ld
 EE_RECOLLECT_LINKERSCRIPTS += $(PKGBASE)/mcu/infineon_common_tc2Yx/cfg/multicore/ee_tc2Yx_gnu_$(EE_LINKERSCRIPT_PREFIX)_recollect_prefix.ld
-EE_RECOLLECT_LINKERSCRIPTS += $(addsuffix ee_$(TRICORE_MODEL)_gnu_flash_recollect.ld.frag, $(EE_CORE_DIRS))
+EE_RECOLLECT_LINKERSCRIPTS += $(addsuffix /ee_$(TRICORE_MODEL)_gnu_flash_recollect.ld.frag, $(EE_CORE_DIRS))
 EE_RECOLLECT_LINKERSCRIPTS += $(PKGBASE)/mcu/infineon_common_tc2Yx/cfg/multicore/ee_tc2Yx_gnu_$(EE_LINKERSCRIPT_PREFIX)_recollect_suffix.ld
 
 $(EE_LINKERSCRIPT): $(EE_LINKERMEMORY) $(EE_RECOLLECT_LINKERSCRIPTS)

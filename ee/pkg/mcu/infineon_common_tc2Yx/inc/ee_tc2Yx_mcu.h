@@ -42,6 +42,8 @@
   *  @brief  MCU-dependent part of API
   *  @author Errico Guidieri
   *  @date 2012
+  *  @author Giuseppe Serano
+  *  @date 2016
   */
 #ifndef INCLUDE_EE_TC2YX_MCU_H__
 #define INCLUDE_EE_TC2YX_MCU_H__
@@ -60,15 +62,14 @@
 #define EE_TC2YX_SRN_CLEAR_REQUEST        ((EE_UINT32)1U << 25U)
 #define EE_TC2YX_SRN_SET_REQUEST          ((EE_UINT32)1U << 26U)
 
-
 /******************************************************************************
               Multicore with single ELF x Core Symbols Remapping
  *****************************************************************************/
 /* Generate the CORE_SYM suffux has is done by HIGHTEC ld binutils */
 #if defined(__MSRP__) && defined(EE_BUILD_SINGLE_ELF)
-#ifndef __GNUC__
+#if (!defined(__GNUC__))
 #error Multicore Single ELF build is supported only by HIGHTEC GNU Compiler
-#endif /* __GNUC__ */
+#endif /* !__GNUC__ */
 
 #define EE_CPU_SUFFIX3(sym3)      EE_PREPROC_JOIN(sym3,_)
 #define EE_CPU_SUFFIX2(sym2,cpu)  EE_CPU_SUFFIX3(EE_PREPROC_JOIN(sym2,cpu))
@@ -147,12 +148,12 @@
 #define EE_CPU_SUFFIX(sym)  sym
 #endif /* __MSRP__ && EE_BUILD_SINGLE_ELF */
 
-#ifdef  EE_MASTER_CPU
+#if (defined(EE_MASTER_CPU))
 /******************************************************************************
                         Startup Symbols Remapping
  *****************************************************************************/
 
-#ifdef __TASKING__
+#if (defined(__TASKING__))
 /* Start-Up Symbols Remapping */
 #define EE_B_USTACK       _lc_ub_ustack_tc0 /* user stack base */
 #define EE_E_USTACK       _lc_ue_ustack     /* user stack end */
@@ -169,7 +170,7 @@
 /* Core Start-up code entry */
 #define EE_TC2YX_START      EE_COMPILER_SECTION(ee_kernel_start) EE_tc2Yx_start
 
-#elif defined (__GNUC__) || defined (__DCC__)
+#elif (defined(__GNUC__)) || (defined(__DCC__))
 
 #define EE_B_USTACK     __USTACK_BEGIN  /* user stack base */
 #define EE_E_USTACK     __USTACK        /* user stack end */
@@ -196,11 +197,126 @@
 #endif /* __TASKING__ || __GNUC__ || __DCC__ */
 #endif /* EE_MASTER_CPU */
 
-/*********************************************************************
+/******************************************************************************
+          Software Free Running Timer (SWFRT) (STM implementation)
+*******************************************************************************/
+/** @brief Macro use to set STM prescaler. For efficency (I don't want to use
+    division in EE_hal_swfrt_eval_elapsed_time) 1,2,4,8 are the value that
+    EE_TC2YX_STMDIV_VALUE can take. These are not all the allowed
+    values for the register. 5,6,10,12,15 cannot be used */
+#if (!defined(EE_TC2YX_STMDIV_VALUE))
+#if (!defined(EE_BYPASS_CLOCK_CONFIGURATION))
+#define EE_TC2YX_STMDIV_VALUE 1U
+#else
+#define EE_TC2YX_STMDIV_VALUE 2U
+#endif /* EE_BYPASS_CLOCK_CONFIGURATION */
+#endif /* EE_TC2YX_STMDIV_VALUE */
+
+#if (!defined(EE_SWFRT_CCNT))
+/** @brief Macro to abstract free running timer duration in Kernel Layer.
+    there are two SWFRT implementation one that use CCNT debug counter
+    (deprecated since it seems that cannot be used without a debugger connected
+    to the board) and one that use SMT.
+    In the first case we need to take in account 31 bits of the reading:
+    for CCNT to handle the "sticky" bit.
+    For STM it depends of pll preescaler value (SCU_CCUCON1.B.STMDIV), how many
+    bits you can take: for example if the frequency of the clock is the same
+    of the CPU (SCU_CCUCON1.B.STMDIV = 1) we can use all the 32 bits, if it's
+    half (SCU_CCUCON1.B.STMDIV = 2) you have to 31 bits, and so on... */
+#define EE_SWFRT_CLOCK              (EE_CPU_CLOCK / EE_TC2YX_STMDIV_VALUE)
+#define EE_HAL_SWFRT_TIMER_DURATION (((EE_UREG)-1) / EE_TC2YX_STMDIV_VALUE)
+#endif /* !EE_SWFRT_CCNT */
+
+/* STM TIM0, CAP(ture) and OCDS Register Selector */
+#if (defined(EE_MASTER_CPU))
+/* registers */
+#define EE_STM_OCS      STM0_OCS
+#define EE_STM_TIM0     STM0_TIM0
+#define EE_STM_CAP      STM0_CAP
+#elif (EE_CURRENTCPU == 1)
+#define EE_STM_OCS      STM1_OCS
+#define EE_STM_TIM0     STM1_TIM0
+#define EE_STM_CAP      STM1_CAP
+#elif (EE_CURRENTCPU == 2)
+#define EE_STM_OCS      STM2_OCS
+#define EE_STM_TIM0     STM2_TIM0
+#define EE_STM_CAP      STM2_CAP
+#else 
+#error Unknown CPU ID
+#endif /* EE_CURRENTCPU */
+
+/**
+  * @brief  Used to read lower word of STM peripheral's 64 bit counter.
+  *         To guarantee coherency lower word must be read before than upper
+  *         word.
+ */
+__INLINE__ EE_UREG __ALWAYS_INLINE__ EE_tc2Yx_stm_get_time_lower_word( void )
+{
+  return EE_STM_TIM0.U;
+}
+
+/**
+  * @brief  Used to read upper word of STM peripheral's 64 bit counter.
+  *         To guarantee coherency lower word must be read before than upper
+  *         word.
+  */
+__INLINE__ EE_UREG __ALWAYS_INLINE__ EE_tc2Yx_stm_get_time_upper_word( void )
+{
+  return EE_STM_CAP.U;
+}
+
+/** @brief Mask for STM OCDS suspension: SUS := 2, SUS_P := 1 */
+#define EE_TC2YX_STM_OCS_SUS_CTRL_MASK ((1U << 28U) | (2U << 24U))
+
+/**
+  * @brief  Used to set STM suspension when OCDS take control
+  */
+__INLINE__ void __ALWAYS_INLINE__ EE_tc2Yx_stm_ocds_suspend_control( void )
+{
+  EE_STM_OCS.U = EE_TC2YX_STM_OCS_SUS_CTRL_MASK;
+}
+
+/**
+  * @brief  Used as bounded busy wait.
+  * @param  usec the number of microseconds you want to wait
+  */
+void EE_tc2Yx_delay( EE_UREG usec );
+
+/*******************************************************************************
+                          Forced Configuration
+ ******************************************************************************/
+#if (defined(EE_MM_OPT))
+/* If MM environment is configured: force bypass clock configuration. */
+#if (!defined(EE_BYPASS_CLOCK_CONFIGURATION))
+#define EE_BYPASS_CLOCK_CONFIGURATION
+#endif /* !EE_BYPASS_CLOCK_CONFIGURATION */
+#endif /* EE_MM_OPT */
+
+/*******************************************************************************
                 Multicore and multiprocessor support
- *********************************************************************/
+ ******************************************************************************/
 /* Include multicore support there's a guard inside */
 #include "mcu/infineon_common_tc2Yx/inc/ee_tc2Yx_multicore.h"
+
+/*******************************************************************************
+               CPU and Safety Watchdogs support functions
+*******************************************************************************/
+
+#ifdef EE_AS_OSAPPLICATIONS__
+#define API_START_SEC_CODE
+#include "MemMap.h"
+#endif /* EE_AS_OSAPPLICATIONS__ */
+
+void EE_tc_cpu_wdg_disable( void );
+
+#if defined(__TC161__) || defined(__CORE_TC16X__)
+void EE_tc_safety_wdg_disable( void );
+#endif /* __TC161__ || __CORE_TC16X__ */
+
+#ifdef EE_AS_OSAPPLICATIONS__
+#define API_STOP_SEC_CODE
+#include "MemMap.h"
+#endif /* EE_AS_OSAPPLICATIONS__ */
 
 /****************************************************************
                     System Timer Support
@@ -314,12 +430,16 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc2Yx_set_osccon( EE_UREG value )
 
 /* PLL Frequencies Bound Defines */
 #define EE_TC2YX_CLOCK_MIN          20000000U
-#define EE_TC2YX_CLOCK_MAX          200000000U
+#ifdef	EE_TC29X__
+#define EE_TC2YX_CLOCK_MAX          300000000U	/* 300Mhz for TC29x MCU */
+#else
+#define EE_TC2YX_CLOCK_MAX          200000000U	/* 200Mhz for other MCUs */
+#endif
 
-#ifdef EE_MASTER_CPU
+#if (defined(EE_MASTER_CPU)) && (!defined(EE_BYPASS_CLOCK_CONFIGURATION))
 /** @brief  Set PLL frequency. This function accept fpll HZ **/
 void EE_tc2Yx_configure_clock( EE_UREG fpll );
-#endif /* EE_MASTER_CPU */
+#endif /* EE_MASTER_CPU && EE_BYPASS_CLOCK_CONFIGURATION */
 
 /** @brief  Return PLL frequency in HZ. **/
 EE_UREG EE_tc2Yx_get_clock( void );
@@ -329,8 +449,9 @@ EE_UREG EE_tc2Yx_get_clock( void );
  ****************************************************************/
 
 /** @brief Initialize a global variable with STM frequency. */
-void EE_tc2Yx_stm_set_clockpersec( void );
+extern void EE_tc2Yx_stm_set_clockpersec( void );
 
+#if (defined(EE_SYSTEM_TIMER_DEVICE))
 #if (EE_SYSTEM_TIMER_DEVICE != EE_TC_STM_SR0)
 /**
   *  @brief Programs STM compare register 0 to trigger an IRQ after
@@ -367,87 +488,7 @@ void EE_tc2Yx_stm_set_sr1( EE_UINT32 usec, EE_TYPEISR2PRIO intvec );
   */
 void EE_tc2Yx_stm_set_sr1_next_match( EE_UINT32 usec );
 #endif /* EE_SYSTEM_TIMER_DEVICE != EE_TC_STM_SR1 */
-
-/******************************************************************************
-             Software Free Running Timer (SWFRT)  (STM implementation)
-*******************************************************************************/
-/** @brief Macro use to set STM prescaler. For efficency (I don't want to use
-    division in EE_hal_swfrt_eval_elapsed_time) 1,2,4,8 are the value that
-    EE_TC2YX_STMDIV_VALUE can take. These are not all the allowed
-    values for the register. 5,6,10,12,15 cannot be used */
-#if (!defined(EE_TC2YX_STMDIV_VALUE))
-#define EE_TC2YX_STMDIV_VALUE 1U
-#endif /* EE_TC2YX_STMDIV_VALUE */
-
-#if (!defined(EE_SWFRT_CCNT))
-/** @brief Macro to abstract free running timer duration in Kernel Layer.
-    there are two SWFRT implementation one that use CCNT debug counter
-    (deprecated since it seems that cannot be used without a debugger connected
-    to the board) and one that use SMT.
-    In the first case we need to take in account 31 bits of the reading:
-    for CCNT to handle the "sticky" bit.
-    For STM it depends of pll preescaler value (SCU_CCUCON1.B.STMDIV), how many
-    bits you can take: for example if the frequency of the clock is the same
-    of the CPU (SCU_CCUCON1.B.STMDIV = 1) we can use all the 32 bits, if it's
-    half (SCU_CCUCON1.B.STMDIV = 2) you have to 31 bits, and so on... */
-#define EE_SWFRT_CLOCK              (EE_CPU_CLOCK / EE_TC2YX_STMDIV_VALUE)
-#define EE_HAL_SWFRT_TIMER_DURATION (((EE_UREG)-1) / EE_TC2YX_STMDIV_VALUE)
-#endif /* !EE_SWFRT_CCNT */
-
-/* STM TIM0, CAP(ture) and OCDS Register Selector */
-#ifdef EE_MASTER_CPU
-/* registers */
-#define EE_STM_OCS      STM0_OCS
-#define EE_STM_TIM0     STM0_TIM0
-#define EE_STM_CAP      STM0_CAP
-#elif (EE_CURRENTCPU == 1)
-#define EE_STM_OCS      STM1_OCS
-#define EE_STM_TIM0     STM1_TIM0
-#define EE_STM_CAP      STM1_CAP
-#elif (EE_CURRENTCPU == 2)
-#define EE_STM_OCS      STM2_OCS
-#define EE_STM_TIM0     STM2_TIM0
-#define EE_STM_CAP      STM2_CAP
-#else 
-#error Unknown CPU ID
-#endif /* EE_CURRENTCPU */
-
-/**
-  * @brief  Used to read lower word of STM peripheral's 64 bit counter.
-  *         To guarantee coherency lower word must be read before than upper
-  *         word.
- */
-__INLINE__ EE_UREG __ALWAYS_INLINE__ EE_tc2Yx_stm_get_time_lower_word( void )
-{
-  return EE_STM_TIM0.U;
-}
-
-/**
-  * @brief  Used to read upper word of STM peripheral's 64 bit counter.
-  *         To guarantee coherency lower word must be read before than upper
-  *         word.
-  */
-__INLINE__ EE_UREG __ALWAYS_INLINE__ EE_tc2Yx_stm_get_time_upper_word( void )
-{
-  return EE_STM_CAP.U;
-}
-
-/** @brief Mask for STM OCDS suspension: SUS := 2, SUS_P := 1 */
-#define EE_TC2YX_STM_OCS_SUS_CTRL_MASK ((1U << 28U) | (2U << 24U))
-
-/**
-  * @brief  Used to set STM suspension when OCDS take control
-  */
-__INLINE__ void __ALWAYS_INLINE__ EE_tc2Yx_stm_ocds_suspend_control( void )
-{
-  EE_STM_OCS.U = EE_TC2YX_STM_OCS_SUS_CTRL_MASK;
-}
-
-/**
-  * @brief  Used as bounded busy wait.
-  * @param  usec the number of microseconds you want to wait
-  */
-void EE_tc2Yx_delay( EE_UREG usec );
+#endif /* EE_SYSTEM_TIMER_DEVICE */
 
 /****************************************************************
                         Ports Support

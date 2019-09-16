@@ -61,14 +61,26 @@
 
 #ifdef EE_STACK_MONITORING__
 /* Used to handle Stack Monitoring */
-#ifdef EE_AS_OSAPPLICATIONS__
+#if (defined(EE_AS_OSAPPLICATIONS__))
 void EE_TC_CHANGE_STACK_POINTER
   EE_as_check_and_handle_stack_overflow( ApplicationType appid,
-    EE_UREG tos )
+    EE_UREG stktop )
 {
-  if ( EE_tc_check_stack_overflow(tos) ) {
+  if ( EE_tc_check_stack_overflow(stktop) ) {
+    /* Just be sure to handle the overflow with the interrupts disabled */
+    EE_hal_disableIRQ();
+#if (defined(EE_AS_PROTECTIONHOOK_HAS_STACK__))
     /* The stack is corrupted I have to switch to a new one */
+    EE_tc_set_SP(EE_tc_prot_hook_tos.SYS_tos);
+#elif (defined(__IRQ_STACK_NEEDED__))
+    /* The stack is corrupted I have to switch to a new one.
+       I can use ISR stack, because as effect of ProtectionHook. I will
+       Terminate the active ISR/TASK at least.
+       Without OS-Applications if the STACK corrupted is The ISR Stack
+       ProtectionHook will Shutdown the execution, since it's not possible
+       to terminate an ISR2 whitout them. */
     EE_tc_set_SP((EE_ADDR)EE_tc_get_csfr(EE_CPU_REG_ISP));
+#endif /* EE_AS_PROTECTIONHOOK_HAS_STACK__ || __IRQ_STACK_NEEDED__ */
     EE_as_call_protection_error( appid, E_OS_STACKFAULT );
   }
 }
@@ -76,15 +88,43 @@ void EE_TC_CHANGE_STACK_POINTER
 #else /* EE_AS_OSAPPLICATIONS__ */
 
 void EE_TC_CHANGE_STACK_POINTER
-  EE_as_check_and_handle_stack_overflow( EE_UREG tos )
+  EE_as_check_and_handle_stack_overflow( EE_UREG stktop )
 {
-  if ( EE_tc_check_stack_overflow(tos) ) {
-    /* The stack is corrupted I have to switch to a new one */
+  if ( EE_tc_check_stack_overflow(stktop) ) {
+    /* Just be sure to handle the overflow with the interrupts disabled */
+    EE_hal_disableIRQ();
+#if (defined(__IRQ_STACK_NEEDED__))
+    /* The stack is corrupted I have to switch to a new one.
+       I can use ISR stack, because as effect of ProtectionHook. I will
+       Terminate the active ISR/TASK at least.
+       Without OS-Applications if the STACK corrupted is The ISR Stack
+       ProtectionHook will Shutdown the execution, since it's not possible
+       to terminate an ISR2 whitout them. */
     EE_tc_set_SP((EE_ADDR)EE_tc_get_csfr(EE_CPU_REG_ISP));
-    EE_oo_ShutdownOS_internal( E_OS_STACKFAULT );
+#endif /* __IRQ_STACK_NEEDED__ */
+    /* appid doesn't exist but it's filtered by the macro */
+    EE_as_call_protection_error( appid, E_OS_STACKFAULT );
   }
 }
 #endif /* EE_AS_OSAPPLICATIONS__ */
+
+void EE_as_restore_stack_canary ( EE_UREG stktop ) {
+  EE_UREG      i;
+  EE_STACK_T * p_end_stack;
+#if (!defined(EE_AS_OSAPPLICATIONS__)) && (defined(__IRQ_STACK_NEEDED__))
+  if ( stktop == ((EE_UREG)-1) ) {
+    p_end_stack = (EE_STACK_T *)EE_tc_IRQ_tos.SYS_bos;
+  } else
+#endif /* !EE_AS_OSAPPLICATIONS__ && __IRQ_STACK_NEEDED__ */
+  {
+    p_end_stack = (EE_STACK_T *)EE_tc_system_bos[stktop].end_stack;
+  }
+
+  for ( i = 0; i < EE_STACK_WORDS_CHECK; ++i ) {
+    p_end_stack[i] = EE_STACK_FILL_PATTERN;
+  }
+}
+
 #endif /* EE_STACK_MONITORING__ */
 
 #ifdef EE_AS_OSAPPLICATIONS__
@@ -332,6 +372,9 @@ void EE_hal_terminate_other_task( EE_TID tid ) {
   p_tos->ram_tos = EE_tc_system_bos[tos].base_stack;
   p_tos->pcxi_tos = 0U;
   p_tos->pcxi_bos = 0U;
+
+  /* Restore the canary on the stack */
+  EE_as_restore_stack_canary(tos);
 }
 
 void EE_TC_CHANGE_STACK_POINTER
@@ -407,6 +450,13 @@ extern EE_UINT32 ee_eapi_ram[];
 extern EE_UINT32 ee_sapi_const[];
 /* End Const API Flash End Address */
 extern EE_UINT32 ee_eapi_const[];
+
+/* Kernel Data Structures range Begin Address */
+extern EE_UINT32 ee_sbss_kernel[];
+/* Kernel Data Structures End Address
+   (These two symbols are the boundaries of kernel data structures sections:
+      all the OSApplications will have read permission for this segment) */
+extern EE_UINT32 ee_edata_kernel[];
 
 /* Symbols set by the linker, used for section boundaries. Declared as arrays,
  * so the compiler doesn't think they are in the small data area. */
@@ -499,9 +549,8 @@ AccessType EE_hal_get_app_mem_access(ApplicationType app,
           /* If the application is Trusted it can access to all the RAM ->
              Kernel Ram */
           if ( (beg >= (EE_ADDR)ee_skernel_ram) && (end <=
-            (EE_ADDR)ee_ekernel_ram) ) {
-            /* Data section. For the sake of efficiency, we don't
-             * check individual sections. */
+            (EE_ADDR)ee_ekernel_ram) )
+          {
              ret = EE_ACCESS_READ | EE_ACCESS_WRITE;
           }
         } else if ( (beg >= (EE_ADDR)info->ram_begin) && (end <=
@@ -510,7 +559,20 @@ AccessType EE_hal_get_app_mem_access(ApplicationType app,
            * check individual sections. */
           ret = EE_ACCESS_READ | EE_ACCESS_WRITE;
         } else {
-          /* No more sections; return the default (0) - Added For MISRA */
+          if ( (beg >= (EE_ADDR)ee_sbss_kernel) && (end <=
+            (EE_ADDR)ee_edata_kernel) )
+          {
+             ret = EE_ACCESS_READ;
+          }
+#if (!defined(EE_MP_PREVENT_ALL_RAM_READ))
+          else if ( (beg >= (EE_ADDR)ee_skernel_ram) && (end <=
+            (EE_ADDR)ee_ekernel_ram) )
+          {
+             ret = EE_ACCESS_READ;
+          } else {
+             /* No more sections; return the default (0) - Added For MISRA */
+          }
+#endif /* !EE_MP_PREVENT_ALL_RAM_READ */
         }
       }
     }
@@ -522,3 +584,40 @@ AccessType EE_hal_get_app_mem_access(ApplicationType app,
 #endif /* __EE_MEMORY_PROTECTION__ */
 
 #endif /* EE_AS_OSAPPLICATIONS__ */
+
+/* If MemMap support is enabled: use it */
+#ifdef EE_SUPPORT_MEMMAP_H
+/* Put the following code in ee_kernel_text */
+#define OS_STOP_SEC_CODE
+/* Put the following variables in ee_kernel_bss */
+#define OS_STOP_SEC_VAR_NOINIT
+#include "MemMap.h"
+#endif /* EE_SUPPORT_MEMMAP_H */
+
+/* Labels for Kernel Tracing. It has been used an utility function to generate
+   only one copy of Tracing Labels.
+   Enabled when ORTI is enabled and ISR are handled by ERIKA's intvec */
+#if defined(__OO_ORTI_SERVICETRACE__) && ((!defined(EE_ERIKA_ISR_HANDLING_OFF))\
+  || defined(EE_MM_OPT))
+/* If MemMap.h support is enabled (i.e. because memory protection): use it */
+#ifdef EE_SUPPORT_MEMMAP_H
+#define API_START_SEC_CODE
+#include "MemMap.h"
+#endif /* EE_SUPPORT_MEMMAP_H */
+
+void __NEVER_INLINE__ EE_tc_isr2_call_handler( EE_tc_ISR_handler f )
+{
+  /* Call The ISR User Handler */
+  if ( f != NULL ) {
+    f();
+  }
+}
+
+/* If MemMap.h support is enabled (i.e. because memory protection): use it */
+#ifdef EE_SUPPORT_MEMMAP_H
+#define API_STOP_SEC_CODE
+#include "MemMap.h"
+#endif /* EE_SUPPORT_MEMMAP_H */
+
+#endif /* __OO_ORTI_SERVICETRACE__ &&
+    (!EE_ERIKA_ISR_HANDLING_OFF || EE_MM_OPT) */

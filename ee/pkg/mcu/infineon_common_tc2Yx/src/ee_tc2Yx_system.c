@@ -54,23 +54,31 @@
 
 /* ENDINIT and SAFETY ENDINIT WATCHDOG Support */
 void EE_tc_endint_disable( void ) { 
-  EE_tc2Yx_endinit_set(EE_TC_ENDINIT_DISABLE);
+  EE_tc2Yx_clearCpuEndinit(EE_tc2Yx_getCpuWatchdogPassword());
 }
 
 void EE_tc_endint_enable( void ) { 
-  EE_tc2Yx_endinit_set(EE_TC_ENDINIT_ENABLE);
+  EE_tc2Yx_setCpuEndinit(EE_tc2Yx_getCpuWatchdogPassword());
+}
+
+void EE_tc_cpu_wdg_disable( void ) { 
+  EE_tc2Yx_disableCpuWatchdog(EE_tc2Yx_getCpuWatchdogPassword());
 }
 
 void EE_tc_safety_endinit_disable( void ) { 
-  EE_tc2Yx_safety_endinit_set(EE_TC_ENDINIT_DISABLE);
+  EE_tc2Yx_clearSafetyEndinit(EE_tc2Yx_getSafetyWatchdogPassword());
 }
 
 void EE_tc_safety_endinit_enable( void ) { 
-  EE_tc2Yx_safety_endinit_set(EE_TC_ENDINIT_ENABLE);
+  EE_tc2Yx_setSafetyEndinit(EE_tc2Yx_getSafetyWatchdogPassword());
+}
+
+void EE_tc_safety_wdg_disable( void ) { 
+  EE_tc2Yx_disableSafetyWatchdog(EE_tc2Yx_getSafetyWatchdogPassword());
 }
 
 /* STM Compare Register Selector */
-#ifdef EE_MASTER_CPU
+#if (defined(EE_MASTER_CPU))
 /* registers */
 #define EE_STM_CMCON    STM0_CMCON
 #define EE_STM_ICR      STM0_ICR
@@ -114,7 +122,7 @@ static void EE_tc2Yx_stm_set_sr1_next_match(EE_UINT32 usec);
 #endif /* EE_SYSTEM_TIMER_DEVICE == EE_TC_STM_SR1 */
 
 /* This file is needed only if System Timer is defined with a device */
-#if defined(ENABLE_SYSTEM_TIMER) && defined(EE_SYSTEM_TIMER_DEVICE)
+#if (defined(ENABLE_SYSTEM_TIMER)) && (defined(EE_SYSTEM_TIMER_DEVICE))
 /****************************************************************
                     System Timer Support
  ****************************************************************/
@@ -149,12 +157,12 @@ ISR2(EE_tc_system_timer_handler) {
   EE_tc2Yx_stm_set_sr1_next_match(OSTICKDURATION / 1000U);
 #endif /* EE_SYSTEM_TIMER_DEVICE */
 
-#ifndef EE_AS_OSAPPLICATIONS__
+#if (!defined(EE_AS_OSAPPLICATIONS__))
   EE_as_set_execution_context( Kernel_Context );
 #endif /* !EE_AS_OSAPPLICATIONS__ */
 
-#if defined(__OO_BCC1__) || defined(__OO_BCC2__) || defined(__OO_ECC1__) || \
-    defined(__OO_ECC2__)
+#if (defined(__OO_BCC1__)) || (defined(__OO_BCC2__)) || \
+    (defined(__OO_ECC1__)) || (defined(__OO_ECC2__))
   (void)IncrementCounterHardware(EE_SYSTEM_TIMER);
 #else /* OO Kernels */
   CounterTick(EE_SYSTEM_TIMER);
@@ -175,7 +183,7 @@ void EE_tc2Yx_initialize_system_timer(void) {
 #endif /* ENABLE_SYSTEM_TIMER && EE_SYSTEM_TIMER_DEVICE */
 
 /* If MemMap. support is enabled (i.e. because protection memory): use it */
-#ifdef EE_SUPPORT_MEMMAP_H
+#if (defined(EE_SUPPORT_MEMMAP_H))
 #define API_START_SEC_CODE
 #define API_START_SEC_VAR_NOINIT
 #include "MemMap.h"
@@ -184,40 +192,46 @@ void EE_tc2Yx_initialize_system_timer(void) {
 /****************************************************************
                     SCU Clock Support
  ****************************************************************/
-#ifdef EE_MASTER_CPU
+#if (defined(EE_MASTER_CPU)) && (!defined(EE_BYPASS_CLOCK_CONFIGURATION))
 void EE_tc2Yx_configure_clock(EE_UREG fpll) {
   EE_tc2Yx_configure_clock_internal(fpll);
 }
-#endif /* EE_MASTER_CPU */
+#endif /* EE_MASTER_CPU && !EE_BYPASS_CLOCK_CONFIGURATION */
 
 EE_UREG EE_tc2Yx_get_clock( void ) {
-  /* PLL dividers */
-  EE_UREG k1, k2, p, n;
-  /*  PLL Clock Frequency */
-  EE_UREG fpll;
+  /*  Clock Frequency */
+  EE_UREG fclock;
 
-  /* Prescaler mode */
-  if ( SCU_PLLSTAT.B.VCOBYST )
-  {
-    k1 = (EE_UREG)SCU_PLLCON1.B.K1DIV + (EE_UREG)1U;
-    fpll = EE_TC2YX_BOARD_FOSC / k1;
-  } else {
-    /* Free running mode */
-    if ( SCU_PLLSTAT.B.FINDIS )
+  if ( SCU_CCUCON0.B.CLKSEL  ) {
+    /* PLL */
+    /* PLL dividers */
+    EE_UREG k1, k2, p, n;
+    /* Prescaler mode */
+    if ( SCU_PLLSTAT.B.VCOBYST )
     {
-      k2 = (EE_UREG)SCU_PLLCON1.B.K2DIV + (EE_UREG)1U;
-      fpll = EE_TC2YX_BOARD_FOSC / k2;
+      k1 = (EE_UREG)SCU_PLLCON1.B.K1DIV + (EE_UREG)1U;
+      fclock = EE_TC2YX_BOARD_FOSC / k1;
     } else {
-      /* PLL Normal mode */
-      k2 = (EE_UREG)SCU_PLLCON1.B.K2DIV + (EE_UREG)1U;
-      p = (EE_UREG)SCU_PLLCON0.B.PDIV + (EE_UREG)1U;
-      n = (EE_UREG)SCU_PLLCON0.B.NDIV + (EE_UREG)1U;
+      /* Free running mode */
+      if ( SCU_PLLSTAT.B.FINDIS )
+      {
+        k2 = (EE_UREG)SCU_PLLCON1.B.K2DIV + (EE_UREG)1U;
+        fclock = EE_TC2YX_BOARD_FOSC / k2;
+      } else {
+        /* PLL Normal mode */
+        k2 = (EE_UREG)SCU_PLLCON1.B.K2DIV + (EE_UREG)1U;
+        p = (EE_UREG)SCU_PLLCON0.B.PDIV + (EE_UREG)1U;
+        n = (EE_UREG)SCU_PLLCON0.B.NDIV + (EE_UREG)1U;
 
-      /* cpu clock value fclk = (fosc * n)/(P * k2) */
-      fpll = n * (EE_TC2YX_BOARD_FOSC / (p * k2));
+        /* cpu clock value fclk = (fosc * n)/(P * k2) */
+        fclock = n * (EE_TC2YX_BOARD_FOSC / (p * k2));
+      }
     }
+  } else {
+    /* Backup clock (EVR) */
+    fclock = EE_EVR_OSC_FREQUENCY;
   }
-  return fpll;
+  return fclock;
 }
 
 /****************************************************************
@@ -239,21 +253,21 @@ static EE_UINT32 EE_tc2Yx_stm_us_ticks ( EE_UINT32 usec ) {
 }
 
 /* Set inside std time reference  */
-void EE_tc2Yx_stm_set_clockpersec(void)
+void EE_tc2Yx_stm_set_clockpersec ( void )
 {
-#ifdef __TASKING__
+#if (defined(__TASKING__))
   /* I don't know where is declared */
-  extern unsigned long long setfoschz( unsigned long long );
+  extern unsigned long long setfoschz ( unsigned long long );
 #endif /* __TASKING__ */
-  /*  PLL Clock Frequency */
-  EE_UREG const fpll = EE_tc2Yx_get_clock();
+  /* Clock Frequency */
+  EE_UREG const fclock = EE_tc2Yx_get_clock();
   /* Standard Timer Module period */
-  EE_UREG const fstm = fpll / SCU_CCUCON1.B.STMDIV;
+  EE_UREG const fstm = fclock / SCU_CCUCON1.B.STMDIV;
 
   /* Set Global variable with freq in Khz value */
   EE_tc2Yx_stm_freq_khz = fstm / EE_KILO;
 
-#ifdef __TASKING__
+#if (defined(__TASKING__))
   setfoschz ( fstm );
 #endif /* __TASKING__ */
 }

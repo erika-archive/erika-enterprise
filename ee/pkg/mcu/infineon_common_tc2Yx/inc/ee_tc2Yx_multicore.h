@@ -50,10 +50,22 @@
 #ifndef INCLUDE_EE_TC2YX_MULTICORE_H__
 #define INCLUDE_EE_TC2YX_MULTICORE_H__
 
-#ifdef __MSRP__
+#if (defined(__MSRP__))
 /*******************************************************************************
                           Multicore System startup
  ******************************************************************************/
+/**
+ *  @brief  Setup the intercore IRQs used by ERIKA for multicore support.
+ *          Software interrupt sourcers (registers) SRC_GPSR00 SRC_GPSR10
+ *          SRC_GPSR20, will be used for this communication mechanism,
+ *          respectively, for core 0,1 and 2.
+ */
+#if (!defined(EE_MM_OPT))
+__DECLARE_INLINE__ void __ALWAYS_INLINE__ EE_tc2Yx_setup_inter_irqs( void );
+#else	/* EE_MM_OPT */
+#define	EE_tc2Yx_setup_inter_irqs()	((void)0)
+#endif	/* !EE_MM_OPT */
+
 #include "cpu/tricore/inc/ee_tc_irq.h"
 
 /** @brief The following macros MAY be redefined by a user that want use
@@ -70,12 +82,7 @@
 #endif  /* EE_CPU2_START_ADDR */
 #endif /* EE_NUMBER_OF_CORES > 2 */
 
-/**
- *  @brief  Setup the intercore IRQs used by ERIKA for multicore support.
- *          Software interrupt sourcers (registers) SRC_GPSR00 SRC_GPSR10
- *          SRC_GPSR20, will be used for this communication mechanism,
- *          respectively, for core 0,1 and 2.
- */
+#if (!defined(EE_MM_OPT))
 __INLINE__ void __ALWAYS_INLINE__ EE_tc2Yx_setup_inter_irqs( void )
 {
   /*  Assign TOS (Type of Service Control:Read CPU) enable and assign
@@ -91,6 +98,7 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc2Yx_setup_inter_irqs( void )
     EE_TC2YX_SRN_PRIORITY(EE_ISR_PRI_1);
 #endif /* EE_NUMBER_OF_CORES > 2 */
 }
+#endif /* !EE_MM_OPT */
 
 /*******************************************************************************
                             Multicore CPU Signal
@@ -141,8 +149,8 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc2Yx_ack_signal( EE_TYPECOREID cpu )
 /*******************************************************************************
                           Multicore Symbols Remapping
  ******************************************************************************/
-#ifdef __TASKING__
-#ifdef EE_MASTER_CPU
+#if (defined(__TASKING__))
+#if (defined(EE_MASTER_CPU))
 /* Symbol remapping already done */
 
 #elif (EE_CURRENTCPU == 1)
@@ -160,7 +168,8 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc2Yx_ack_signal( EE_TYPECOREID cpu )
 #define EE_E_CSA          _lc_ue_csa_tc1      /* Context Save Area end  */
 
 #define EE_C_INIT_TC      _c_init_tc1         /* C initialization function */
-#define EE_TC2YX_START    EE_COMPILER_SECTION(EE_tc2Yx_cpu1_start) EE_tc2Yx_cpu1_start /* Core Start-up code entry */
+#define EE_TC2YX_START    EE_COMPILER_SECTION(EE_tc2Yx_cpu1_start)\
+  EE_tc2Yx_cpu1_start /* Core Start-up code entry */
 
 #elif (EE_CURRENTCPU == 2)
 /* Start-Up Symbols Remapping */
@@ -177,7 +186,8 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc2Yx_ack_signal( EE_TYPECOREID cpu )
 #define EE_E_CSA          _lc_ue_csa_tc2      /* Context Save Area end  */
 
 #define EE_C_INIT_TC      _c_init_tc2         /* C initialization function */
-#define EE_TC2YX_START    EE_COMPILER_SECTION(EE_tc2Yx_cpu2_start) EE_tc2Yx_cpu2_start /* Core Start-up code entry */
+#define EE_TC2YX_START    EE_COMPILER_SECTION(EE_tc2Yx_cpu2_start)\
+  EE_tc2Yx_cpu2_start /* Core Start-up code entry */
 
 #else
 #error Unknown CPU ID

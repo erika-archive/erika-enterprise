@@ -60,7 +60,7 @@ SECTIONS
   /*
    * Section for interrupt table
    */
-  CORE_SEC(.inttab) : ALIGN(32) FLAGS(axl)
+  CORE_SEC(.inttab) : ALIGN(8192) FLAGS(axl)
   {
     PROVIDE(__inttab_start = .);
     KEEP (*(.inttab));

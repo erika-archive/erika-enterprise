@@ -9,7 +9,6 @@
 ; initialize and start the debugger
 
   RESet
-
   SYStem.CPU TC27*
 
   IF CPUIS("TC27*A")||CPUIS("TC27*E")||CPUIS("TC27*F")

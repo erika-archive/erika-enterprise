@@ -19,4 +19,3 @@ SECTIONS {
   /* Make sure that EE_tc2Yx_cpu1_start symbol is in the right place. */
   _. = ASSERT (EE_tc2Yx_cpu1_start == 0x80200000, "EE_tc2Yx_cpu1_start is not in the right place");
 
-

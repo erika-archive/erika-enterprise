@@ -156,6 +156,9 @@ static void __NEVER_INLINE__ EE_tc_dummy_context( EE_TID tid )
   /* Read EE_terminate_real_th_body still in kernel protection set */
   task_body = EE_terminate_real_th_body[tid];
 
+  /* Before call the body of the TASK, monitor its STACK */
+  EE_as_monitoring_the_stack();
+
   /* Set protection domain for the new created TASK */
   EE_tc_set_os_app_term_prot_set(tid);
 

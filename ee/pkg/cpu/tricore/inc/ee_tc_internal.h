@@ -117,8 +117,11 @@ __INLINE__ void __ALWAYS_INLINE__ EE_hal_start_core( EE_TYPECOREID core_id,
 }
 
 /** @brief HAL for core synchronization inside the Kernel */
-void EE_hal_sync_barrier ( EE_TYPEBARRIER *bar,
-  EE_UREG volatile * p_wait_mask );
+void EE_hal_sync_barrier (
+  EE_TYPEBARRIER *   bar,
+  EE_UREG volatile * p_wait_mask,
+  EE_VOID_CALLBACK   p_cb
+);
 
 #ifndef EE_USE_CUSTOM_STARTUP_CODE
 /* EE Default Startup code used: declare Slave Cores entry points */
@@ -130,12 +133,6 @@ extern void EE_tc27x_cpu2_start ( void );
 /*******************************************************************************
                     HAL For Primitives Synchronization
  ******************************************************************************/
-
-/* Mask used to reset CCPN field in flags dull variable */
-#define EE_TC_RESET_ICR_CCPN 0xFFFFFF00U
-/* Macro used to adjust flags dull variable with new priority */
-#define EE_TC_ADJUST_FLAGS_WITH_NEW_PRIO(flags, prio) \
-  (((flags) & EE_TC_RESET_ICR_CCPN) | (prio))
 
 /* Called as _first_ function of a primitive that can be called from within
  * an IRQ and from within a task. */
@@ -355,7 +352,9 @@ __INLINE__ EE_ADDR __ALWAYS_INLINE__ EE_tc_get_prev_stack( void )
 #endif /* __IRQ_STACK_NEEDED__ */
 
 /*******************************************************************************
-        Erika internal software free running counter HAL support (CCNT)
+          Erika internal software free running counter HAL support
+  N.B. Software Free Running Timer (SWFRT) could be configured in any case, but
+       for now it is tied to Timing Protection.
 *******************************************************************************/
 /* Deprecated since it seems that cannot be used without a debugger connected
    to the board */
@@ -493,14 +492,22 @@ void EE_hal_terminate_other_task( EE_TID tid );
 #define EE_TC_PCXI_ICR_PIE_BIT  (1U << 21U)
 #endif
 
+/* Mask used to get PCPN field in flags dull variable */
+/* #define EE_TC_MASK_PCXI_PCPN (((1U << 8U) - 1U) << 22U) */
+#define EE_TC_MASK_PCXI_PCPN  0x3FC00000U
+/* Mask used to reset PCPN field in flags dull variable */
+#define EE_TC_RESET_PCXI_PCPN (~EE_TC_MASK_PCXI_PCPN)
+/* Get value of PCPN in PCXI mask */
+#define EE_TC_EXTRACT_PCXI_PCPN(pcxi) ((pcxi & EE_TC_MASK_PCXI_PCPN) >> 22U)
+/* Set new value of PCPN in PCXI mask */
+#define EE_TC_SET_PCXI_PCPN(pcxi, prio) \
+  ((pcxi) & EE_TC_RESET_PCXI_PCPN) | (((prio) & 0xFFU) << 22U)
+
 /*
    The following MACROS are used inside AS Kernel to handle bitmask
    representing the machine IRQ status.
  */
 
-/* Initial state for ISR global variable, IRQ state value at the time
-   DisableAllInterrupts() is called. */
-#define EE_HAL_IRQSTATE_INVALID ((EE_FREG)EE_TC_PCXI_ICR_PIE_BIT)
 /* There's nothig like a valid flag for TriCore */
 #define EE_hal_set_irq_valid_flag(f) ((f) | EE_TC_PCXI_ICR_PIE_BIT)
 /* Clear the IRQ flag */
@@ -509,14 +516,41 @@ void EE_hal_terminate_other_task( EE_TID tid );
 #define EE_hal_copy_irq_flag(from, to) (((to) & ~EE_TC_PCXI_ICR_PIE_BIT) | \
   ((from) & EE_TC_PCXI_ICR_PIE_BIT))
 
+__INLINE__ EE_FREG __ALWAYS_INLINE__
+  EE_hal_set_max_isr2_pri_flag ( EE_FREG next )
+{
+  EE_TYPEISR2PRIO prio = EE_TC_EXTRACT_PCXI_PCPN(next);
+
+  if ( prio < EE_MAX_ISR2_PRI ) {
+    next = EE_TC_SET_PCXI_PCPN(next, EE_MAX_ISR2_PRI);
+  }
+
+  return next;
+}
+
+__INLINE__ EE_FREG __ALWAYS_INLINE__
+  EE_hal_copy_pri_flag ( EE_FREG from, EE_FREG to )
+{
+  /* Extract CCPN value from 'from' flags and set it to 'to' flags */
+  return ((to & EE_TC_RESET_PCXI_PCPN) | (from & EE_TC_MASK_PCXI_PCPN));
+}
+
 /* Name remapping for compiler Abstraction (I cannot use inline function,
    because _syscall is a macro that stringify her param, so I have to rely
    on preprocessor macro substitution) */
-#ifdef __TASKING__
+#if (defined(__TASKING__))
+#if (defined(EE_TC_TURN_ON_SYSCALL_WORKAROUND))
+#define EE_tc_syscall(tin) do { __syscallfunc(tin); EE_tc_isync(); } while ( 0 )
+#else
 #define EE_tc_syscall(tin) __syscallfunc(tin)
+#endif /* EE_TC_TURN_ON_SYSCALL_WORKAROUND */
+#else  /* __TASKING__ */
+#if (defined(EE_TC_TURN_ON_SYSCALL_WORKAROUND))
+#define EE_tc_syscall(tin) do { _syscall(tin); EE_tc_isync(); } while ( 0 )
 #else
 #define EE_tc_syscall(tin) _syscall(tin)
-#endif
+#endif /* EE_TC_TURN_ON_SYSCALL_WORKAROUND */
+#endif /* __TASKING__ */
 
 #endif /* __EE_MEMORY_PROTECTION__ */
 #endif /* EE_AS_OSAPPLICATIONS__ */
@@ -557,20 +591,40 @@ void EE_tc_enable_protections( void );
 /*******************************************************************************
                       Stack Monitoring Internal Support
  ******************************************************************************/
+#if (!(defined(EE_STACK_WORDS_CHECK)))
+#define EE_STACK_WORDS_CHECK 1U
+#endif
 
-__INLINE__ EE_INT32 __ALWAYS_INLINE__
-  EE_tc_check_stack_overflow_with_sp( EE_UREG tos, EE_ADDR sp)
+__INLINE__ EE_TYPEBOOL __ALWAYS_INLINE__
+  EE_tc_check_stack_overflow_with_sp( EE_UREG stktop, EE_ADDR sp)
 {
-  return ( (*((EE_STACK_T *)EE_tc_system_bos[tos].end_stack)) !=
-      EE_TC_STACK_FILL_PATTERN  ) ||
-    ( sp < EE_tc_system_bos[tos].end_stack ) ||
-    ( sp > EE_tc_system_bos[tos].base_stack );
+  EE_UREG      i;
+  EE_STACK_T * p_end_stack;
+  EE_TYPEBOOL  is_overflow = EE_FALSE;
+#if (!defined(EE_AS_OSAPPLICATIONS__)) && (defined(__IRQ_STACK_NEEDED__))
+  if ( stktop == ((EE_UREG)-1) ) {
+    p_end_stack = (EE_STACK_T *)EE_tc_IRQ_tos.SYS_bos;
+    is_overflow = ( (sp < EE_tc_IRQ_tos.SYS_bos) ||
+      (sp > EE_tc_IRQ_tos.SYS_tos) );
+  } else
+#endif /* !EE_AS_OSAPPLICATIONS__ && __IRQ_STACK_NEEDED__ */
+  {
+    p_end_stack = (EE_STACK_T *)EE_tc_system_bos[stktop].end_stack;
+    is_overflow = ( (sp < EE_tc_system_bos[stktop].end_stack) ||
+      (sp > EE_tc_system_bos[stktop].base_stack) );
+  }
+
+  for ( i = 0; i < EE_STACK_WORDS_CHECK && (!is_overflow); ++i ) {
+    is_overflow = (p_end_stack[i] != EE_STACK_FILL_PATTERN);
+  }
+
+  return is_overflow;
 }
 
-__INLINE__ EE_INT32 __ALWAYS_INLINE__ EE_TC_CHANGE_STACK_POINTER
-  EE_tc_check_stack_overflow( EE_UREG tos )
+__INLINE__ EE_TYPEBOOL __ALWAYS_INLINE__ EE_TC_CHANGE_STACK_POINTER
+  EE_tc_check_stack_overflow( EE_UREG stktop )
 {
-  return EE_tc_check_stack_overflow_with_sp(tos, EE_tc_get_SP());
+  return EE_tc_check_stack_overflow_with_sp(stktop, EE_tc_get_SP());
 }
 #endif /* EE_STACK_MONITORING__ */
 
