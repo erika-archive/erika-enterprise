@@ -44,7 +44,7 @@
  *         2011 Bernardo  Dal Seno
  */
 
-#include <ee_internal.h>
+#include "ee_internal.h"
 #include "cpu/e200zx/inc/ee_irq_internal.h"
 #include "cpu/e200zx/inc/ee_mcu_regs.h"
 
@@ -66,9 +66,9 @@ void EE_e200z7_register_ISR(EE_UINT16 level, EE_e200z7_ISR_handler fun, EE_UINT8
 
 	/* Set priority for external interrupts */
 	if (level >= EE_E200ZX_MAX_CPU_EXCP_C) {
-	        #if 0
-		proc = EE_E200ZX_INTC_CURRPROC;
-		#endif
+#if 0
+        proc = EE_E200ZX_INTC_CURRPROC;
+#endif
 		SET_INT_PRIO(level, pri);
 	}
 
@@ -83,6 +83,9 @@ void EE_e200z7_irq(EE_UREG level)
 {
 	EE_e200z7_ISR_handler fh;
 	EE_ORTI_runningisr2_type ortiold;
+
+	/* Monitor the preempted stack */
+	EE_as_monitoring_the_stack();
 
 	EE_increment_IRQ_nesting_level();
 	fh = EE_e200z7_ISR_table[level];
@@ -103,17 +106,19 @@ void EE_e200z7_irq(EE_UREG level)
 			 9.4.3.1.2 End-of-Interrupt Exception Handler NOTE
 		*/
 		EE_e200zx_mbar();
-		INTC_EOIR.R = 0U;
+		INTC_EOIR = 0U;
 	}
 	EE_decrement_IRQ_nesting_level();
 	if (!EE_is_inside_ISR_call()) {
 		/*
-		 * Outer nesting level: call the scheduler.  If we have
+		 * Outer nesting level: call the scheduler. If we have
 		 * also type-ISR1 interrupts, the scheduler should be
 		 * called only for type-ISR2 interrupts.
-		 * WTF?  It doesn't work, does it?
+		 * WTF? It doesn't work, does it?
 		 */
 		EE_std_after_IRQ_schedule();
+		/* Monitor the returning stack */
+		EE_as_monitoring_the_stack();
 	}
 }
 

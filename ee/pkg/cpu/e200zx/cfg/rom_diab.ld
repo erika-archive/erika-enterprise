@@ -52,6 +52,8 @@ SECTIONS
 
 	GROUP : {
 		.text : {
+			*(ee_kernel_text)
+			*(ee_api_text)
 			*(.text)
 			*(.text_vle)
 			*(.init)
@@ -68,22 +70,33 @@ SECTIONS
 	} > iflash
 
 	GROUP : {
+		ee_sstack = . ;
+		.stack : {
+			*(".stack*")
+		}
+		ee_estack = . ;
 		ee_sdata = . ;
-		.data LOAD(ee_load_ram): { }
+		.data LOAD(ee_load_ram): {
+			*(ee_kernel_data)
+			*(ee_api_data)
+		}
 
 		.sram_text LOAD(ee_load_ram + ADDR(.sram_text) - ADDR(.data)): { }
 
-		.sdata LOAD(ee_load_ram + ADDR(.sdata) - ADDR(.data)): { }
+		.sdata LOAD(ee_load_ram + ADDR(.sdata) - ADDR(.data)): {
+			*(ee_kernel_sdata)
+			*(ee_api_sdata)
+		}
 
 		ee_sbss = . ;
-		.sbss : { }
-		.bss : { }
-		ee_ebss = . ;
-
-		ee_sstack = . ;
-		.stack : {
-			*(.stack)
+		.sbss : {
+			*(ee_kernel_sbss)
+			*(ee_api_sbss)
 		}
-		ee_estack = . ;
+		.bss : {
+			*(ee_kernel_bss)
+			*(ee_api_bss)
+		}
+		ee_ebss = . ;
 	} > isram
 }

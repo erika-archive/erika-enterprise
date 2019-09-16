@@ -42,30 +42,11 @@
  * Author: 2010 Fabio Checconi
  */
 
-#ifndef PKG_CPU_E200ZX_INC_EE_IRQ_H
-#define PKG_CPU_E200ZX_INC_EE_IRQ_H
+#ifndef PKG_CPU_E200ZX_INC_EE_E200ZX_IRQ_H
+#define PKG_CPU_E200ZX_INC_EE_E200ZX_IRQ_H
 
 /* CPU-dependent part of HAL that have to be seen by user code */
 #include "ee_cpu_os.h"
-
-
-/* ISR priority level defines */
-#define EE_ISR_UNMASKED 0U
-#define EE_ISR_PRI_1  1U
-#define EE_ISR_PRI_2  2U
-#define EE_ISR_PRI_3  3U
-#define EE_ISR_PRI_4  4U
-#define EE_ISR_PRI_5  5U
-#define EE_ISR_PRI_6  6U
-#define EE_ISR_PRI_7  7U
-#define EE_ISR_PRI_8  8U
-#define EE_ISR_PRI_9  9U
-#define EE_ISR_PRI_10 10U
-#define EE_ISR_PRI_11 11U
-#define EE_ISR_PRI_12 12U
-#define EE_ISR_PRI_13 13U
-#define EE_ISR_PRI_14 14U
-#define EE_ISR_PRI_15 15U
 
 #if (defined(__RN__)) && (defined (EE_ISR_DYNAMIC_TABLE))
 
@@ -90,6 +71,13 @@
 #endif  /* defined(__ALLOW_NESTED_IRQ__) &&
   (!defined(__EE_MEMORY_PROTECTION__)) */
 
+/* Stack Monitoring function used Internally in Kernel primitives.
+   The official declaration is inside ee_as_internal.h,
+   that cannot be included here...
+   So I need to declare it explicitly here */
+#if (defined(EE_STACK_MONITORING__))
+extern void EE_as_monitoring_the_stack( void );
+#endif /* EE_STACK_MONITORING__ */
 
 /*
   For memory protection the stack is changed within the prestub and the postub
@@ -156,6 +144,10 @@ __INLINE__ EE_ORTI_runningisr2_type __ALWAYS_INLINE__ EE_ISR2_prestub(
 {
   /* keep the old ORTI */
   EE_ORTI_runningisr2_type ortiold;
+  /* Monitor the preempted stack */
+#if (defined(EE_STACK_MONITORING__))
+  EE_as_monitoring_the_stack();
+#endif /* EE_STACK_MONITORING__ */
   /* increment nesting level here, with isr disabled */
   EE_increment_IRQ_nesting_level();
   /* Save the old ORTI ID */
@@ -182,6 +174,10 @@ __INLINE__ void __ALWAYS_INLINE__ EE_ISR2_poststub(
   /* check for scheduling point */
   if (!EE_is_inside_ISR_call()) {
     EE_std_after_IRQ_schedule();
+    /* Monitor the returning stack */
+#if (defined(EE_STACK_MONITORING__))
+    EE_as_monitoring_the_stack();
+#endif /* EE_STACK_MONITORING__ */
   }
 }
 
@@ -198,6 +194,10 @@ __INLINE__ void __ALWAYS_INLINE__ EE_ISR2_INT_poststub(
   /* check for scheduling point */
   if (!EE_is_inside_ISR_call()) {
     EE_std_after_IRQ_schedule();
+    /* Monitor the returning stack */
+#if (defined(EE_STACK_MONITORING__))
+    EE_as_monitoring_the_stack();
+#endif /* EE_STACK_MONITORING__ */
   }
 }
 #endif /* EE_ISR_DYNAMIC_TABLE */
@@ -222,7 +222,7 @@ __INLINE__ void __ALWAYS_INLINE__ EE_ISR2_INT_poststub(
     register handlers for internal exception.
 */
 
-#define ISR1_PART1(f)						      \
+#define ISR1_PART1(f)						                          \
   EE_increment_IRQ_nesting_level();                                   \
   /* This handle stack change and nesting */                          \
   EE_e200zx_call_ISR(EE_PREPROC_JOIN(ISR1_,f), EE_IRQ_nesting_level); \
@@ -230,7 +230,7 @@ __INLINE__ void __ALWAYS_INLINE__ EE_ISR2_INT_poststub(
   /* 9.4.3.1.2 EOIE Handler NOTE */                                   \
   EE_e200zx_mbar();
 
-#define ISR1_PART2 \
+#define ISR1_PART2                                                    \
   EE_INTC_EOIR = 0U;                                                  \
   /* decrement nesting level */                                       \
   EE_decrement_IRQ_nesting_level();                                   \
@@ -240,19 +240,19 @@ __INLINE__ void __ALWAYS_INLINE__ EE_ISR2_INT_poststub(
 void EE_PREPROC_JOIN(ISR1_,f)(void);\
 void f(void)                        \
 {                                   \
-ISR1_PART1(f)			    \
-ISR1_PART2			    \
+ISR1_PART1(f)                       \
+ISR1_PART2                          \
 }                                   \
 void EE_PREPROC_JOIN(ISR1_,f)(void)
 
 
-#define ISR2_PART1(f) \
+#define ISR2_PART1(f)               \
   /* keep the old ORTI */           \
   EE_ORTI_runningisr2_type ortiold; \
   /* handle ORTI ID */              \
   ortiold = EE_ISR2_prestub(f);
 
-#define ISR2_PART2(f) \
+#define ISR2_PART2(f)                                                 \
   /* This handle stack change and nesting */                          \
   EE_e200zx_call_ISR(EE_PREPROC_JOIN(ISR2_,f), EE_IRQ_nesting_level); \
   /* poststub do clean-up and scheduling and INTC PRIO pop */         \
@@ -263,7 +263,7 @@ void EE_PREPROC_JOIN(ISR2_,f)(void); \
 void f(void)                         \
 {                                    \
 ISR2_PART1(f)                        \
-ISR2_PART2(f)			     \
+ISR2_PART2(f)			             \
 }                                    \
 void EE_PREPROC_JOIN(ISR2_,f)(void)
 
@@ -280,7 +280,7 @@ void EE_PREPROC_JOIN(ISR2_,f)(void)
 void EE_PREPROC_JOIN(ISR1_INT_,f)(void); \
 void f(void)                             \
 {                                        \
-  ISR1_INT_PART1(f)			 \
+  ISR1_INT_PART1(f)                      \
   /* decrement nesting level */          \
   EE_decrement_IRQ_nesting_level();      \
 }                                        \
@@ -311,4 +311,4 @@ void EE_PREPROC_JOIN(ISR2_INT_,f)(void)
 #include "ee_irq_mem_prot.h"
 #endif /* else __EE_MEMORY_PROTECTION__ */
 
-#endif
+#endif /* PKG_CPU_E200ZX_INC_EE_E200ZX_IRQ_H */

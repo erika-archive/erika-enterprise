@@ -50,7 +50,12 @@ SECTIONS
 	} > boot
 
 	GROUP : {
+        /* Dummy sections used for shared variables (to make Diab happy) */
+        ee_mcglobalt : { }
+
 		.text : {
+			*(ee_kernel_text)
+			*(ee_api_text)
 			*(.text)
 			*(.text_vle)
 			*(.init)
@@ -68,15 +73,39 @@ SECTIONS
 
 	GROUP : {
 		ee_sdata = . ;
-		.data LOAD(ee_load_ram): { }
+		.data LOAD(ee_load_ram): {
+			*(ee_kernel_data)
+			*(ee_api_data)
+			*(.data)
+		}
+
+        /* Dummy sections used for shared variables (to make Diab happy) */
+        ee_mcglobald : { }
+		ee_small_mcglobald : { }
+        ee_mcglobalc : { }
+        ee_small_mcglobalc : { }
+		ee_mcglobalu : { }
+		ee_small_mcglobalu : { }
 
 		.sram_text LOAD(ee_load_ram + ADDR(.sram_text) - ADDR(.data)): { }
 
-		.sdata LOAD(ee_load_ram + ADDR(.sdata) - ADDR(.data)): { }
+		.sdata LOAD(ee_load_ram + ADDR(.sdata) - ADDR(.data)): {
+			*(ee_kernel_sdata)
+			*(ee_api_sdata)
+			*(.sdata)
+		}
 
 		ee_sbss = . ;
-		.sbss : { }
-		.bss : { }
+		.sbss : {
+			*(ee_kernel_sbss)
+			*(ee_api_sbss)
+			*(.sbss)
+		}
+		.bss : {
+			*(ee_kernel_bss)
+			*(ee_api_bss)
+			*(.bss)
+		}
 		ee_ebss = . ;
 
 		ee_sstack = . ;

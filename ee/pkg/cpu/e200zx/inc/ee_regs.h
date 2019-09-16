@@ -99,7 +99,7 @@
 
 /* IRQ vector  */
 
-#ifdef __PPCE200Z0__
+#if defined(__PPCE200Z0__) || defined(EE_PPCE200Z225) || defined(EE_PPCE200Z420)
 #define E200ZX_IRQ_VECTOR_BASE_ALIGN	4096
 /* Z0 has fixed IVORs, at 16-byte intervals */
 #define E200ZX_IRQ_ENTRY_ALIGN	16
@@ -113,7 +113,7 @@
 #endif
 
 
-#ifdef __PPCE200Z0__
+#if defined(__PPCE200Z0__) || defined(EE_PPCE200Z225) || defined(EE_PPCE200Z420)
 /* Z0 doesn't have any internal timer */
 #define E200ZX_CPU_HAS_TB	0
 #else

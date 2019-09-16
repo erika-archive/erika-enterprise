@@ -44,8 +44,8 @@
  *         2011 Bernardo  Dal Seno
  */
 
-#ifndef PKG_CPU_E200ZX_INC_EE_INTERNAL_H
-#define PKG_CPU_E200ZX_INC_EE_INTERNAL_H
+#ifndef PKG_CPU_E200ZX_INC_EE_E200ZX_INTERNAL_H
+#define PKG_CPU_E200ZX_INC_EE_E200ZX_INTERNAL_H
 
 #include "cpu/e200zx/inc/ee_cpu.h"
 
@@ -62,13 +62,15 @@
 /*************************************************************************
                             System stack
  *************************************************************************/
-#ifdef USE_PRAGMAS
-#pragma section PRAGMA_SECTION_BEGIN_SYS_STACK
-extern EE_STACK_T EE_e200zx_sys_stack[EE_STACK_WLEN(EE_SYS_STACK_SIZE)];
-#pragma section PRAGMA_SECTION_END_SYS_STACK
-#else
+#ifdef EE_SUPPORT_MEMMAP_H
+#define OS_START_SEC_STACK
+#include "MemMap.h"
+#endif /* EE_SUPPORT_MEMMAP_H */
 extern EE_STACK_T EE_STACK_ATTRIB EE_e200zx_sys_stack[EE_STACK_WLEN(EE_SYS_STACK_SIZE)];
-#endif
+#ifdef EE_SUPPORT_MEMMAP_H
+#define OS_STOP_SEC_STACK
+#include "MemMap.h"
+#endif /* EE_SUPPORT_MEMMAP_H */
 
 
 /*************************************************************************
@@ -84,6 +86,12 @@ void EE_initialize_system_timer(void);
 __INLINE__ void __ALWAYS_INLINE__ EE_initialize_system_timer(void) {}
 #endif /* ENABLE_SYSTEM_TIMER && EE_SYSTEM_TIMER_DEVICE */
 
+#if ((defined(EE_STACK_MONITORING__)))
+void EE_e200zx_fill_stacks ( void );
+#else
+__INLINE__ void __ALWAYS_INLINE__ EE_e200zx_fill_stacks ( void ) {}
+#endif
+
 #if (defined(__MSRP__)) \
   || ( (defined(__EE_MEMORY_PROTECTION__)) \
        && ( (defined(__OO_BCC1__)) || (defined(__OO_BCC2__))	\
@@ -96,6 +104,7 @@ EE_TYPEBOOL EE_cpu_startos(void);
 __INLINE__ EE_TYPEBOOL __ALWAYS_INLINE__ EE_cpu_startos(void);
 __INLINE__ EE_TYPEBOOL __ALWAYS_INLINE__ EE_cpu_startos(void)
 {
+  EE_e200zx_fill_stacks();
   EE_initialize_system_timer();
   return EE_FALSE;
 }
@@ -181,13 +190,6 @@ __INLINE__ EE_BIT __ALWAYS_INLINE__ EE_hal_check_int_prio_if_higher(
 	return (actual_prio > new_prio)?1U:0U;
 }
 
-/*******************************************************************************
-                      Special Stacks Data Structures
- ******************************************************************************/
-#if (defined(__IRQ_STACK_NEEDED__))
-extern struct EE_TOS EE_e200z7_IRQ_tos;
-#endif /* __IRQ_STACK_NEEDED__ */
-
 /* typically called at the end of an interrupt by kernel */
 #define EE_hal_IRQ_stacked  EE_hal_endcycle_stacked
 #define EE_hal_IRQ_ready    EE_hal_endcycle_ready
@@ -211,6 +213,59 @@ void EE_hal_terminate_task(EE_TID tid) NORETURN;
 #endif
 
 #endif /* __OO_BCCx */
+
+/*******************************************************************************
+                      Special Stacks Data Structures
+ ******************************************************************************/
+#if (defined(__IRQ_STACK_NEEDED__))
+extern struct EE_SD const EE_e200z7_IRQ_tos;
+#endif /* __IRQ_STACK_NEEDED__ */
+
+#if (defined(EE_AS_PROTECTIONHOOK_HAS_STACK__))
+extern struct EE_SD const EE_e200z7_prot_hook_tos;
+#endif /* EE_AS_PROTECTIONHOOK_HAS_STACK__ */
+
+#if (defined(EE_STACK_MONITORING__))
+/*******************************************************************************
+                      Stack Monitoring Internal Support
+ ******************************************************************************/
+
+#if (!(defined(EE_STACK_WORDS_CHECK)))
+#define EE_STACK_WORDS_CHECK 4U
+#endif
+
+__INLINE__ EE_TYPEBOOL __ALWAYS_INLINE__
+  EE_e200zx_check_stack_overflow_with_sp( EE_UREG stktop, EE_ADDR sp)
+{
+  EE_UREG      i;
+  EE_STACK_T * p_end_stack;
+  EE_TYPEBOOL  is_overflow = EE_FALSE;
+#if (!defined(EE_AS_OSAPPLICATIONS__)) && (defined(__IRQ_STACK_NEEDED__))
+  if ( stktop == ((EE_UREG)-1) ) {
+    p_end_stack = (EE_STACK_T *)EE_e200z7_IRQ_tos.SYS_bos;
+    is_overflow = ( (sp < EE_e200z7_IRQ_tos.SYS_bos) ||
+      (sp > EE_e200z7_IRQ_tos.SYS_tos) );
+  } else
+#endif /* !EE_AS_OSAPPLICATIONS__ && __IRQ_STACK_NEEDED__ */
+  {
+    p_end_stack = (EE_STACK_T *)EE_e200zx_system_bos[stktop].SYS_bos;
+    is_overflow = ( (sp < EE_e200zx_system_bos[stktop].SYS_bos) ||
+      (sp > EE_e200zx_system_bos[stktop].SYS_tos) );
+  }
+
+  for ( i = 0; i < EE_STACK_WORDS_CHECK && (!is_overflow); ++i ) {
+    is_overflow = (p_end_stack[i] != EE_STACK_FILL_PATTERN);
+  }
+
+  return is_overflow;
+}
+
+__INLINE__ EE_TYPEBOOL __ALWAYS_INLINE__
+  EE_e200zx_check_stack_overflow( EE_UREG stktop )
+{
+  return EE_e200zx_check_stack_overflow_with_sp(stktop, EE_e200zx_get_sp());
+}
+#endif /* EE_STACK_MONITORING__ */
 
 #ifdef __ASM_CONVERTED_TO_C__
 /* Prototypes are included only for Erika source files, but they could be useful
@@ -242,4 +297,4 @@ extern int ee_esbss2;
 #endif
 
 
-#endif /* __INCLUDE_E200ZX_INTERNAL_H__ */
+#endif /* PKG_CPU_E200ZX_INC_EE_E200ZX_INTERNAL_H */

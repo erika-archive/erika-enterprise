@@ -40,6 +40,7 @@
 
 /*
  * Author: 2000-2006 Paolo Gai
+ * 	   2016 Giuseppe Serano
  */
 
 #ifndef PKG_EE_INTERNAL_H
@@ -121,7 +122,7 @@ extern "C" {
 #endif
 
 #if (defined(__PPCE200Z7__)) || (defined(__PPCE200ZX__))
-#include "cpu/e200zx/inc/ee_internal.h"
+#include "cpu/e200zx/inc/ee_e200zx_internal.h"
 #endif
 
 #ifdef __ESI_RISC__
@@ -215,8 +216,15 @@ extern "C" {
 
 /* Tricore */
 
-/* Tricore TC26X || TC27x */
-#if (defined(EE_TRICORE__)) && ( (defined(EE_TC26X__)) || (defined(EE_TC27X__)) )
+/* Tricore TC26X || TC27x || TC29x */
+#if (						\
+	(defined(EE_TRICORE__)) &&		\
+	(					\
+		(defined(EE_TC26X__)) ||	\
+		(defined(EE_TC27X__)) ||	\
+		(defined(EE_TC29X__))		\
+	)					\
+)
 #include "mcu/infineon_common_tc2Yx/inc/ee_tc2Yx_internal.h"
 #endif
 

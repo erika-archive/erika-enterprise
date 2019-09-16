@@ -44,8 +44,8 @@
  * Author: 2010,  Fabio Checconi
  */
 
-#include <eecfg.h>
-#include <cpu/e200zx/inc/ee_regs.h>
+#include "eecfg.h"
+#include "cpu/e200zx/inc/ee_regs.h"
 
 	.text
 
@@ -97,6 +97,16 @@ EE_hal_terminate_savestk:
 	stw	r31, 80(sp)
 #endif
 
+#if (defined(EE_STACK_MONITORING__))
+  /* Call STACk monitoring procedure after have created the context to return
+     to: I don't want execute the TASK if stack corruption could have happened.
+     Since I have a brand new TASK context, here I use a non-volatile register
+     (r31) to hold r5 (TASK body) before call stack monitoring procedure. */
+  addi r31, r5, 0
+  bl EE_as_monitoring_the_stack
+  /* Restore TASK Body Value on r5 */
+  addi r5, r31, 0
+#endif /* EE_STACK_MONITORING__ */
 	/* Start the thread body */
 	mtlr	r5
 #if !defined(__EE_MEMORY_PROTECTION__)

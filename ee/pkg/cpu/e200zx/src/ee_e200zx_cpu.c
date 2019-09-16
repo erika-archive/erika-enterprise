@@ -43,15 +43,20 @@
  *         2010  Fabio Checconi
  */
 
-#include <ee_internal.h>
+#include "ee_internal.h"
 
-#ifdef USE_PRAGMAS
-#pragma section PRAGMA_SECTION_BEGIN_SYS_STACK
-EE_STACK_T EE_e200zx_sys_stack[EE_STACK_WLEN(EE_SYS_STACK_SIZE)];
-#pragma section PRAGMA_SECTION_END_SYS_STACK
-#else
-EE_STACK_T EE_STACK_ATTRIB EE_e200zx_sys_stack[EE_STACK_WLEN(EE_SYS_STACK_SIZE)];
-#endif
+#if (!defined(EE_MM_OPT))
+#ifdef EE_SUPPORT_MEMMAP_H
+#define OS_START_SEC_STACK
+#include "MemMap.h"
+#endif /* EE_SUPPORT_MEMMAP_H */
+EE_STACK_T EE_STACK_ATTRIB
+	EE_e200zx_sys_stack[EE_STACK_WLEN(EE_SYS_STACK_SIZE)];
+#ifdef EE_SUPPORT_MEMMAP_H
+#define OS_STOP_SEC_STACK
+#include "MemMap.h"
+#endif /* EE_SUPPORT_MEMMAP_H */
+#endif /* !EE_MM_OPT */
 
 #if (defined(__EE_MEMORY_PROTECTION__)) && (defined(OO_CPU_HAS_STARTOS_ROUTINE))
 EE_TYPEBOOL EE_cpu_startos(void)
@@ -60,6 +65,8 @@ EE_TYPEBOOL EE_cpu_startos(void)
 	for (i = 0U; i < EE_MAX_APP; i++) {
 		EE_hal_app_init(&(EE_as_Application_ROM[i].sec_info));
 	}
+	EE_e200zx_fill_stacks();
+
 	/* When the MMU is set up, access to an application space is permitted
 	 * only if the CPU PID matches the application; so application memory is
 	 * initialized before configuring the MMU. */
@@ -71,6 +78,113 @@ EE_TYPEBOOL EE_cpu_startos(void)
 	return 0;
 }
 #endif /* __EE_MEMORY_PROTECTION__ && OO_CPU_HAS_STARTOS_ROUTINE */
+
+#if (defined(EE_STACK_MONITORING__))
+
+typedef void (*p_func) (void);
+
+void EE_e200zx_fill_stacks ( void ) {
+  EE_UREG i;
+  EE_ADDR const sp = EE_e200zx_get_sp();
+  {
+    EE_STACK_T * p_end_stack = EE_e200zx_system_bos[0].SYS_tos;
+    EE_STACK_T * p_stack     = EE_e200zx_system_bos[0].SYS_bos;
+    if ( p_end_stack > sp ) {
+      p_end_stack = sp;
+    }
+    /* Here I need p_stack to be stricly less than p_end_stack, because
+       p_end_stack point to stack allocated memory location. */
+    while ( p_stack < p_end_stack ) {
+      (*p_stack) = EE_STACK_FILL_PATTERN;
+      ++p_stack;
+    }
+  }
+  for ( i = 1U; i < EE_E200Z7_SYSTEM_TOS_SIZE; ++i ) {
+    EE_STACK_T * const p_end_stack = EE_e200zx_system_bos[i].SYS_tos;
+    EE_STACK_T *       p_stack     = EE_e200zx_system_bos[i].SYS_bos;
+    while ( p_stack <= p_end_stack ) {
+      (*p_stack) = EE_STACK_FILL_PATTERN;
+      ++p_stack;
+    }
+  }
+#if (defined(__IRQ_STACK_NEEDED__))
+  {
+    EE_STACK_T * const p_end_stack = EE_e200z7_IRQ_tos.SYS_tos;
+    EE_STACK_T *       p_stack     = EE_e200z7_IRQ_tos.SYS_bos;
+    while ( p_stack <= p_end_stack ) {
+      (*p_stack) = EE_STACK_FILL_PATTERN;
+      ++p_stack;
+    }
+  }
+#endif /* __IRQ_STACK_NEEDED__ */
+
+#if (defined(EE_AS_PROTECTIONHOOK_HAS_STACK__))
+  {
+    EE_STACK_T * const p_end_stack = EE_e200z7_prot_hook_tos.SYS_tos;
+    EE_STACK_T *       p_stack     = EE_e200z7_prot_hook_tos.SYS_bos;
+    while ( p_stack <= p_end_stack ) {
+      (*p_stack) = EE_STACK_FILL_PATTERN;
+      ++p_stack;
+    }
+  }
+#endif /* EE_AS_PROTECTIONHOOK_HAS_STACK__ */
+}
+
+extern void EE_e200zx_call_function_in_new_stack(EE_UREG param, p_func,
+  EE_ADDR new_sp);
+
+void EE_as_check_and_handle_stack_overflow( EE_UREG stktop )
+{
+  if ( EE_e200zx_check_stack_overflow(stktop) ) {
+    /* Just be sure to handle the overflow with the interrupts disabled */
+    EE_hal_disableIRQ();
+#if (defined(EE_AS_HAS_PROTECTIONHOOK__))
+#if (defined(EE_AS_PROTECTIONHOOK_HAS_STACK__))
+    /* The stack is corrupted I have to switch to a new one.
+       Actually I will use ISR stack, but probably this will change */
+    EE_e200zx_call_function_in_new_stack(E_OS_STACKFAULT,
+      EE_as_handle_protection_error, EE_e200z7_prot_hook_tos.SYS_tos);
+#elif (defined(__IRQ_STACK_NEEDED__))
+    /* The stack is corrupted I have to switch to a new one.
+       I can use ISR stack, because as effect of ProtectionHook, I will
+       Terminate the active ISR/TASK at least. */
+    EE_e200zx_call_function_in_new_stack(E_OS_STACKFAULT,
+      EE_oo_ShutdownOS_internal, EE_e200z7_IRQ_tos.SYS_tos);
+#else
+    EE_as_handle_protection_error(E_OS_STACKFAULT);
+#endif /* EE_AS_PROTECTIONHOOK_HAS_STACK__ || __IRQ_STACK_NEEDED__ */
+#else
+#if (defined(__IRQ_STACK_NEEDED__))
+    /* The stack is corrupted I have to switch to a new one.
+       I can use ISR stack, because as effect of ProtectionHook, I will
+       Terminate the active ISR/TASK at least. */
+    EE_e200zx_call_function_in_new_stack(E_OS_STACKFAULT,
+      EE_oo_ShutdownOS_internal, EE_e200z7_IRQ_tos.SYS_tos);
+#else
+    EE_oo_ShutdownOS_internal( E_OS_STACKFAULT );
+#endif /* __IRQ_STACK_NEEDED__ */
+#endif /* EE_AS_HAS_PROTECTIONHOOK__ */
+  }
+}
+
+void EE_as_restore_stack_canary ( EE_UREG stktop ) {
+  EE_UREG      i;
+  EE_STACK_T * p_end_stack;
+#if (!defined(EE_AS_OSAPPLICATIONS__)) && (defined(__IRQ_STACK_NEEDED__))
+  if ( stktop == ((EE_UREG)-1) ) {
+    p_end_stack = (EE_STACK_T *)EE_e200z7_IRQ_tos.SYS_bos;
+  } else
+#endif /* !EE_AS_OSAPPLICATIONS__ && __IRQ_STACK_NEEDED__ */
+  {
+    p_end_stack = (EE_STACK_T *)EE_e200zx_system_bos[stktop].SYS_bos;
+  }
+
+  for ( i = 0; i < EE_STACK_WORDS_CHECK; ++i ) {
+    p_end_stack[i] = EE_STACK_FILL_PATTERN;
+  }
+}
+
+#endif /* EE_STACK_MONITORING__ */
 
 
 #ifdef __EE_MEMORY_PROTECTION__

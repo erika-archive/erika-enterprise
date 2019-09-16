@@ -51,7 +51,27 @@ SECTIONS
 	} > boot
 
 	GROUP : {
+        ee_mcglobalt : {
+            *(.text[ErrorHook])
+            *(.text[StartupHook])
+            *(.text[ErrorHook])
+            *(.text[ShutdownHook])
+           /* *(.text[PreTaskHook]) */
+           /* *(.text[PostTaskHook]) */
+            *(.text[ProtectionHook])
+            *(.text_vle[ErrorHook])
+            *(.text_vle[StartupHook])
+            *(.text_vle[ErrorHook])
+            *(.text_vle[ShutdownHook])
+           /* *(.text_vle[PreTaskHook]) */
+           /* *(.text_vle[PostTaskHook]) */
+            *(.text_vle[ProtectionHook])
+            *(ee_mcglobalt)
+        }
+
 		.text : {
+			*(ee_kernel_text)
+			*(ee_api_text)
 			*(.text)
 			*(.text_vle)
 			*(.init)
@@ -68,27 +88,47 @@ SECTIONS
 			*(.sdata2)
 			*(.sbss2)
 		 }
+
+		ee_ssmall_mcglobalc = .;
+		ee_small_mcglobalc : { }
+		ee_esmall_mcglobalc = .;
+
 		ee_load_ram = . ;
 	} > iflash
 
 	GROUP : {
 		ee_sdata = . ;
-		.data LOAD(ee_load_ram): { }
+		.data LOAD(ee_load_ram): {
+			*(ee_kernel_data)
+			*(ee_api_data)
+			*(.data)
+		}
 
 		.sram_text LOAD(ee_load_ram + ADDR(.sram_text) - ADDR(.data)): { }
 
+		.sdata LOAD(ee_load_ram + ADDR(.sdata) - ADDR(.data)): {
+			*(ee_kernel_sdata)
+			*(ee_api_sdata)
+			*(.sdata)
+		}
 		ee_smcglobald = . ;
 		ee_mcglobald LOAD(ee_load_ram + ADDR(ee_mcglobald) - ADDR(.data)): { }
-                ee_fast_mcglobald LOAD(ee_load_ram + ADDR(ee_fast_mcglobald) - ADDR(.data)): { }
+        ee_small_mcglobald LOAD(ee_load_ram + ADDR(ee_small_mcglobald) - ADDR(.data)): { }
 		ee_emcglobald = . ;
 
-		.sdata LOAD(ee_load_ram + ADDR(.sdata) - ADDR(.data)): { }
-
 		ee_sbss = . ;
-		.sbss : { }
-                ee_fast_mcglobalu LOAD(ee_load_ram + ADDR(ee_fast_mcglobalu) - ADDR(.data)): { }
-		.bss : { }
-                ee_mcglobalu LOAD(ee_load_ram + ADDR(ee_mcglobald) - ADDR(.data)): { }
+		.sbss : {
+			*(ee_kernel_sbss)
+			*(ee_api_sbss)
+			*(.sbss)
+		}
+        ee_small_mcglobalu LOAD(ee_load_ram + ADDR(ee_small_mcglobalu) - ADDR(.data)): { }
+		.bss : {
+			*(ee_kernel_bss)
+			*(ee_api_bss)
+			*(.bss)
+		}
+        ee_mcglobalu LOAD(ee_load_ram + ADDR(ee_mcglobalu) - ADDR(.data)): { }
 		ee_ebss = . ;
 
 		ee_sstack = . ;

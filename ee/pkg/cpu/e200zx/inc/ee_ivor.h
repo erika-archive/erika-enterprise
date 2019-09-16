@@ -47,7 +47,7 @@
 #define __EE_CPU_E200ZX_IVOR_H__
 
 #ifdef __ASM_CONVERTED_TO_C__
-#include <cpu/e200zx/inc/ee_irq_internal.h>
+#include "cpu/e200zx/inc/ee_irq_internal.h"
 #endif
 
 #define handler_prologue	bl	save_registers

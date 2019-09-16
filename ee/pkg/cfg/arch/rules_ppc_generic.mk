@@ -66,7 +66,7 @@ endif
 
 # MCU
 ifeq ($(call iseeopt, __MPC5674F__), yes)
-PPC_MCU_MODEL = mpc5674f
+PPC_MCU_MODEL = freescale_mpc5674f
 T32_FLASH_BIN = c90fl5674.bin
 endif
 ifeq ($(call iseeopt, __MPC5668G__), yes)
@@ -74,11 +74,11 @@ ifeq ($(call iseeopt, __MPC5668G__), yes)
 EEOPT += __MPC5668__
 endif
 ifeq ($(call iseeopt, __MPC5668__), yes)
-PPC_MCU_MODEL = mpc5668
+PPC_MCU_MODEL = freescale_mpc5668
 T32_FLASH_BIN = c90fl5668.bin
 endif
 ifeq ($(call iseeopt, EE_MPC5643L), yes)
-PPC_MCU_MODEL = mpc5643l
+PPC_MCU_MODEL = freescale_mpc5643l
 T32_FLASH_BIN = c90fl564xl.bin
 ifeq ($(call iseeopt, LOCK_STEP), yes)
 # MPC5643L supports Lock step mode
@@ -90,8 +90,35 @@ LS_FLAG =
 endif
 endif
 ifeq ($(call iseeopt, EE_MPC5644A), yes)
-PPC_MCU_MODEL = mpc5644a
+PPC_MCU_MODEL = freescale_mpc5644a
 T32_FLASH_BIN = c90fl5674.bin
+endif
+ifeq ($(call iseeopt, EE_MPC5777C), yes)
+PPC_MCU_MODEL = freescale_mpc5777c
+T32_FLASH_BIN = c55fm5777c.bin
+
+# Master core of MPC5777C (running from Flash) has a specific linker script
+ifeq ($(call iseeopt, __MSRP__), yes)
+ifneq ($(call iseeopt, __E200ZX_EXECUTE_FROM_RAM__), yes)
+ifeq ($(CPU_NUMID), 0)
+LS_FLAG = _flash
+endif   # CPU_NUMID
+endif   # __E200ZX_EXECUTE_FROM_RAM__
+endif   # __MSRP__
+
+endif
+ifeq ($(call iseeopt, EE_SPC574K), yes)
+PPC_MCU_MODEL = st_spc574k
+T32_FLASH_BIN = c55fm5746m.bin
+
+# Master core of SPC574K (running from Flash) has a specific linker script
+ifeq ($(call iseeopt, __MSRP__), yes)
+ifneq ($(call iseeopt, __E200ZX_EXECUTE_FROM_RAM__), yes)
+ifeq ($(CPU_NUMID), 0)
+LS_FLAG = _flash
+endif   # CPU_NUMID
+endif   # __E200ZX_EXECUTE_FROM_RAM__
+endif   # __MSRP__
 endif
 ifndef PPC_MCU_MODEL
 $(error No known PPC MCU model found in EE_OPT)
@@ -141,7 +168,7 @@ include $(PKGBASE)/cfg/arch/rules_ppc_multi_base.mk
 else
 
 ifneq ($(call iseeopt, __USE_CUSTOM_CRT0__), yes)
-EE_CRT0_S := pkg/mcu/freescale_$(PPC_MCU_MODEL)/src/ee_boot.S
+EE_CRT0_S := pkg/mcu/$(PPC_MCU_MODEL)/src/ee_boot.S
 ifeq ($(NEED_ASM_TO_C_TRANSLATION), 1)
 EE_CRT0_SRCS := $(call asm_to_c_filename,$(EE_CRT0_S))
 else
@@ -264,7 +291,7 @@ all: $(TARGET) t32
 clean:
 	@echo "CLEAN\n" ;
 	@-rm -rf *.a *.ld *.dld *.map *.elf *.objdump deps deps.pre	\
-		debug.bat *.cmm obj *.men *.o *.cd *.src
+		debug.bat *.cmm obj *.men *.o *.cd *.src MemMap.h *.s *.i
 
 ##
 ## Lauterbach targets
@@ -286,41 +313,41 @@ endif
 
 t32: $(T32TARGETS)
 
-t32.cmm: $(PKGBASE)/mcu/freescale_$(PPC_MCU_MODEL)/cfg/$(T32CMM_SRC) $(MAKEFILE_LIST)
+t32.cmm: $(PKGBASE)/mcu/$(PPC_MCU_MODEL)/cfg/$(T32CMM_SRC) $(MAKEFILE_LIST)
 	$(QUIET)sed -e 's:#ORTICMD#:$(T32ORTISTR):'			\
 		-e 's:#USE_VLE#:$(USE_VLE):g'				\
 		-e 's:#EXE_NAME#:$(TARGET):g'				\
 		-e 's:#USE_LOCK_STEP#:$(LOCK_STEP):g'				\
 		$< > $@
 
-orti.cmm ortiperf.men: %: $(PKGBASE)/mcu/freescale_$(PPC_MCU_MODEL)/cfg/%
+orti.cmm ortiperf.men: %: $(PKGBASE)/mcu/$(PPC_MCU_MODEL)/cfg/%
 	$(QUIET) cp $< $@
 
 # Targets for Lauterbach simulator demo
 ifeq ($(call iseeopt, __VLE__),yes)
-demo.cmm: %: $(PKGBASE)/mcu/freescale_$(PPC_MCU_MODEL)/cfg/lauterbach_demo/%
+demo.cmm: %: $(PKGBASE)/mcu/$(PPC_MCU_MODEL)/cfg/lauterbach_demo/%
 	$(QUIET) cp $< $@
 else
-demo.cmm: $(PKGBASE)/mcu/freescale_$(PPC_MCU_MODEL)/cfg/lauterbach_demo/demo_no_vle.cmm
+demo.cmm: $(PKGBASE)/mcu/$(PPC_MCU_MODEL)/cfg/lauterbach_demo/demo_no_vle.cmm
 	$(QUIET) cp $< $@
 endif
-menmpc55xx.men: %: $(PKGBASE)/mcu/freescale_$(PPC_MCU_MODEL)/cfg/lauterbach_demo/%
+menmpc55xx.men: %: $(PKGBASE)/mcu/$(PPC_MCU_MODEL)/cfg/lauterbach_demo/%
 	$(QUIET) cp $< $@
-press.cmm: %: $(PKGBASE)/mcu/freescale_$(PPC_MCU_MODEL)/cfg/lauterbach_demo/%
+press.cmm: %: $(PKGBASE)/mcu/$(PPC_MCU_MODEL)/cfg/lauterbach_demo/%
 	$(QUIET) cp $< $@
-t32pro.ps: %: $(PKGBASE)/mcu/freescale_$(PPC_MCU_MODEL)/cfg/lauterbach_demo/%
+t32pro.ps: %: $(PKGBASE)/mcu/$(PPC_MCU_MODEL)/cfg/lauterbach_demo/%
 	$(QUIET) cp $< $@
-config.t32: %: $(PKGBASE)/mcu/freescale_$(PPC_MCU_MODEL)/cfg/lauterbach_demo/%
+config.t32: %: $(PKGBASE)/mcu/$(PPC_MCU_MODEL)/cfg/lauterbach_demo/%
 	$(QUIET) cp $< $@
-helpdemo.t32: %: $(PKGBASE)/mcu/freescale_$(PPC_MCU_MODEL)/cfg/lauterbach_demo/%
+helpdemo.t32: %: $(PKGBASE)/mcu/$(PPC_MCU_MODEL)/cfg/lauterbach_demo/%
 	$(QUIET) cp $< $@
-permpc55xx.per: %: $(PKGBASE)/mcu/freescale_$(PPC_MCU_MODEL)/cfg/lauterbach_demo/%
+permpc55xx.per: %: $(PKGBASE)/mcu/$(PPC_MCU_MODEL)/cfg/lauterbach_demo/%
 	$(QUIET) cp $< $@
-t32.men: %: $(PKGBASE)/mcu/freescale_$(PPC_MCU_MODEL)/cfg/lauterbach_demo/%
+t32.men: %: $(PKGBASE)/mcu/$(PPC_MCU_MODEL)/cfg/lauterbach_demo/%
 	$(QUIET) cp $< $@
-win.cmm: %: $(PKGBASE)/mcu/freescale_$(PPC_MCU_MODEL)/cfg/lauterbach_demo/%
+win.cmm: %: $(PKGBASE)/mcu/$(PPC_MCU_MODEL)/cfg/lauterbach_demo/%
 	$(QUIET) cp $< $@
-button_led.per: %: $(PKGBASE)/mcu/freescale_$(PPC_MCU_MODEL)/cfg/lauterbach_demo/%
+button_led.per: %: $(PKGBASE)/mcu/$(PPC_MCU_MODEL)/cfg/lauterbach_demo/%
 	$(QUIET) cp $< $@
 
 
@@ -331,10 +358,10 @@ exec_lauterbach.sh:
 else
 ifeq ($(call iseeopt, EE_LAUTERBACH_DEMO_SIM),yes)
 # Special target used for Lauterbach simulated demo
-exec_lauterbach.sh:  %: $(PKGBASE)/mcu/freescale_$(PPC_MCU_MODEL)/cfg/lauterbach_demo/%
+exec_lauterbach.sh:  %: $(PKGBASE)/mcu/$(PPC_MCU_MODEL)/cfg/lauterbach_demo/%
 else
 # Standard target
-exec_lauterbach.sh:  %: $(PKGBASE)/mcu/freescale_$(PPC_MCU_MODEL)/cfg/%
+exec_lauterbach.sh:  %: $(PKGBASE)/mcu/$(PPC_MCU_MODEL)/cfg/%
 endif
 	@echo "Copying exec_lauterbach.sh..."
 	@echo
@@ -355,7 +382,7 @@ $(TARGET): $(LINKDEP) $(CRT0) $(APPOBJS) $(LIBDEP)
 	@echo
 	@echo "Compilation terminated successfully"
 	@echo
-else
+else  # EE_GNU__
 $(TARGET): $(CRT0) $(APPOBJS) $(LINKDEP) $(LIBDEP)
 	@printf "LD\n";
 	$(QUIET)$(EE_LINK) $(COMPUTED_OPT_LINK)				\
@@ -425,11 +452,11 @@ ifdef EE_LINK_SCRIPT
 # section part, and an optional file containing global definition (the last
 # one is used for shared symbols in the multicore setup)
 ifeq ($(call iseeopt, __EE_MEMORY_PROTECTION__), yes)
-$(EE_LINK_SCRIPT): apps.conf $(PKGBASE)/mcu/freescale_$(PPC_MCU_MODEL)/cfg/$(SCRIPT_SUBPATH)memory$(CPU_NUMID).ld $(PKGBASE)/cpu/e200zx/cfg/$(BASE_LD_SCRIPT) $(ADDITIONAL_LINKSCRIPT)
+$(EE_LINK_SCRIPT): apps.conf $(PKGBASE)/mcu/$(PPC_MCU_MODEL)/cfg/$(SCRIPT_SUBPATH)memory$(CPU_NUMID).ld $(PKGBASE)/cpu/e200zx/cfg/$(BASE_LD_SCRIPT) $(ADDITIONAL_LINKSCRIPT)
 	@printf "LOC\n" ;
 	$(QUIET) awk -f $(PKGBASE)/cpu/e200zx/cfg/memprot-genld.awk $^ > $@
 else # if __EE_MEMORY_PROTECTION__
-$(EE_LINK_SCRIPT): $(PKGBASE)/mcu/freescale_$(PPC_MCU_MODEL)/cfg/$(SCRIPT_SUBPATH)memory$(CPU_NUMID)$(LS_FLAG).ld $(PKGBASE)/cpu/e200zx/cfg/$(BASE_LD_SCRIPT) $(ADDITIONAL_LINKSCRIPT)
+$(EE_LINK_SCRIPT): $(PKGBASE)/mcu/$(PPC_MCU_MODEL)/cfg/$(SCRIPT_SUBPATH)memory$(CPU_NUMID)$(LS_FLAG).ld $(PKGBASE)/cpu/e200zx/cfg/$(BASE_LD_SCRIPT) $(ADDITIONAL_LINKSCRIPT)
 	@printf "LOC\n" ;
 	$(QUIET) cat $^ > $@
 endif # else __EE_MEMORY_PROTECTION__

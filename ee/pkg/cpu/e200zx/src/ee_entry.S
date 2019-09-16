@@ -41,11 +41,13 @@
  * Exception entry points and hardware setup for the e200zX CPUs.
  * Author: 2010 Fabio Checconi
  *         2011 Bernardo  Dal Seno
+ *         2014 Francesco Esposito (Added configuration dependency)
  */
 
-#include <cpu/e200zx/inc/ee_regs.h>
-#include <cpu/e200zx/inc/ee_cpu_asm.h>
-#include <cpu/e200zx/inc/ee_ivor.h>
+#include "eecfg.h"
+#include "cpu/e200zx/inc/ee_regs.h"
+#include "cpu/e200zx/inc/ee_cpu_asm.h"
+#include "cpu/e200zx/inc/ee_ivor.h"
 
 	.text
 
@@ -118,7 +120,7 @@ restore_all_return:
  * this belongs to the mcu code; we'd need a way to let the mcu code
  * define a couple of macros for us...
  */
-#include <cpu/e200zx/inc/ee_mcu_regs_asm.h>
+#include "cpu/e200zx/inc/ee_mcu_regs_asm.h"
 
 #ifndef EE_ISR_EXTERNAL_TABLE
 	/* CW-FUNC-DEFINITION:  void EE_e200zx_external_input_handler(void) */
@@ -194,17 +196,6 @@ cpu_setup:
 #endif /* !EE_ISR_EXTERNAL_TABLE */
 	.size	cpu_setup, .-cpu_setup
 
-
-
-#ifdef	EE_GNU__
-	.section .boot, "ax", @progbits
-  	.align 8
-#else
-	text_section(.boot)
-#endif
-
-
-
 	/* CW-FUNC-DEFINITION: void sram_setup(void) */
 	.global	sram_setup
 	.type	sram_setup, @function
@@ -220,7 +211,7 @@ sram_setup:
 	li	r30, 0
 	li	r29, 0
 	li	r28, 0
-1:
+ee_1:
 	/* ECC SRAM must be initialized with 64-bit writes, hence stmw;
 	 * 16-btye alignment should work always */
 #ifndef	DEBUG
@@ -232,7 +223,7 @@ sram_setup:
 	stw	r31, 12(r8)
 #endif
 	addi	r8, r8, 16
-	bdnz	1b
+	bdnz	ee_1
 #endif /*!__E200ZX_EXECUTE_FROM_RAM__ */
 	blr
 	.size	sram_setup, .-sram_setup

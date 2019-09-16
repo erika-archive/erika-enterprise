@@ -42,9 +42,9 @@
  * Author: 2012  Errico Guidieri
  */
 
-#include <ee_internal.h>
-#include <ee_api.h>
-#include <ee_irq.h>
+#include "ee_internal.h"
+#include "ee_api.h"
+#include "ee_irq.h"
 
 /* This file is needed only if System Timer is defined with a device */
 #if defined(ENABLE_SYSTEM_TIMER) && defined(EE_SYSTEM_TIMER_DEVICE)

@@ -74,4 +74,8 @@
 /* HID0 register bits */
 #define HID0_TBEN	14
 
+#if (!(defined(EE_STACK_FILL_PATTERN)))
+#define EE_STACK_FILL_PATTERN 0xA5A5A5A5
+#endif
+
 #endif /* __INCLUDE_E200ZX_EE_CPU_ASM_H__ */

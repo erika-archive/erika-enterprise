@@ -1,0 +1,108 @@
+; Script for SPC574K (K2)
+; Author: Francesco Esposito
+; Company: Evidence Srl
+; 19-3-2014
+; Note: derived from Lauterbach script
+;
+
+Title "TRACE32 for SPC574K (K2) - Master & Slave Flash Utility"
+
+&filename_master="master/myProject_master.elf"
+&filename_slave="slave/myProject_slave.elf"
+
+LOCAL &parameters &param_prepareonly &param_skipconfig
+  ENTRY %LINE &parameters
+&param_prepareonly=(STRing.SCAN(STRing.UPpeR("&parameters"),"PREPAREONLY",0)!=-1)
+&param_skipconfig=(STRing.SCAN(STRing.UPpeR("&parameters"),"SKIPCONFIG",0)!=-1)
+
+LOCAL &DualPort
+IF VERSION.BUILD.BASE()>=45520.
+&DualPort="/DualPort"
+
+;========================================================================
+; CPU setup
+
+IF !&param_skipconfig
+(
+ SYStem.RESet
+ SYStem.BdmClock 4.0MHz
+  SYStem.DETECT.CPU
+  if (CPU()!="MPC5744K")&&(CPU()!="SPC574K74")
+  (
+    PRINT %ERROR "Flash script not suitable for this device."
+    ENDDO
+  )
+  SYStem.CONFIG.CORE 3. 1.
+  SYStem.CONFIG.Slave OFF
+  SYStem.Option.WATCHDOG OFF
+  SYStem.Up
+
+  ; Initialize internal SRAM (only partially used)
+  Data.Set EA:0x40000000--0x4000ffff %Quad 0
+)
+
+;========================================================================
+; Flash declaration
+
+FLASH.RESet
+
+; Low address space
+FLASH.Create 1. 0x00404000--0x00407FFF NOP    Quad 0x0000 /INFO "BAF (read only)"
+FLASH.Create 1. 0x00FC0000--0x00FC3FFF TARGET Quad 0x0001
+FLASH.Create 1. 0x00FC4000--0x00FC7FFF TARGET Quad 0x0002
+FLASH.Create 1. 0x00FC8000--0x00FCBFFF TARGET Quad 0x0003
+FLASH.Create 1. 0x00FCC000--0x00FCFFFF TARGET Quad 0x0004
+FLASH.Create 1. 0x00FD0000--0x00FD7FFF TARGET Quad 0x0005
+FLASH.Create 1. 0x00FD8000--0x00FDFFFF TARGET Quad 0x0006
+FLASH.Create 1. 0x00FE0000--0x00FEFFFF TARGET Quad 0x0007
+FLASH.Create 1. 0x00FF0000--0x00FFFFFF TARGET Quad 0x0008
+; High address space
+FLASH.Create 3. 0x00800000--0x00803FFF TARGET Quad 0x0200
+FLASH.Create 3. 0x00804000--0x00807FFF TARGET Quad 0x0201
+FLASH.Create 3. 0x00808000--0x0080BFFF TARGET Quad 0x0202
+FLASH.Create 3. 0x0080C000--0x0080FFFF TARGET Quad 0x0203
+; 256k address space
+FLASH.Create 4. 0x01000000--0x0103FFFF TARGET Quad 0x0300
+FLASH.Create 4. 0x01040000--0x0107FFFF TARGET Quad 0x0301
+FLASH.Create 4. 0x01080000--0x010BFFFF TARGET Quad 0x0302
+FLASH.Create 4. 0x010C0000--0x010FFFFF TARGET Quad 0x0303
+FLASH.Create 4. 0x01100000--0x0113FFFF TARGET Quad 0x0304
+FLASH.Create 4. 0x01140000--0x0117FFFF TARGET Quad 0x0305
+FLASH.Create 4. 0x01180000--0x011BFFFF TARGET Quad 0x0306
+FLASH.Create 4. 0x011C0000--0x011FFFFF TARGET Quad 0x0307
+FLASH.Create 4. 0x01200000--0x0123FFFF TARGET Quad 0x0308
+; UTEST address space
+FLASH.Create 6. 0x00400000--0x00403FFF TARGET Quad 0x0500 /OTP /INFO "UTEST"
+
+; Overlay enabled mapping
+FLASH.CreateALIAS 0x08A00000--0x08FFFFFF 0x00A00000   ; Small & medium flash blocks
+FLASH.CreateALIAS 0x09000000--0x09FFFFFF 0x01000000   ; Large flash blocks
+
+FLASH.TARGET E:0x40000000 E:0x40002000 0x1000 ~~/demo/powerpc/flash/quad/c55fm5746m.bin /STACKSIZE 0x0200 &DualPort
+
+; Flash script ends here if called with parameter PREPAREONLY
+IF &param_prepareonly
+  ENDDO
+
+;========================================================================
+; Flash programming
+
+DIALOG.YESNO "Flash programming prepared. Program flash memory now?"
+LOCAL &progflash
+ENTRY &progflash
+
+IF &progflash 
+(
+  FLASH.ReProgram ALL /Erase
+  Data.LOAD.auto &filename_master E:0x01000000--(0x01010400-1) ; Master core and Boot info
+  Data.LOAD.auto &filename_slave  E:0x01010400--(0x01020800-1) ; Slave core
+  FLASH.ReProgram off
+)
+ELSE
+(
+  FLASH.List
+)
+
+; close t32 after flash-write
+QUIT
+

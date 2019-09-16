@@ -43,9 +43,11 @@
  * Implementation of EE_std_change_context() as described in
  * pkg/cpu/common/inc/ee_context.h
  * Author: Fabio Checconi
+ *         2014 Francesco Esposito (Added configuration dependency)
  */
 
-#include <cpu/e200zx/inc/ee_regs.h>
+#include "eecfg.h"
+#include "cpu/e200zx/inc/ee_regs.h"
 
 /*
 void EE_std_change_context_multi(EE_FADDR thread_addr, EE_UREG tos_index);
@@ -201,7 +203,6 @@ end_change_stacks:
 
         /* } */
 end_run_thread:
-
 	blr
 	
 	.size	EE_std_change_context, .-EE_std_change_context

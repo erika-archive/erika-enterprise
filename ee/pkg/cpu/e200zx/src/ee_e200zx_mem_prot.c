@@ -44,7 +44,7 @@
  */
 
 
-#include <ee_internal.h>
+#include "ee_internal.h"
 
 /* Symbols set by the linker, used for section boundaries.  Declared as arrays,
  * so the compiler doesn't think they are in the small data area. */
@@ -59,6 +59,17 @@ extern int ee_stext[], ee_srodata[], ee_load_ram[];
 /* No stack address available: always return false */
 #define check_stack(b,e,i) 0
 #endif /* RTDRUID_CONFNUM_STACK_IN_APP_SEC_INFO */
+
+#ifdef EE_SUPPORT_MEMMAP_H
+#define OS_START_SEC_VAR_NOINIT
+#include "MemMap.h"
+#endif /* EE_SUPPORT_MEMMAP_H */
+EE_FREG EE_e200zx_mp_suspend_os_pri;
+#ifdef EE_SUPPORT_MEMMAP_H
+#define OS_STOP_SEC_VAR_NOINIT
+#include "MemMap.h"
+#endif /* EE_SUPPORT_MEMMAP_H */
+
 
 /* Function intruced to prevent from misra error:
  * "cast from pointer to unsigned int"

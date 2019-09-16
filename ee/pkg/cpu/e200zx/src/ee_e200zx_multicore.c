@@ -43,21 +43,26 @@
  * Author: 2011 Bernardo  Dal Seno
  */
 
-#include <ee_internal.h>
-#include <cpu/e200zx/inc/ee_irq.h>
+#include "ee_internal.h"
+#include "cpu/e200zx/inc/ee_e200zx_irq.h"
 
-#if EE_CURRENTCPU == 0
-#ifdef USE_PRAGMAS
-#pragma section EE_SHARED_NOTINIT_BEGIN
-#pragma section EE_SHARED_FAST_NOTINIT_BEGIN
-EE_TYPEBARRIER EE_e200zx_start_barrier;
-#pragma section EE_SHARED_END
-#pragma section EE_SHARED_FAST_OR_SLOW_END
-#else
+/* Startup barrier data */
+/* Variable definition only for master core */
+#if (defined(EE_CURRENTCPU)) && (EE_CURRENTCPU == EE_SHARED_VAR_DEF_CORE)
+
+#ifdef EE_SUPPORT_MEMMAP_H
+#define SHARED_START_SEC_VAR_NOINIT
+#include "MemMap.h"
+#endif /* EE_SUPPORT_MEMMAP_H */
 EE_TYPEBARRIER EE_SHARED_UDATA EE_e200zx_start_barrier;
-#endif
-#endif
+#ifdef EE_SUPPORT_MEMMAP_H
+#define SHARED_STOP_SEC_VAR_NOINIT
+#include "MemMap.h"
+#endif /* EE_SUPPORT_MEMMAP_H */
 
+#endif /* EE_CURRENTCPU && EE_CURRENTCPU == EE_SHARED_VAR_DEF_CORE */
+
+#if 0
 void EE_e200zx_sync_barrier(EE_TYPEBARRIER *bar)
 {
 	EE_UINT32 all = ((EE_UINT32)1U << EE_MAX_CPU) - 1U;
@@ -67,9 +72,60 @@ void EE_e200zx_sync_barrier(EE_TYPEBARRIER *bar)
 		bar->value |= ((EE_UINT32)1U << EE_CURRENTCPU);
 		EE_hal_spin_out(0U);
 		while (bar->value != all) {
-			/* Wait for all other cores/CPUs */
+			; /* Wait for all other cores/CPUs */
 		}
 	}
+}
+#endif /* 0 - OLD STYLE SYNC BARRIER */
+
+void EE_hal_sync_barrier(
+  EE_TYPEBARRIER *	bar,
+  EE_UREG volatile *	p_wait_mask,
+  EE_VOID_CALLBACK	p_cb
+)
+{
+  /* Not OK for MISRA: taken as reference
+  EE_UINT32 const exit_mask  = (0xFFFFFFFFU << EE_MAX_CPU); */
+
+  EE_UINT32 const exit_mask  = (0xFFFFFFFFU ^
+    (((EE_UINT32)0x1U << EE_MAX_CPU) - 1U));
+
+  EE_UINT32 wait_mask, all_exited;
+
+  if ( (bar != NULL) && (p_wait_mask != NULL) ) {
+    while( (bar->value & exit_mask) != 0U ) {
+      /* If the barrier is still not completed exited: wait */
+      if ( p_cb != NULL )
+      {
+        p_cb();
+      }
+    }
+    /* I need a spinlock so I will reuse spinlock for core 0 */
+    EE_hal_spin_in(EE_SPINLOCK_CORE0);
+    /* Set current CPU as entered */
+    bar->value |= ((EE_UINT32)1U << EE_CURRENTCPU);
+    EE_hal_spin_out(EE_SPINLOCK_CORE0);
+    do {
+      if ( p_cb != NULL )
+      {
+        p_cb();
+      }
+      wait_mask = (*p_wait_mask);
+      /* Wait for all other cores/CPUs */
+    } while ( (bar->value & wait_mask) != wait_mask );
+
+    all_exited = (wait_mask << EE_MAX_CPU) | wait_mask;
+    EE_hal_spin_in(EE_SPINLOCK_CORE0);
+    /* Set current CPU as exited */
+    bar->value |= ((EE_UINT32)1U << (EE_MAX_CPU + EE_CURRENTCPU));
+    /* This ensures subsequent "if" statement to work with coherent data */
+    EE_e200zx_msync();
+    if ( bar->value == all_exited ) {
+      /* Reset the barrier */
+      bar->value = 0U;
+    }
+    EE_hal_spin_out(EE_SPINLOCK_CORE0);
+  }
 }
 
 #ifdef EE_ISR_DYNAMIC_TABLE
@@ -81,7 +137,11 @@ static void EE_e200zx_setup_inter_irqs(void)
 
 static void EE_e200zx_iirq_handler(void)
 {
-	EE_rn_handler();
+#ifdef EE_AS_RPC__
+  EE_as_rpc_handler();
+#elif defined(__RN__)
+  EE_rn_handler();
+#endif /*  EE_AS_RPC__ || __RN__ */
 }
 #else /* EE_ISR_DYNAMIC_TABLE */
 
@@ -92,22 +152,23 @@ void EE_e200zx_iirq_handler(void);
 
 ISR2 (EE_e200zx_iirq_handler)
 {
-	EE_rn_handler();
+#ifdef EE_AS_RPC__
+  EE_as_rpc_handler();
+#elif defined(__RN__)
+  EE_rn_handler();
+#endif /*  EE_AS_RPC__ || __RN__ */
 }
 #endif /* EE_ISR_DYNAMIC_TABLE */
 
 EE_TYPEBOOL EE_cpu_startos(void)
 {
-	EE_e200zx_setup_inter_irqs();
+    EE_e200zx_fill_stacks();
+    EE_e200zx_setup_inter_irqs();
 
 /* Used only if system timer is required by the application */
 #if defined(ENABLE_SYSTEM_TIMER) && defined(EE_SYSTEM_TIMER_DEVICE)
     EE_initialize_system_timer();
 #endif
 
-/* Used only if syncronization barrier is required by the application */
-#if defined(EE_MSRP_USE_SYNC_BARRIER)
-	EE_e200zx_sync_barrier(&EE_e200zx_start_barrier);
-#endif
-	return 0;
+    return 0;
 }

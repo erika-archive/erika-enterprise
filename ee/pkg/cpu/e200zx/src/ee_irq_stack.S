@@ -40,16 +40,18 @@
 /*
  * IRQ low-level code, based on the mico32 version.
  * Author: 2010 Fabio Checconi
+ *         2014 Francesco Esposito (Added configuration dependency)
  */
 
-#include <cpu/e200zx/inc/ee_regs.h>
+#include "eecfg.h"
+#include "cpu/e200zx/inc/ee_regs.h"
 #ifdef __ASM_CONVERTED_TO_C__
-#include <cpu/e200zx/inc/ee_irq.h>
+#include "cpu/e200zx/inc/ee_e200zx_irq.h"
 #endif
 
+#ifndef	EE_GNU__
 /* IRQ tos defined in eecfg.c */
 /* CW-VAR-DEFINITION: extern struct EE_TOS EE_e200z7_IRQ_tos; */
-#ifndef	EE_GNU__
   .extern EE_e200z7_IRQ_tos
 #endif
 
@@ -149,3 +151,53 @@ frame_free:
   blr
 
   .size EE_e200zx_call_ISR, .-EE_e200zx_call_ISR
+
+
+  .global EE_e200zx_call_function_in_new_stack
+  .type   EE_e200zx_call_function_in_new_stack, @function
+EE_e200zx_call_function_in_new_stack:
+  /*
+   * r3 == fun parameter  (parameter)
+   * r4 == fun            (parameter)
+   * r5 == new stack      (parameter) + internal temporary register
+   * r0 == internal temporary register
+   */
+
+  /* !!! 2 Function Frame on the NEW stack ( to better hold the info ) !!! */
+  /* Temporary hold old SP in r0 */
+  addi  r0, sp, 0
+
+  /* Switch to the NEW stack */
+  addi  sp, r5, 0
+
+  /* Prepare the Backlink to the fake first frame */
+  addi  r5, sp, -16
+  /* 2 Function Frame On the NEW Stack, with the last back link already set */
+  stwu  r5, -32(sp)
+  /* Save the OLD stack on the Frame */
+  stw   r0, 16(sp)
+  /* Save the Linker Register */
+  mfspr r0, SPRG_LR
+  stw   r0, 20(sp)
+
+  /* call fun(); */
+  mtspr	SPRG_LR, r4
+  blrl
+
+#if 0
+  /* Equivalent way to execute Branch without change LR */
+  mtspr SPRG_CTR,r4  /* fun in CTR */
+  bctrl              /* Call the Func */
+#endif
+
+  /* Free the function frame: */
+  /* Restore the LR */
+  lwz   r0,       20(sp)
+  mtspr SPRG_LR,  r0
+  /* Load the OLD SP */
+  lwz   sp,       16(sp)
+  /* return */
+  blr
+
+  .size EE_e200zx_call_function_in_new_stack, .-EE_e200zx_call_function_in_new_stack
+

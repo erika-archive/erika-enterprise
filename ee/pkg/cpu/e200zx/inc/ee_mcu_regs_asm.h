@@ -43,6 +43,7 @@
  * Author: 2011 Bernardo  Dal Seno
  *         2012 Francesco Esposito
  *         2013 Eugen Kleinschmidt
+ *         2014 Francesco Esposito
  */
 
 #ifndef PKG_CPU_E200ZX_INC_EE_MCU_REGS_ASM_H
@@ -54,13 +55,17 @@
  * better choice */
 
 #ifdef __MPC5668__
-#include <mcu/freescale_mpc5668/inc/ee_regs_asm.h>
+#include "mcu/freescale_mpc5668/inc/ee_regs_asm.h"
 #elif defined __MPC5674F__
-#include <mcu/freescale_mpc5674f/inc/ee_regs_asm.h>
+#include "mcu/freescale_mpc5674f/inc/ee_regs_asm.h"
 #elif defined EE_MPC5643L
-#include <mcu/freescale_mpc5643l/inc/ee_regs_asm.h>
+#include "mcu/freescale_mpc5643l/inc/ee_regs_asm.h"
 #elif defined EE_MPC5644A
-#include <mcu/freescale_mpc5644a/inc/ee_regs_asm.h>
+#include "mcu/freescale_mpc5644a/inc/ee_regs_asm.h"
+#elif defined EE_MPC5777C
+#include "mcu/freescale_mpc5777c/inc/ee_regs_asm.h"
+#elif defined EE_SPC574K
+#include "mcu/st_spc574k/inc/ee_regs_asm.h"
 #else
 #error "No known MCU found"
 #endif

@@ -71,9 +71,6 @@
 #ifdef __MULTI__
 struct EE_TOS {
   EE_ADDR SYS_tos;
-#ifdef EE_STACK_MONITORING__
-  EE_ADDR SYS_bos;
-#endif /* EE_STACK_MONITORING__ */
 };
 #endif /* __MULTI__ */
 

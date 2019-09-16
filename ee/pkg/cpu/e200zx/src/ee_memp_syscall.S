@@ -44,9 +44,9 @@
  */
 
 #include "eecfg.h"
-#include <cpu/e200zx/inc/ee_regs.h>
-#include <cpu/e200zx/inc/ee_cpu_asm.h>
-#include <cpu/e200zx/inc/ee_ivor.h>
+#include "cpu/e200zx/inc/ee_regs.h"
+#include "cpu/e200zx/inc/ee_cpu_asm.h"
+#include "cpu/e200zx/inc/ee_ivor.h"
 
 	.text
 
@@ -66,7 +66,7 @@ EE_e200zx_system_call:
 	/* Calls that should affect interrupt enabling are treated
 	 * specially */
 	cmpli	cr0, 0, r0, EE_ID_interrupts_last
-	bgt	1f
+	bgt	ee_1
 	/* The core function is called without enabling interrupts; SRR1 is
 	 * passed as an argument, and the returned value is stored in SRR1 */
 	slwi    r0, r0, 2
@@ -77,20 +77,20 @@ EE_e200zx_system_call:
 	mtlr    r10
 	blrl
 	mtsrr1	r3
-	b	3f
+	b	ee_4
 	/* Calls that don't affect interrupt enabling */
-1:
+ee_1:
 	mfsrr0  r8
 	stw     r8, 8(sp)
 	mfsrr1  r9
 	stw     r9, 12(sp)
 
 	cmpli	cr0, 0, r0, EE_SYSCALL_NR
-	blt	1f
+	blt	ee_2
 	/* FIXME: Error handling here (call ProtectionHook?) */
-	b	2f
+	b	ee_3
 
-1:
+ee_2:
 	wrtee	r9
 	slwi    r0, r0, 2
 	addis   r10, 0, EE_syscall_table@ha
@@ -101,12 +101,12 @@ EE_e200zx_system_call:
 	blrl
 
 	wrteei	0
-2:
+ee_3:
 	lwz     r7, 12(sp)
 	mtsrr1  r7
 	lwz     r8, 8(sp)
 	mtsrr0  r8
-3:
+ee_4:
 	lwz     r9, 20(sp)
 	mtlr    r9
 	addi    sp, sp, 16
@@ -208,7 +208,7 @@ ISR2_terminate:
 #endif
 
 	cmpli	cr0, 0, r4, 0
-	bne	1f
+	bne	ee_5
 
 	addis	r3, 0, EE_e200zx_ISR_stksave@ha
 	ori	r3, r3, EE_e200zx_ISR_stksave@l
@@ -221,7 +221,7 @@ ISR2_terminate:
 	bl	EE_e200zx_after_IRQ_schedule
 #endif
 	bctr			; Return to the ISR wrapper
-1:
+ee_5:
 	addis	r11, 0, EE_as_ISR_ROM@ha
 	ori	r11, r11, EE_as_ISR_ROM@l
 	addi	r6, r6, -8			# tos--
@@ -232,7 +232,7 @@ ISR2_terminate:
 	lwzx	r8, r11, r8			# r8 <= fromid
 
 	cmpl	cr0, r8, r3
-	beq	3f
+	beq	ee_7
 	mr	r10, r8
 	slwi	r10, r10, 4
 	add	r10, r7, r10			# r10 <= from
@@ -240,17 +240,17 @@ ISR2_terminate:
 	mtpid0	r8				# load_appid(fromid)
 	isync
 	lwz	sp, (r10)			# load_sp(from->ISRTOS)
-2:
+ee_6:
 	srwi	r9, r9, 16			# r9 <= Terminated
 	cmpli	cr0, 0, r9, 0
-	bne	5f
-3:
+	bne	ee_9
+ee_7:
 	bctr			; Return to the ISR wrapper
-4:
+ee_8:
 	addi	r4, r4, -1			# EE_IRQ_nesting_level--
 	stw	r4, (r3)
 	b	ISR2_terminate
-5:
+ee_9:
 	blr
 	.size	EE_as_TerminateISR2, .-EE_as_TerminateISR2
 

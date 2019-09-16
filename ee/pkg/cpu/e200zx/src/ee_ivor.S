@@ -42,9 +42,11 @@
  * Author: 2010 Fabio Checconi
  *         2011 Bernardo  Dal Seno
  *         2012 Francesco Esposito
+ *         2014 Francesco Esposito (Added configuration dependency)
  */
 
-#include <cpu/e200zx/inc/ee_regs.h>
+#include "eecfg.h"
+#include "cpu/e200zx/inc/ee_regs.h"
 
 #ifdef	EE_GNU__
  	.section .text, "ax", @progbits
@@ -59,7 +61,8 @@
 	/* Don't use r0 as `reg' */
 #ifdef	EE_GNU__
 .macro	load_ivpr reg, lab
-#ifdef __PPCE200Z0__
+#if defined(__PPCE200Z0__) || defined(EE_PPCE200Z225) || \
+	defined(EE_PPCE200Z420)
 	e_lis	\reg, \lab@ha
 	e_add16i \reg, \reg, \lab@l
 #elif defined __PPCE200Z6__ || defined __PPCE200Z7__ || defined EE_PPCE200Z4
@@ -73,7 +76,8 @@
 #endif
 #else /* EE_GNU__ */
 load_ivpr: .macro reg, lab
-#ifdef __PPCE200Z0__
+#if defined(__PPCE200Z0__) || defined(EE_PPCE200Z225) || \
+	defined(EE_PPCE200Z420)
 	e_lis	reg, lab@ha
 	e_add16i reg, reg, lab@l
 #elif defined __PPCE200Z6__ || defined __PPCE200Z7__ || defined EE_PPCE200Z4
@@ -188,8 +192,9 @@ vector EE_e200zx_debug_critical, __empty_handler
 	.global	ivor_setup
 	.type	ivor_setup, @function
 ivor_setup:
-	/* Z0 has hard-wired IVORs */
-#ifndef __PPCE200Z0__
+	/* Z0 has hard-wired IVORs...as well as Z225 and Z420 of the SPC574K */
+#if !defined(__PPCE200Z0__) && !defined(EE_PPCE200Z225) && \
+	!defined(EE_PPCE200Z420)
 	set_ivor 0, EE_e200zx_critical_input
 	set_ivor 1, EE_e200zx_machine_check
 	set_ivor 2, EE_e200zx_data_storage

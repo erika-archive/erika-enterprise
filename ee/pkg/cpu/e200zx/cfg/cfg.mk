@@ -45,16 +45,18 @@ EE_CASM_SRCS += pkg/cpu/e200zx/src/ee_entry.S
 EE_SRCS += pkg/cpu/e200zx/src/ee_e200zx_cpu.c
 EE_SRCS += pkg/cpu/e200zx/src/ee_e200zx_decrementer.c
 
+ifeq ($(and $(call iseeopt, __MULTI__), $(call iseeopt, EE_STACK_MONITORING__)), yes)
+EE_FULL_STACK_MONITORING = yes
+endif #__MULTI__ && EE_STACK_MONITORING__
+
 ifneq ($(call iseeopt, EE_ISR_EXTERNAL_TABLE), yes)
 EE_SRCS += pkg/cpu/e200zx/src/ee_ivor.S
 EE_SRCS += pkg/cpu/e200zx/src/ee_irq.c
-ifeq  ($(call iseeopt, __IRQ_STACK_NEEDED__), yes)
-ifneq ($(call iseeopt, __EE_MEMORY_PROTECTION__), yes)
-#EE_200zx_call_ISR is not used with memory protection
-EE_CASM_SRCS += pkg/cpu/e200zx/src/ee_irq_stack.S
-endif # __EE_MEMORY_PROTECTION__
-endif # __IRQ_STACK_NEEDED_
 endif # EE_ISR_EXTERNAL_TABLE
+
+ifeq ($(or $(call iseeopt, __IRQ_STACK_NEEDED__), $(EE_FULL_STACK_MONITORING)), yes)
+EE_CASM_SRCS += pkg/cpu/e200zx/src/ee_irq_stack.S
+endif
 
 # Enable System Timer
 ifeq ($(call iseeopt, ENABLE_SYSTEM_TIMER), yes)
@@ -81,7 +83,7 @@ EE_CASM_SRCS += pkg/cpu/e200zx/src/ee_oo.S
 endif
 
 ifeq ($(call iseeopt, __MULTI__), yes)
-EE_CASM_SRCS += pkg/cpu/e200zx/src/ee_context.S
+EE_CASM_SRCS += pkg/cpu/e200zx/src/ee_e200zx_context.S
 endif
 
 ifeq ($(call iseeopt, __MSRP__), yes)

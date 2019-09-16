@@ -1,0 +1,103 @@
+; Script for MPC5777C (Cobra55)
+; Author: Francesco Esposito
+; Company: Evidence Srl
+; 19-3-2014
+; Note: derived from Lauterbach script
+;
+&use_vle=#USE_VLE#
+&filename="#EXE_NAME#"
+
+&path=OS.PPD()
+
+SYStem.RESet
+
+SYStem.CPU MPC55XX
+SYStem.DETECT CPU
+SYStem.BdmClock 4.MHz
+
+if POWERNEXUS()
+(
+  Trace.Method Analyzer
+  Trace.Init
+  
+  if ID.CABLE()==2
+    ;NEXUS.PortSize MDO16 ;LA-7630 (Nexus-AutoFocus adapter)
+    NEXUS.PortSize MDO12 ;LA-7630 (Nexus-AutoFocus adapter)
+  else
+    NEXUS.PortSize MDO12 ;LA-7610 (supports only up to MDO12)
+)
+else if SIMULATOR()
+(
+  Trace.Method Analyzer
+  Trace.Init
+)
+else
+(
+  Trace.Method Onchip
+  Trace.Init
+)
+
+if !SIMULATOR()
+(
+  ;enable real time memory access via NEXUS block
+  SYStem.MemAccess NEXUS
+)
+
+;connect and reset processor
+SYStem.UP
+
+if &use_vle==1
+    &vle_flag=0x20
+else
+    &vle_flag=0
+
+;set up the TLBs the same as the BAM
+MMU.Set.TLB1 0. 0x80000300 0x40000000+&vle_flag 0x4000003f
+MMU.Set.TLB1 1. 0x80000500 0xC3F00008+&vle_flag 0xC3F0003F
+MMU.Set.TLB1 2. 0xC0000580 0xFFE0000A+&vle_flag 0xFFE0003F
+
+;initialize SRAM
+Data.Set EA:0x40000000--0x4000FFFF %Quad 0
+
+;load program to SRAM
+;print "&path"
+;stop
+Data.LOAD.ELF "&filename" 0x40000000--0x4000FFFF
+
+; evi - call orti.cmm if needed
+#ORTICMD#
+
+;execute until function main
+;GO main
+;WAIT !RUN()
+
+;set debug mode to HLL debugging
+MODE.HLL
+
+;open some windows and arrange
+;WINCLEAR
+;WINPOS 0.57143 0.46154 80. 28. 13. 1. W000
+;WINTABS 10. 10. 25. 62.
+;Data.List
+
+;WINPOS 0.57143 34.077 80. 24. 6. 1. W006
+;WINTABS 32.
+;Trace.List
+
+;WINPOS 85.429 0.46154 64. 5. 0. 0. W002
+;Var.View %spotlight %e flags %open vtripplearray 
+
+;WINPOS 85.429 51.615 92. 8. 23. 1. W005
+;MMU.TLB1
+
+;WINPOS 85.429 9.3846 64. 12. 5. 0. W003
+;Var.Frame /Locals /Caller
+
+;WINPOS 85.429 27.462 77. 20. 0. 0. W004
+;Register
+
+;WINPOS 155.14 0.46154 23. 23. 0. 0. W001
+;SPE
+
+ENDDO
+

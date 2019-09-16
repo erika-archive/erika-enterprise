@@ -65,7 +65,7 @@
 #ifdef __NO_INLINE__
 #define __INLINE__ static
 #else
-#define __INLINE__ static inline
+#define __INLINE__ static __inline__
 #endif
 #endif /* !__INLINE__ */
 
@@ -93,34 +93,29 @@
 #define PRAGMA_SECTION_BEGIN_SYS_STACK DATA ".stack" ".stack"
 #define PRAGMA_SECTION_END_SYS_STACK DATA
 
+/* For slave core use 32 bit addressing mode */
+#define FAR_ABSOLUTE far-absolute
+
 /* Pragma macros for Multicore applications */
 /* for const variables */
-#define EE_SHARED_CONST_BEGIN CONST "ee_mcglobalc"
-#define EE_SHARED_SCONST_BEGIN SCONST "ee_mcglobalc"
+#define EE_CONST_BEGIN CONST "ee_mcglobalc" "ee_mcglobalc"
+#define EE_SCONST_MASTER_BEGIN SCONST "ee_small_mcglobalc" "ee_small_mcglobalc"
+#define EE_SCONST_SLAVE_BEGIN SCONST "ee_small_mcglobalc" "ee_small_mcglobalc" \
+	FAR_ABSOLUTE /* For slave core use 32 bit addressing mode */
 
 /* for variables inside the rapid access area (initialized data) */
-#define EE_SHARED_BEGIN DATA "ee_mcglobald" "ee_mcglobalu"
-#define EE_SHARED_FAST_BEGIN SDATA "ee_fast_mcglobald" "ee_fast_mcglobalu"
-
-/* for variables outside the rapid access area (initialized data) */
-#define EE_SHARED_SLOW_BEGIN \
-EE_PREPROC_JOIN(SDATA "ee_fast_mcglobald" "ee_fast_mcglobalu", far-absolute)
-
-/* for variables inside the rapid access area (uninitialized data) */
-#define EE_SHARED_NOTINIT_BEGIN DATA "" "ee_mcglobalu"
-#define EE_SHARED_FAST_NOTINIT_BEGIN SDATA "" "ee_fast_mcglobalu"
-
-/* for variables outside the rapid access area (uninitialized data) */
-#define EE_SHARED_SLOW_NOTINIT_BEGIN \
-EE_PREPROC_JOIN(SDATA "" "ee_fast_mcglobalu", far-absolute)
+#define EE_DATA_BEGIN DATA "ee_mcglobald" "ee_mcglobalu"
+#define EE_SDATA_MASTER_BEGIN SDATA "ee_small_mcglobald" "ee_small_mcglobalu"
+#define EE_SDATA_SLAVE_BEGIN SDATA "ee_small_mcglobald" "ee_small_mcglobalu" \
+	FAR_ABSOLUTE /* For slave core use 32 bit addressing mode */
 
 /* Pragma section tail for DATA/SDATA classes */
-#define EE_SHARED_END DATA
-#define EE_SHARED_FAST_OR_SLOW_END SDATA
+#define EE_DATA_END DATA
+#define EE_SDATA_END SDATA
 
 /* Pragma section tail for CONST/SCONST classes */
-#define EE_SHARED_CONST_END CONST
-#define EE_SHARED_SCONST_END SCONST
+#define EE_CONST_END CONST
+#define EE_SCONST_END SCONST
 
 #define EE_barrier() _nop()
 

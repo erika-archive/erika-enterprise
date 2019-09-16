@@ -1,0 +1,51 @@
+;demo script for SPC574Kxx running on internal SRAM
+;
+; $Author: mobermeir $
+; $Date: 2013-04-24 10:31:07 +0200 (Wed, 24 Apr 2013) $
+; $Rev: 5495 $
+
+
+  SYStem.RESet
+
+&sim=SIMULATOR()
+  
+;settings for JTAG debugger / simulator
+  if SIMULATOR()
+  (
+    SYStem.CPU SPC574K74
+  )
+  else
+  (
+    SYStem.DETECT.CPU
+    SYStem.CONFIG.CORE 3. 1.
+  )
+
+  SYStem.Option.WATCHDOG OFF
+  SYStem.BdmClock 4.MHz
+
+  if SIMULATOR()
+  (
+    SYStem.Option.DisMode VLE ;here: configure instruction set simulator for VLE
+    Trace.Method Analyzer
+    Trace.Init
+  )
+
+;reset processor and connect
+SYStem.UP
+
+;initialize internal SRAM
+DATA.SET EA:0x40000000--0x4000FFFF %quad 0x55AA55AA55AA55AA
+
+;load demo application
+DATA.LOAD.ELF "ppc.elf"
+
+; evi - call orti.cmm if needed
+#ORTICMD#
+
+;execute until function main
+;  GO main
+;  WAIT !RUN()
+
+;set debug mode to HLL debugging
+  MODE.HLL
+

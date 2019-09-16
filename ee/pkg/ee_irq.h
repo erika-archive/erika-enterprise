@@ -155,7 +155,7 @@ extern "C" {
 #endif
 
 #if (defined(__PPCE200Z7__)) || (defined(__PPCE200ZX__))
-#include "cpu/e200zx/inc/ee_irq.h"
+#include "cpu/e200zx/inc/ee_e200zx_irq.h"
 #endif
 
 #ifdef __CORTEX_MX__

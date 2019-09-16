@@ -50,7 +50,7 @@
 #ifndef __INCLUDE_E200ZX_DEBUG_H__
 #define __INCLUDE_E200ZX_DEBUG_H__
 
-#include <cpu/e200zx/inc/ee_internal.h>
+#include "cpu/e200zx/inc/ee_e200zx_internal.h"
 
 /*
  * Stack debugging
@@ -116,7 +116,7 @@ __INLINE__ EE_UREG __ALWAYS_INLINE__ get_tos_index_for_task(EE_TID tid)
     return EE_std_thread_tos[tid+1];
 }
 
-asm volatile EE_ADDR get_sp(void)
+__asm volatile static EE_ADDR get_sp(void)
 {
 ! "r3"
     mr r3, sp

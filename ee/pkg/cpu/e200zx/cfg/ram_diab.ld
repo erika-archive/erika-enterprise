@@ -46,9 +46,16 @@
 SECTIONS
 {
 	GROUP : {
+		ee_sstack = . ;
+		.stack : {
+			*(".stack*")
+		}
+		ee_estack = . ;
 		.boot : { }
 
 		.text : {
+			*(ee_kernel_text)
+			*(ee_api_text)
 			*(.text)
 			*(.text_vle)
 			*(.init)
@@ -67,19 +74,25 @@ SECTIONS
 
 		ee_load_ram = . ;
 		ee_sdata = . ;
-		.data : { }
+		.data : {
+			*(ee_kernel_data)
+			*(ee_api_data)
+		}
 
-		.sdata : { }
+		.sdata : {
+			*(ee_kernel_sdata)
+			*(ee_api_sdata)
+		}
 
 		ee_sbss = . ;
-		.sbss : { }
-		.bss : { }
-		ee_ebss = . ;
-
-		ee_sstack = . ;
-		.stack : {
-			*(.stack)
+		.sbss : {
+			*(ee_kernel_sbss)
+			*(ee_api_sbss)
 		}
-		ee_estack = . ;
+		.bss : {
+			*(ee_kernel_bss)
+			*(ee_api_bss)
+		}
+		ee_ebss = . ;
 	} > isram
 }

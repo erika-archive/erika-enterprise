@@ -51,11 +51,6 @@
 
 /* Include types and functions for the kernel */
 #include "ee_cpu_os.h"
-/* defines used both by C and assembly */
-#include "ee_cpu_asm.h"
-/* INTC symbols */
-#include "ee_mcu_regs.h"
-
 
 /* This instruction should cause a trap when executed. Handy to mark invalid
  * functions */
@@ -64,12 +59,14 @@
 
 
 /* Alignment and section for program stacks */
-#define EE_STACK_SEC "ee_stack"
-#define STACK_SEC ".stack"
-#define EE_STACK_ATTRIB		EE_COMPILER_ALIGN(EE_STACK_ALIGN)	\
-	EE_COMPILER_SECTION(STACK_SEC)
+#define EE_STACK_ATTRIB EE_COMPILER_ALIGN(EE_STACK_ALIGN)
+
+#if (!defined(EE_AS_OSAPPLICATIONS__))
 #define EE_STACK_ATTRIB_NAME(n)	EE_COMPILER_ALIGN(EE_STACK_ALIGN)	\
 	EE_COMPILER_SECTION(EE_STACK_SEC "_" EE_PREPROC_STRING(n))
+#else
+#define EE_STACK_ATTRIB_NAME(n)	EE_COMPILER_ALIGN(EE_STACK_ALIGN)
+#endif /* !EE_AS_OSAPPLICATIONS__ */
 
 /* Word used to build user stacks */
 typedef EE_UINT32 EE_STACK_T;
@@ -92,95 +89,109 @@ typedef EE_UINT32 EE_STACK_T;
    local (0) to a processor */
 #define EE_GLOBAL_MUTEX ((ResourceType)0x80000000U)
 
-/* Type for spinlocks: an ID */
-typedef EE_UINT32 EE_TYPESPIN;
-
 /* For compatibilty with old code */
 #define EE_SHARED_DATA(x) x
 
 /* Shared data use separate sections; potentially, three different sections
  * could be used for constant, unitialized, and initialized data */
-#ifndef USE_PRAGMAS
+#ifndef EE_SUPPORT_MEMMAP_H
 #define EE_SHARED_CDATA  EE_COMPILER_SECTION("ee_mcglobalc") EE_COMPILER_KEEP
 #define EE_SHARED_UDATA  EE_COMPILER_SECTION("ee_mcglobald") EE_COMPILER_KEEP
 #define EE_SHARED_IDATA  EE_COMPILER_SECTION("ee_mcglobald") EE_COMPILER_KEEP
-#endif
+#else  /* !EE_SUPPORT_MEMMAP_H */
+#define EE_SHARED_CDATA
+#define EE_SHARED_UDATA
+#define EE_SHARED_IDATA
+#endif /* !EE_SUPPORT_MEMMAP_H */
 
 #if 0  /* Shared code, resources and mutex not working yet */
 #define EE_SHARED_CODE(x) EE_SHARED_CODE_##x
 #define EE_SHARED_RES(name,var) EE_SHARED_RES_##name(var)
 #endif
 
-/* Include multicore support if needed (There's a guard inside the file too) */
+/*******************************************************************************
+                    Multicore and multiprocessor support
+ ******************************************************************************/
+#if (!defined(EE_CURRENTCPU)) || (EE_CURRENTCPU == 0)
+/* Used as short-cut for previous condition */
+#define EE_MASTER_CPU
+#endif /* EE_CURRENTCPU == 0 */
+
+/* Used to decide in which core defife shared variables */
+#if defined(EE_BUILD_CORE1_FIRST)
+#define EE_SHARED_VAR_DEF_CORE 1
+#else
+#define EE_SHARED_VAR_DEF_CORE 0
+#endif
+
+/* Include multicore support there's a guard inside */
 #include "ee_e200zx_multicore.h"
 
 #endif /* __MSRP__ */
 
-#ifdef __EE_MEMORY_PROTECTION__
 
-#define EE_HAL_IRQSTATE_INVALID ((EE_FREG)0U)
-#define EE_hal_set_irq_valid_flag(f) ((f) | (MSR_EE << 1))
-#define EE_hal_clear_irq_flag(f) ((f) & ~MSR_EE)
-#define EE_hal_copy_irq_flag(from, to) (((to) & ~MSR_EE) | ((from) & MSR_EE))
-
-#endif /* __EE_MEMORY_PROTECTION__ */
-
-/*************************************************************************
- Access to CPU registers
- *************************************************************************/
+/*******************************************************************************
+                            Access to CPU registers
+ ******************************************************************************/
 
 #ifdef __DCC__
 
-__asm static EE_UREG EE_e200zx_get_tcr(void)
+__asm volatile static EE_UREG EE_e200zx_get_tcr(void)
 {
 ! "r3"
 	mfspr	r3, tcr
 }
 
-__asm static void EE_e200zx_set_tcr(EE_UREG val)
+__asm volatile static void EE_e200zx_set_tcr(EE_UREG val)
 {
 % reg val
 !
 	mtspr	tcr, val
 }
 
-__asm static EE_UREG EE_e200zx_get_tsr(void)
+__asm volatile static EE_UREG EE_e200zx_get_tsr(void)
 {
 ! "r3"
 	mfspr	r3, tsr
 }
 
-__asm static void EE_e200zx_set_tsr(EE_UREG val)
+__asm volatile static void EE_e200zx_set_tsr(EE_UREG val)
 {
 % reg val
 !
 	mtspr	tsr, val
 }
 
-__asm static void EE_e200zx_set_dec(EE_UREG val)
+__asm volatile static void EE_e200zx_set_dec(EE_UREG val)
 {
 % reg val
 !
 	mtspr	dec, val
 }
 
-__asm static void EE_e200zx_set_decar(EE_UREG val)
+__asm volatile static void EE_e200zx_set_decar(EE_UREG val)
 {
 % reg val
 !
 	mtspr	decar, val
 }
 
-__asm static EE_UREG EE_e200zx_get_tbl(void)
+__asm volatile static EE_UREG EE_e200zx_get_tbl(void)
 {
 ! "r3"
 	mfspr	r3, tbl
 }
 
-__asm static EE_UREG EE_e200zx_get_pvr(void)
+__asm volatile static EE_UREG EE_e200zx_get_pvr(void)
 {
 ! "r3"
 	mfspr	r3, pvr
+}
+
+__asm volatile static EE_ADDR EE_e200zx_get_sp(void)
+{
+! "r3"
+	addi	r3, r1, 0
 }
 
 #else /* if __DCC__ */
@@ -265,35 +276,6 @@ __INLINE__ EE_UREG EE_e200zx_get_pvr(void)
 }
 #endif /* else __DCC__ */
 
-
-/*************************************************************************
- Functions
- *************************************************************************/
-
-__INLINE__ void __ALWAYS_INLINE__ EE_e200zx_isync(void)
-{
-	__asm volatile ("isync");
-}
-
-__INLINE__ EE_TYPEISR2PRIO __ALWAYS_INLINE__ EE_e200zx_get_int_prio(void)
-{
-	return INTC_CPR.R;
-}
-
-__INLINE__ void __ALWAYS_INLINE__ EE_e200zx_set_int_prio(EE_TYPEISR2PRIO prio)
-{
-	/* To understand why all this synchronization is needed look at one of
-		 frescale ppc's reference manual at the following:
-		 9.3.1.2 INTC Current Priority Register NOTE
-		 9.5.5.2 Ensuring Coherency
-	*/
-	/* Execution syncronization -> all stores executed (for coherency: 9.5.5.2) */
-	EE_e200zx_mbar();
-	INTC_CPR.R = prio;
-	/* Context syncronization + INTC_CPR store executed */
-	EE_e200zx_mbar();
-	EE_e200zx_isync();
-}
 
 #ifndef __PPCE200Z0__
 /* e200z0 has no internal timer, so the functions below are not defined */
@@ -488,8 +470,8 @@ void EE_hal_app_init(const EE_APP_SEC_INFO_T *app_info);
 #ifdef  __EE_MEMORY_PROTECTION__
 #ifdef __DCC__
 
-__asm static EE_UINT8 EE_as_raw_call_trusted_func(EE_UINT32 FunctionIndex,
-	void *FunctionParams)
+__asm volatile static EE_UINT8 EE_as_raw_call_trusted_func(
+	EE_UINT32 FunctionIndex, void *FunctionParams)
 {
 % reg FunctionIndex, FunctionParams
 ! "r0","r3","r4","r5","r6","r7","r8","r9","r10","r11","r12","ctr"
@@ -507,4 +489,46 @@ __INLINE__ EE_UINT8 EE_as_raw_call_trusted_func(EE_UINT32 FunctionIndex,
 }
 #endif
 #endif /* __EE_MEMORY_PROTECTION__ */
+
+#if (defined(__MULTI__)) || (defined(EE_STACK_MONITORING__))
+struct EE_SD {
+  EE_ADDR SYS_tos;
+#if (defined(EE_STACK_MONITORING__))
+  EE_ADDR SYS_bos;
+#endif /* EE_STACK_MONITORING__ */
+};
+#endif /* __MULTI__ || EE_STACK_MONITORING__ */
+
+#if (defined(EE_STACK_MONITORING__))
+
+extern struct EE_SD const EE_e200zx_system_bos[EE_E200Z7_SYSTEM_TOS_SIZE];
+
+#if (defined(EE_MM_OPT))
+
+extern unsigned char __SP_INIT[];
+extern unsigned char __SP_REAL_END[];
+
+#define EE_SYS_SP_BEGIN  __SP_INIT
+#define EE_SYS_SP_END    __SP_REAL_END
+#else
+
+#ifdef EE_SUPPORT_MEMMAP_H
+#define OS_START_SEC_STACK
+#include "MemMap.h"
+#endif /* EE_SUPPORT_MEMMAP_H */
+extern EE_STACK_T EE_STACK_ATTRIB
+	EE_e200zx_sys_stack[EE_STACK_WLEN(EE_SYS_STACK_SIZE)];
+#ifdef EE_SUPPORT_MEMMAP_H
+#define OS_STOP_SEC_STACK
+#include "MemMap.h"
+#endif /* EE_SUPPORT_MEMMAP_H */
+
+#define EE_SYS_SP_BEGIN \
+  ((EE_ADDR)&EE_e200zx_sys_stack[EE_STACK_INITP(EE_SYS_STACK_SIZE)])
+#define EE_SYS_SP_END \
+  ((EE_ADDR)&EE_e200zx_sys_stack[0])
+#endif /* EE_MM_OPT */
+
+#endif /* EE_STACK_MONITORING__ */
+
 #endif /* __INCLUDE_E200ZX_EE_CPU_H__ */

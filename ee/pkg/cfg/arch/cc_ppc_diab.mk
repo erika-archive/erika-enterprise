@@ -76,17 +76,30 @@ OPT_TARGET := -t $(PPC_ARCH)
 ## OPT_CC are the options for compiler invocation
 # -Xstruct-arg-warning: warn if a structure too big is passed by value
 # -Xkeywords=4: enable the inline keyword
-OPT_CC = -Xeieio -Xsemi-is-comment -Xkeywords=4 -c $(CFLAGS) $(OPT_TARGET)
+OPT_CC = -Xeieio -Xsemi-is-comment -Xkeywords=4
 ifneq ($(call iseeopt, __MINIMAL_CC_OPTIONS__), yes)
 OPT_CC += -Xlicense-wait -Xstderr-fully-buffered -Xbss-common-off	\
 	-Xeieio -XO -Xsavefpr-avoid -Xsmall-data=8 -Xswitch-table=0	\
 	-Xinline=40 -Xsmall-const=8 -Xenum-is-best -Xunroll=4		\
 	-Xunroll-size=5 -Xsize-opt -Xsemi-is-comment -Xstop-on-warning	\
-	-Xforce-prototypes -Xmacro-in-pragma
-endif # __MINIMAL_CC_OPTIONS__
+	-Xforce-prototypes -Xmacro-in-pragma -Xsection-split=1
+endif # !__MINIMAL_CC_OPTIONS__
+
+# Generate .s (assembly) for each .c file
+ifeq ($(call iseeopt, EE_GEN_ASS_FILE), yes)
+OPT_CC += -Xkeep-assembly-file
+endif
+# add common OPT_CC
+OPT_CC += -c $(CFLAGS) $(OPT_TARGET)
 
 ## OPT_ASM are the options for asm invocation
-OPT_ASM = $(OPT_TARGET) $(ASFLAGS)
+ifeq ($(call iseeopt, EE_MM_OPT), yes)
+OPT_ASM = -Xgnu-locals-off $(OPT_TARGET)
+# -Xgnu-locals-off disables local GNU labels. See GNU-Style Locals for
+# more information. The default setting is -Xgnu-locals-on.
+else
+OPT_ASM = $(OPT_TARGET)
+endif
 
 ifneq ($(call iseeopt, __BIN_DISTR), yes)
 ifeq ($(call iseeopt, DEBUG), yes)
@@ -96,7 +109,7 @@ endif
 endif
 
 # OPT_LINK represents the options for ld invocation
-OPT_LINK += $(LDFLAGS) $(OPT_TARGET)
+OPT_LINK += $(OPT_TARGET)
 OPT_LINK += -e __start -lc
 MAP_OPT = -m63 > $(MAP_FILE)
 # Linker script
@@ -108,6 +121,7 @@ else
 EE_LINK_SCRIPT =
 LINKDEP =
 endif
+OPT_LINK += $(LDFLAGS)
 
 CC_LD_SUFFIX = _diab.ld
 

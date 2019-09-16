@@ -1,0 +1,262 @@
+; Script for SPC574K (K2)
+; Author: Francesco Esposito
+; Company: Evidence Srl
+; 29-5-2014
+; Note: derived from Lauterbach script
+;
+
+; Enable/Disable minimal interface
+; 1=disable eTPUs and additional Lauterbach windows
+; 0=enable eTPUs and additional Lauterbach windows
+&minimal=1
+
+&intercomport_etpuA=0
+&intercomport_etpuB=0
+&intercomport_etpuC=0
+&intercomport_core0=0
+&intercomport_core1=0
+
+;start all other Trace32 instance: slave and ALL eTPUs (started only on demand)
+&nodename=NODENAME()
+&intercomport_core0=FORMAT.DECIMAL(1.,intercom.port())
+&intercomport_core1=FORMAT.DECIMAL(1.,intercom.port()+1)
+
+if &minimal==0
+(
+  &intercomport_etpuA=FORMAT.DECIMAL(1.,intercom.port()+2)
+  &intercomport_etpuB=FORMAT.DECIMAL(1.,intercom.port()+3)
+  &intercomport_etpuC=FORMAT.DECIMAL(1.,intercom.port()+4)
+)
+
+&configparams="NET NODE=&nodename PACKLEN=1024"
+if "&nodename"=="" ;no IP address to debug interface -> USB connection
+(
+  &configparams="USB"
+)
+
+;use executable path the same es for current Trace32 instance
+&patht32mppc=OS.PED()+"/t32mppc"
+&patht32mtpu=OS.PED()+"/t32mtpu"
+
+if !intercom.ping(localhost:&intercomport_core1)
+(
+  OS &patht32mppc -c config-mc.t32 &intercomport_core1 TRACE32_B &configparams CORE=2 &
+)
+
+if &minimal==0
+(
+  if !intercom.ping(localhost:&intercomport_etpuA)
+  (
+    OS &patht32mtpu -c config-mc.t32 &intercomport_etpuA Trace32_C &configparams CORE=3 &
+  )
+  if !intercom.ping(localhost:&intercomport_etpuB)
+  (
+    OS &patht32mtpu -c config-mc.t32 &intercomport_etpuB Trace32_D &configparams CORE=4 &
+  )
+  if !intercom.ping(localhost:&intercomport_etpuC)
+  (
+    OS &patht32mtpu -c config-mc.t32 &intercomport_etpuC Trace32_E &configparams CORE=5 &
+  )
+)
+
+INTERCOM.WAIT localhost:&intercomport_core1
+if &minimal==0
+(
+  INTERCOM.WAIT localhost:&intercomport_etpuA
+  INTERCOM.WAIT localhost:&intercomport_etpuB
+  INTERCOM.WAIT localhost:&intercomport_etpuC
+)
+
+;set up macros for intercom communication between the Trace32 instances
+&intercomport_core0=FORMAT.DECIMAL(1.,intercom.port())
+&intercomport_core1=FORMAT.DECIMAL(1.,intercom.port()+1)
+
+if &minimal==0
+(
+  &intercomport_etpuA=FORMAT.DECIMAL(1.,intercom.port()+2)
+  &intercomport_etpuB=FORMAT.DECIMAL(1.,intercom.port()+3)
+  &intercomport_etpuC=FORMAT.DECIMAL(1.,intercom.port()+4)
+)
+
+&core0="" ;only to inprove readability
+&core1="intercom localhost:&intercomport_core1"
+
+if &minimal==0
+(
+  &etpuA="intercom localhost:&intercomport_etpuA"
+  &etpuB="intercom localhost:&intercomport_etpuB"
+  &etpuC="intercom localhost:&intercomport_etpuC"
+)
+  
+&allppc="GOSUB intercom_allppc "
+
+if &minimal==0
+(
+  &alletpu="GOSUB intercom_alletpu "
+)
+
+&all="GOSUB intercom_all "
+
+;set titles
+&core0 Title "TRACE32 for SPC574K (K2) - Master core (Core 0)"
+&core1 Title "TRACE32 for SPC574K (K2) - Slave core (Core 1)"
+
+if &minimal==0
+(
+  &etpuA Title "TRACE32 for SPC574K (K2) - eTPU_A"
+  &etpuB Title "TRACE32 for SPC574K (K2) - eTPU_B"
+  &etpuC Title "TRACE32 for SPC574K (K2) - eTPU_C"
+)
+
+;arrange debugger windows
+&core0 FRAMEPOS  182.0    0.0    181. 26.
+&core1 FRAMEPOS  182.0   40.5    181. 26.
+
+if &minimal==0
+(
+  &etpuA FRAMEPOS    0.0    0.0    83.  61.
+  &etpuB FRAMEPOS   96.0    0.00   83.  20.
+  &etpuC FRAMEPOS   96.0   40.5    83.  20.
+)
+
+;install Quit button
+&all DO ~~/demo/practice/intercom/toolbar_quit_all.cmm
+
+;set working path of core_1 to match working path of core_0
+
+&path=OS.PWD()
+&core1 cd "&path"
+
+;debugger setup
+&all SYNCH.RESet
+
+;Note: Call SYStem.Reset in the order eTPUs - core1 - core 0
+&alletpu SYStem.RESet
+&core1 SYStem.RESet
+&core0 SYStem.RESet
+  
+&all Break.Delete
+&all SYStem.BdmClock 4.MHz
+
+;detect processor
+SYStem.CPU MPC55XX
+SYStem.DETECT CPU
+    
+&cpu=CPU()
+&all SYStem.CPU &cpu
+&allppc SYStem.Option.WATCHDOG OFF
+&allppc SYStem.BdmClock 4.MHz
+
+;assign Trace32 instances to cores
+&core0 SYStem.CONFIG.CORE 3. 1.
+&core1 SYStem.CONFIG.CORE 1. 1.
+
+if &minimal==0
+(
+  &etpuA SYStem.CONFIG.CORE 3. 1.
+  &etpuB SYStem.CONFIG.CORE 4. 1.
+  &etpuC SYStem.CONFIG.CORE 5. 1.
+)
+
+if POWERNEXUS()
+(
+  if ID.CABLE()==2
+    ;&all NEXUS.PortSize MDO16 ;LA-7630 (Nexus-AutoFocus adapter)
+    &all NEXUS.PortSize MDO12 ;LA-7630 (Nexus-AutoFocus adapter)
+  else
+    &all NEXUS.PortSize MDO12 ;LA-7610 (supports only up to MDO12)
+
+  &all Trace.Method Analyzer
+  &all Trace.AutoArm ON
+  
+;enable cross-tracking of trace listings
+  &core0 Trace.XTRACK localhost:&intercomport_core1
+  &core1 Trace.XTRACK localhost:&intercomport_core0
+)
+
+; run master script
+DO master/t32.cmm
+
+;stop
+
+if &minimal==0
+(
+  ;setup for synchronous step/go/break and system mode change
+  &all   SYNCH.RESet
+  &core0 SYNCH.CONNECT &intercomport_core1 &intercomport_etpuA &intercomport_etpuB &intercomport_etpuC
+  &core1 SYNCH.CONNECT &intercomport_core0 &intercomport_etpuA &intercomport_etpuB &intercomport_etpuC
+  &etpuA SYNCH.CONNECT &intercomport_core0 &intercomport_core1 &intercomport_etpuB &intercomport_etpuC
+  &etpuB SYNCH.CONNECT &intercomport_core0 &intercomport_core1 &intercomport_etpuA &intercomport_etpuC
+  &etpuC SYNCH.CONNECT &intercomport_core0 &intercomport_core1 &intercomport_etpuA &intercomport_etpuB
+)
+else
+(
+  &all   SYNCH.RESet
+  &core0 SYNCH.CONNECT &intercomport_core1
+  &core1 SYNCH.CONNECT &intercomport_core0
+)
+
+;synchronized run control only for e200 cores (eTPUs controlled via TrOnchip.CBI below)
+&allppc SYNCH.MasterGO         ON
+&allppc SYNCH.SlaveGO          ON
+&allppc SYNCH.MasterBREAK      ON
+&allppc SYNCH.SlaveBREAK       ON
+&allppc SYNCH.MasterSTEP       ON
+&allppc SYNCH.SlaveSTEP        ON
+  
+&all    SYNCH.MasterSystemMode ON
+&all    SYNCH.SlaveSystemMode  ON
+
+;halt eTPUs together with e200 cores
+if &minimal==0
+(
+  &alletpu TrOnchip.CBI ON
+)
+
+;switch to HLL mode debugging
+&allppc MODE.HLL
+
+;add demo script to command history for easy restart
+hist.set CMD "do start-mc.cmm"
+
+;open some windows
+if &minimal==0
+(
+  &allppc WINPAGE.RESET
+  &allppc WINCLEAR
+  &allppc WINPOS 84.857 0.0 26. 2. 0. 0. W002
+  &allppc Var.View %e nRequestType nTransferData 
+  &allppc WINPOS 85.714 8.0769 38. 9. 0. 0. W003
+  &allppc SYNCH
+  &allppc WINPOS 131.57 0.15385 44. 19. 5. 0. W001
+  &allppc Var.Frame /Locals /Caller
+  &allppc WINPOS 0.14286 0.0 80. 19. 13. 1. W004
+  &allppc WINTABS 10. 10. 25. 62.
+  &allppc Data.List
+  &allppc WINPAGE.SELECT P000    
+) 
+ENDDO
+
+
+intercom_allppc:
+  LOCAL &param
+  ENTRY %Line &param
+  &core0 &param
+  &core1 &param
+RETURN
+
+intercom_alletpu:
+  LOCAL &param
+  ENTRY %Line &param
+  &etpuA &param
+  &etpuB &param
+  &etpuC &param
+RETURN
+
+intercom_all:
+  LOCAL &param
+  ENTRY %Line &param
+  GOSUB intercom_allppc &param
+  GOSUB intercom_alletpu &param
+RETURN
+

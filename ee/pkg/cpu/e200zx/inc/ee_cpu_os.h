@@ -55,8 +55,10 @@
 
 #ifdef __GNUC__
 #include "cpu/common/inc/ee_compiler_gcc.h"
+#define EE_SUPPORT_MEMMAP_H
 #elif defined (__DCC__)
 #include "cpu/common/inc/ee_compiler_diab.h"
+#define EE_SUPPORT_MEMMAP_H
 #elif defined (__CWCC__)
 #include "cpu/common/inc/ee_compiler_codewarrior.h"
 #else
@@ -73,6 +75,11 @@
   (I need to put this here because it needs to see HAL types) */
 #include "cpu/common/inc/ee_hal_structs.h"
 
+/* defines used both by C and assembly */
+#include "ee_cpu_asm.h"
+
+/* INTC symbols */
+#include "ee_mcu_regs.h"
 
 /*
                         !!! WARNING WORK AROUND !!!
@@ -163,6 +170,20 @@ __INLINE__ void __ALWAYS_INLINE__ EE_e200zx_mbar(void)
 	__asm volatile("mbar 0\n");
 }
 
+__INLINE__ void __ALWAYS_INLINE__ EE_e200zx_mbar_1(void)
+{
+	__asm volatile("mbar 1\n");
+}
+
+__INLINE__ void __ALWAYS_INLINE__ EE_e200zx_msync(void)
+{
+	__asm volatile("msync\n");
+}
+
+__INLINE__ void __ALWAYS_INLINE__ EE_e200zx_isync(void)
+{
+	__asm volatile ("isync");
+}
 
 /*********************************************************************
                   E200Z7 interrupt disabling/enabling
@@ -184,7 +205,7 @@ __INLINE__ void __ALWAYS_INLINE__ EE_e200z7_disableIRQ(void)
 }
 
 #ifdef	__DCC__
-__asm static void EE_e200z7_resumeIRQ(EE_FREG msr)
+__asm volatile static void EE_e200z7_resumeIRQ(EE_FREG msr)
 {
 % reg msr
 	mtmsr msr
@@ -197,7 +218,7 @@ __INLINE__ void __ALWAYS_INLINE__ EE_e200z7_resumeIRQ(EE_FREG msr)
 #endif
 
 #ifdef	__DCC__
-__asm static EE_FREG EE_e200z7_suspendIRQ(void)
+__asm volatile static EE_FREG EE_e200z7_suspendIRQ(void)
 {
 ! "r3"
 	mfmsr	r3
@@ -217,7 +238,7 @@ __INLINE__ EE_FREG __ALWAYS_INLINE__ EE_e200z7_suspendIRQ(void)
 
 /* FIXME: In Erika HAL doesn't exit a method to check IRQ status! */
 #ifdef __DCC__
-__asm static EE_FREG EE_e200z7_isIRQEnabled(void)
+__asm volatile static EE_FREG EE_e200z7_isIRQEnabled(void)
 {
 ! "r3"
   mfmsr	r3
@@ -236,12 +257,32 @@ __INLINE__ EE_TYPEBOOL __ALWAYS_INLINE__ EE_e200z7_isIRQEnabled(void)
 }
 #endif
 
+__INLINE__ EE_TYPEISR2PRIO __ALWAYS_INLINE__ EE_e200zx_get_int_prio(void)
+{
+	return INTC_CPR;
+}
+
+__INLINE__ void __ALWAYS_INLINE__ EE_e200zx_set_int_prio(EE_TYPEISR2PRIO prio)
+{
+  /* To understand why all this synchronization is needed look at one of
+     frescale ppc's reference manual at the following:
+     9.3.1.2 INTC Current Priority Register NOTE
+     9.5.5.2 Ensuring Coherency
+  */
+  /* Execution syncronization -> all stores executed (for coherency: 9.5.5.2) */
+  EE_e200zx_mbar();
+  INTC_CPR = prio;
+  /* Context syncronization + INTC_CPR store executed */
+  EE_e200zx_mbar();
+  EE_e200zx_isync();
+}
+
 /*********************************************************************
              E200Z7 mode user/supervisor switch functions
  *********************************************************************/
 
 #ifdef __DCC__
-__asm static void EE_e200z7_switch_to_user_mode(void)
+__asm volatile static void EE_e200z7_switch_to_user_mode(void)
 {
 ! "r3"
   mfmsr r3
@@ -249,7 +290,7 @@ __asm static void EE_e200z7_switch_to_user_mode(void)
   mtmsr r3
 }
 
-__asm static void EE_e200z7_switch_to_supervisor_mode(void)
+__asm volatile static void EE_e200z7_switch_to_supervisor_mode(void)
 {
 ! "r3"
   mfmsr r3
@@ -296,6 +337,24 @@ __INLINE__  void EE_e200z7_switch_to_supervisor_mode(void)
  * and in inline kernel services.
  **************************************************************************/
 
+/* ISR priority level defines */
+#define EE_ISR_UNMASKED 0U
+#define EE_ISR_PRI_1  1U
+#define EE_ISR_PRI_2  2U
+#define EE_ISR_PRI_3  3U
+#define EE_ISR_PRI_4  4U
+#define EE_ISR_PRI_5  5U
+#define EE_ISR_PRI_6  6U
+#define EE_ISR_PRI_7  7U
+#define EE_ISR_PRI_8  8U
+#define EE_ISR_PRI_9  9U
+#define EE_ISR_PRI_10 10U
+#define EE_ISR_PRI_11 11U
+#define EE_ISR_PRI_12 12U
+#define EE_ISR_PRI_13 13U
+#define EE_ISR_PRI_14 14U
+#define EE_ISR_PRI_15 15U
+
 /* Disable/Enable Interrupts */
 __INLINE__ void __ALWAYS_INLINE__ EE_hal_enableIRQ(void)
 {
@@ -316,6 +375,60 @@ __INLINE__ EE_FREG __ALWAYS_INLINE__ EE_hal_suspendIRQ(void)
 {
 	return EE_e200z7_suspendIRQ();
 }
+
+/* With the following Macro we declare that this cpu support really handle OS
+   interrupts so the Suspend/ResumeOSInterrupts can avoid to disable all
+   interrupts */
+#define EE_REALLY_HANDLE_OS_IRQ
+
+__INLINE__ EE_FREG __ALWAYS_INLINE__ EE_hal_suspend_OsIRQ ( void )
+{
+  register EE_TYPEISR2PRIO actual_prio = EE_e200zx_get_int_prio();
+
+  if ( actual_prio < EE_MAX_ISR2_PRI )
+  {
+    /* Set the new priority */
+    EE_e200zx_set_int_prio(EE_MAX_ISR2_PRI);
+  }
+  return (EE_FREG)actual_prio;
+}
+
+__INLINE__ void __ALWAYS_INLINE__ EE_hal_resume_OsIRQ ( EE_FREG flags )
+{
+  EE_e200zx_set_int_prio((EE_TYPEISR2PRIO)flags);
+}
+
+#if (defined(__EE_MEMORY_PROTECTION__))
+
+#ifdef EE_SUPPORT_MEMMAP_H
+#define OS_START_SEC_VAR_NOINIT
+#include "MemMap.h"
+#endif /* EE_SUPPORT_MEMMAP_H */
+extern EE_FREG EE_e200zx_mp_suspend_os_pri;
+#ifdef EE_SUPPORT_MEMMAP_H
+#define OS_STOP_SEC_VAR_NOINIT
+#include "MemMap.h"
+#endif /* EE_SUPPORT_MEMMAP_H */
+
+#define EE_hal_set_irq_valid_flag(f) ((f) | (MSR_EE << 1))
+#define EE_hal_clear_irq_flag(f) ((f) & ~MSR_EE)
+#define EE_hal_copy_irq_flag(from, to) (((to) & ~MSR_EE) | ((from) & MSR_EE))
+
+__INLINE__ EE_FREG __ALWAYS_INLINE__
+  EE_hal_set_max_isr2_pri_flag ( EE_FREG next )
+{
+  EE_e200zx_mp_suspend_os_pri = EE_hal_suspend_OsIRQ();
+  return next;
+}
+
+__INLINE__ EE_FREG __ALWAYS_INLINE__
+  EE_hal_copy_pri_flag ( EE_FREG from, EE_FREG to )
+{
+  EE_hal_resume_OsIRQ(EE_e200zx_mp_suspend_os_pri);
+  return EE_hal_copy_irq_flag(from, to);
+}
+
+#endif /* __EE_MEMORY_PROTECTION__ */
 
 /*************************************************************************
                 CPU-dependent ORT support (mainly OTM)
@@ -358,7 +471,7 @@ __INLINE__ void EE_ORTI_send_otm_servicetrace(EE_UINT8 srv)
 #if (defined(RTDRUID_CONFIGURATOR_NUMBER)) \
  && (RTDRUID_CONFIGURATOR_NUMBER >= RTDRUID_CONFNUM_ORTI_SERVICE_API)
 #if defined __DCC__
-__asm static void EE_ORTI_ext_set_service(EE_UINT8 srv)
+__asm volatile static void EE_ORTI_ext_set_service(EE_UINT8 srv)
 {
 % reg srv
 ! "r0","r3","r4","r5","r6","r7","r8","r9","r10","r11","r12","ctr"

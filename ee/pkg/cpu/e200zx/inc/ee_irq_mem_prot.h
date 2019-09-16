@@ -92,7 +92,7 @@
  * }
  */
 
-__asm void EE_ISR2_PROT_prestub(int toid, int isrid)
+__asm volatile static void EE_ISR2_PROT_prestub(int toid, int isrid)
 {
 
 % reg toid, isrid; lab l1, l2
@@ -154,7 +154,7 @@ l2:
 	.set reorder
 }
 
-__asm void EE_ISR2_PROT_poststub(void)
+__asm volatile static void EE_ISR2_PROT_poststub(void)
 {
 ! "r0"
 	li	r0, EE_ID_TerminateISR2

@@ -167,12 +167,15 @@ endif
 ## PPC - diab under GNU/Linux or Cygwin
 ##########################################################################
 ifeq ($(or $(call iseeopt, __PPCE200Z6__), $(call iseeopt, __PPCE200Z7__), \
-	$(call iseeopt, __PPCE200Z0__), $(call iseeopt, EE_PPCE200Z4)), yes)
+	$(call iseeopt, __PPCE200Z0__), $(call iseeopt, EE_PPCE200Z4), \
+	$(call iseeopt, EE_PPCE200Z225), $(call iseeopt, EE_PPCE200Z420)), yes)
 EEOPT +=  __PPCE200ZX__
 endif
 ifeq ($(call iseeopt, __PPCE200ZX__), yes)
 ifeq ($(or $(call iseeopt, __MPC5674F__), $(call iseeopt, __MPC5668__), \
-	$(call iseeopt, __MPC5668G__), $(call iseeopt, EE_MPC5643L) , $(call iseeopt, EE_MPC5644A)), yes)
+	$(call iseeopt, __MPC5668G__), $(call iseeopt, EE_MPC5643L) , \
+    $(call iseeopt, EE_MPC5644A), $(call iseeopt, EE_MPC5777C), \
+	$(call iseeopt, EE_SPC574K)), yes)
 include $(EEBASE)/pkg/cfg/arch/rules_ppc_generic.mk
 endif
 endif # __PPCE200ZX__
