@@ -377,8 +377,8 @@ void _START(void){}
 /*******************************************************************************
  * @brief startup code
  ******************************************************************************/
-#define EE_TC_START_PSW         0x00000B80U
-#define EE_TC_START_PSW_ISP     0x00000980U
+#define EE_TC_START_PSW         0x00000BFFU
+#define EE_TC_START_PSW_ISP     0x000009FFU
 
 #if defined(__MSRP__) && defined(EE_MASTER_CPU) && defined(__GNUC__)
 #pragma section "ee_kernel_start" ax 4
@@ -552,15 +552,6 @@ void __NEVER_INLINE__ JUMP EE_TC2YX_START( void )
      you cannot make a real function call before initialize CSAs lists */
   EE_tc2Yx_csa_init();
 
-  /*
-   * Initialize and clear C variables.
-   */
-  EE_tc2Yx_cinit();      /* initialize data */
-
-#ifdef EE_C_INIT_TC
-  EE_C_INIT_TC();      /* initialize core specific data */
-#endif /* EE_C_INIT_TC */
-
 #if defined (__MULTI__) && defined(__IRQ_STACK_NEEDED__)
   /*
    * Load interrupt stack pointer.
@@ -577,6 +568,15 @@ void __NEVER_INLINE__ JUMP EE_TC2YX_START( void )
    * to enable the write-protection.
    */
   EE_tc2Yx_endinit_set(EE_TC_ENDINIT_ENABLE);
+
+  /*
+   * Initialize and clear C variables.
+   */
+  EE_tc2Yx_cinit();      /* initialize data */
+
+#ifdef EE_C_INIT_TC
+  EE_C_INIT_TC();      /* initialize core specific data */
+#endif /* EE_C_INIT_TC */
 
 #ifdef EE_MASTER_CPU
   /*
