@@ -152,8 +152,8 @@ __start:
 	addi	r8, r8, ee_estack@l
 	addis	r9, 0, ee_sstack@ha	/* load _sstack into r9 */
 	addi	r9, r9, ee_sstack@l
-	addis	r11, 0, 0xa5a5a5a5@ha	/* load the fill pattern in r11 */
-	addi	r11, r11, 0xa5a5a5a5@l
+	addis	r11, 0, EE_STACK_FILL_PATTERN@ha	/* load the fill pattern in r11 */
+	addi	r11, r11, EE_STACK_FILL_PATTERN@l
 
 1:
 	stw	r11, 0(r9)		/* fill the stacks */
