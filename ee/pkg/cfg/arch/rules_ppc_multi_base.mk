@@ -72,19 +72,19 @@ $(foreach c, $(CPU_LIST), $(eval $(call all-clean-template,$c)))
 $(foreach s, $(SLAVE_CPUS), $(s)-all): $(GLOBAL_LINKSCRIPT)
 
 $(START_SH): \
- %: $(PKGBASE)/mcu/freescale_$(PPC_MCU_MODEL)/cfg/multicore/%
+ %: $(PKGBASE)/mcu/$(PPC_MCU_MODEL)/cfg/multicore/%
 	@echo CP $@
 	$(QUIET) cp $< $@
 
 config-mc.t32: \
- %: $(PKGBASE)/mcu/freescale_$(PPC_MCU_MODEL)/cfg/multicore/%
+ %: $(PKGBASE)/mcu/$(PPC_MCU_MODEL)/cfg/multicore/%
 	@echo GEN $@
 	$(QUIET) sed -e 's:#T32SYS#:$(T32SYS):g'  $< > $@
 
 ifeq ($(call iseeopt, __E200ZX_EXECUTE_FROM_RAM__), yes)
 # This rule works on the assumption that there is one slave CPU
 start-mc.cmm: \
- %: $(PKGBASE)/mcu/freescale_$(PPC_MCU_MODEL)/cfg/multicore/% $(MAKEFILE_LIST)
+ %: $(PKGBASE)/mcu/$(PPC_MCU_MODEL)/cfg/multicore/% $(MAKEFILE_LIST)
 	@echo GEN $@
 	$(QUIET)sed -e 's:#MASTER_DIR#:$(CPU_MASTER_DIR):g'		\
 		$(foreach s, $(SLAVE_CPUS),				\
@@ -95,7 +95,7 @@ start-mc.cmm: \
 else
 # This rule works on the assumption that there is one slave CPU
 start-mc.cmm: \
- %: $(PKGBASE)/mcu/freescale_$(PPC_MCU_MODEL)/cfg/multicore/% $(MAKEFILE_LIST)
+ %: $(PKGBASE)/mcu/$(PPC_MCU_MODEL)/cfg/multicore/% $(MAKEFILE_LIST)
 	@echo GEN $@
 	$(QUIET)sed -e 's:#MASTER_DIR#:$(CPU_MASTER_DIR):g'		\
 		$(foreach s, $(SLAVE_CPUS),				\
@@ -105,7 +105,7 @@ start-mc.cmm: \
 		) $< > $@
 
 rom_multi.cmm: \
- %: $(PKGBASE)/mcu/freescale_$(PPC_MCU_MODEL)/cfg/multicore/% $(MAKEFILE_LIST)
+ %: $(PKGBASE)/mcu/$(PPC_MCU_MODEL)/cfg/multicore/% $(MAKEFILE_LIST)
 	@echo GEN $@
 	$(QUIET) sed -e 's:#MASTER_ELF#:$(MASTER_ELF):g'  		\
 		$(foreach s, $(SLAVE_CPUS),				\
@@ -115,7 +115,7 @@ rom_multi.cmm: \
 
 endif
 
-exec_lauterbach.sh:  %: $(PKGBASE)/mcu/freescale_$(PPC_MCU_MODEL)/cfg/%
+exec_lauterbach.sh:  %: $(PKGBASE)/mcu/$(PPC_MCU_MODEL)/cfg/%
 	@echo
 	@echo "Copying exec_lauterbach.sh..."
 	@echo
@@ -129,9 +129,9 @@ $(MASTER_ELF): CPU_MASTER-all
 $(GLOBAL_LINKSCRIPT): $(MASTER_ELF)
 	@echo Building shared symbol table
 	$(QUIET)objdump -t -w -j ee_mcglobalc -j ee_mcglobald -j ee_mcglobalu \
-                -j ee_fast_mcglobalc -j ee_fast_mcglobald \
-                -j ee_fast_mcglobalu -j ee_start $< \
-		| awk '/^[0-9a-fA-F]+ ......O/ {			\
+                -j ee_small_mcglobalc -j ee_small_mcglobald \
+                -j ee_small_mcglobalu -j ee_mcglobalt -j ee_start $< \
+		| awk '/^[0-9a-fA-F]+ ......[OF]/ {			\
 			match($$0, "^([0-9a-fA-F]+) .+ ([^ ]+)$$", m);	\
 			printf("%s = 0x%s;\n", m[2], m[1]) }' > $@
 
