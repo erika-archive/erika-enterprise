@@ -1,7 +1,7 @@
 /* ###*B*###
  * ERIKA Enterprise - a tiny RTOS for small microcontrollers
  *
- * Copyright (C) 2002-2014  Evidence Srl
+ * Copyright (C) 2002-2016  Evidence Srl
  *
  * This file is part of ERIKA Enterprise.
  *
@@ -41,6 +41,7 @@
 /*
  * Author: 2000-2004 Paolo Gai
  *         2009 Bernardo Dal Seno
+ *         2016 Giuseppe Serano
  */
 
 
@@ -240,8 +241,15 @@ extern "C" {
 #include "mcu/x86/inc/ee_mcu.h"
 #endif
 
-/* Tricore TC26X || TC27x */
-#if (defined(EE_TRICORE__)) && ( (defined(EE_TC26X__)) || (defined(EE_TC27X__)) )
+/* Tricore TC26X || TC27x || TC29x */
+#if (						\
+	(defined(EE_TRICORE__)) &&		\
+	(					\
+		(defined(EE_TC26X__)) ||	\
+		(defined(EE_TC27X__)) ||	\
+		(defined(EE_TC29X__))		\
+	)					\
+)
 #include "mcu/infineon_common_tc2Yx/inc/ee_tc2Yx_mcu.h"
 #endif
 
@@ -386,9 +394,13 @@ extern "C" {
 #include "board/infineon_tc1796b/inc/ee_board.h"
 #endif
 
-/* Tricore TC27x */
-#if (defined(EE_TRICORE__)) && (defined(EE_TRIBOARD_TC2X5))
-#include "board/infineon_TriBoard_TC2X5/inc/ee_tc2x5_board.h"
+/* Tricore TC2x5 || TC2xN */
+#if (                                                           \
+  (defined(EE_TRICORE__)) &&                                    \
+  ((defined(EE_TRIBOARD_TC2X5)) || (defined(EE_TRIBOARD_TC2XN)))\
+)
+/* #include "board/infineon_TriBoard_TC2X5/inc/ee_tc2x5_board.h" */
+#include "board/infineon_TriBoard_TC2XN/inc/ee_tc2xN_board.h"
 #endif
 
 /* Infineon Applikation Kit */
@@ -516,6 +528,16 @@ extern "C" {
    */
 
 #include "ee_irq.h"
+
+  /*
+   *
+   * CABs
+   *
+   */
+
+#ifdef EE_CABS__
+#include "com/cabs/inc/ee_cabs.h"
+#endif
 
 /* Assert inclusion if enabled */
 #ifdef __ASSERT__
