@@ -7,7 +7,7 @@
  *
  * ERIKA Enterprise is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation, 
+ * version 2 as published by the Free Software Foundation,
  * (with a special exception described below).
  *
  * Linking this code statically or dynamically with other modules is
@@ -45,7 +45,6 @@
 
 #include "ee_internal.h"
 
-#if (!defined(EE_MM_OPT))
 #ifdef EE_SUPPORT_MEMMAP_H
 #define OS_START_SEC_STACK
 #include "MemMap.h"
@@ -56,7 +55,6 @@ EE_STACK_T EE_STACK_ATTRIB
 #define OS_STOP_SEC_STACK
 #include "MemMap.h"
 #endif /* EE_SUPPORT_MEMMAP_H */
-#endif /* !EE_MM_OPT */
 
 #if (defined(__EE_MEMORY_PROTECTION__)) && (defined(OO_CPU_HAS_STARTOS_ROUTINE))
 EE_TYPEBOOL EE_cpu_startos(void)
@@ -241,7 +239,7 @@ void EE_hal_app_init(const EE_APP_SEC_INFO_T *app_info)
 	const EE_UINT32 *dest_end;
 	EE_UINT32 *bss;
 	const EE_UINT32 *bss_end;
-        
+
 	EE_UINT32 *stack_start;
         const EE_UINT32 *stack_end;
 

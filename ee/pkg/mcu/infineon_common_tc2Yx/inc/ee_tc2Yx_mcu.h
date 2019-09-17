@@ -241,7 +241,7 @@
 #define EE_STM_OCS      STM2_OCS
 #define EE_STM_TIM0     STM2_TIM0
 #define EE_STM_CAP      STM2_CAP
-#else 
+#else
 #error Unknown CPU ID
 #endif /* EE_CURRENTCPU */
 
@@ -281,16 +281,6 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc2Yx_stm_ocds_suspend_control( void )
   * @param  usec the number of microseconds you want to wait
   */
 void EE_tc2Yx_delay( EE_UREG usec );
-
-/*******************************************************************************
-                          Forced Configuration
- ******************************************************************************/
-#if (defined(EE_MM_OPT))
-/* If MM environment is configured: force bypass clock configuration. */
-#if (!defined(EE_BYPASS_CLOCK_CONFIGURATION))
-#define EE_BYPASS_CLOCK_CONFIGURATION
-#endif /* !EE_BYPASS_CLOCK_CONFIGURATION */
-#endif /* EE_MM_OPT */
 
 /*******************************************************************************
                 Multicore and multiprocessor support

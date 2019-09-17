@@ -141,7 +141,7 @@ void EE_as_restore_stack_canary ( EE_UREG stktop ) {
 
 #ifdef __GNUC__
 /* This disable the selected warning of unsused variables only for this code
-   (available in gcc from version 4.6), the warning is suppressed between 
+   (available in gcc from version 4.6), the warning is suppressed between
    until "#pragma GCC diagnostic pop" */
 #pragma GCC diagnostic push
 /* I declare some volatile registers located variables to "discourage" compiler
@@ -597,8 +597,7 @@ AccessType EE_hal_get_app_mem_access(ApplicationType app,
 /* Labels for Kernel Tracing. It has been used an utility function to generate
    only one copy of Tracing Labels.
    Enabled when ORTI is enabled and ISR are handled by ERIKA's intvec */
-#if defined(__OO_ORTI_SERVICETRACE__) && ((!defined(EE_ERIKA_ISR_HANDLING_OFF))\
-  || defined(EE_MM_OPT))
+#if defined(__OO_ORTI_SERVICETRACE__) && (!defined(EE_ERIKA_ISR_HANDLING_OFF))
 /* If MemMap.h support is enabled (i.e. because memory protection): use it */
 #ifdef EE_SUPPORT_MEMMAP_H
 #define API_START_SEC_CODE
@@ -619,5 +618,4 @@ void __NEVER_INLINE__ EE_tc_isr2_call_handler( EE_tc_ISR_handler f )
 #include "MemMap.h"
 #endif /* EE_SUPPORT_MEMMAP_H */
 
-#endif /* __OO_ORTI_SERVICETRACE__ &&
-    (!EE_ERIKA_ISR_HANDLING_OFF || EE_MM_OPT) */
+#endif /* __OO_ORTI_SERVICETRACE__ && !EE_ERIKA_ISR_HANDLING_OFF */

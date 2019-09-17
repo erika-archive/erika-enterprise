@@ -503,15 +503,6 @@ struct EE_SD {
 
 extern struct EE_SD const EE_e200zx_system_bos[EE_E200Z7_SYSTEM_TOS_SIZE];
 
-#if (defined(EE_MM_OPT))
-
-extern unsigned char __SP_INIT[];
-extern unsigned char __SP_REAL_END[];
-
-#define EE_SYS_SP_BEGIN  __SP_INIT
-#define EE_SYS_SP_END    __SP_REAL_END
-#else
-
 #ifdef EE_SUPPORT_MEMMAP_H
 #define OS_START_SEC_STACK
 #include "MemMap.h"
@@ -527,7 +518,6 @@ extern EE_STACK_T EE_STACK_ATTRIB
   ((EE_ADDR)&EE_e200zx_sys_stack[EE_STACK_INITP(EE_SYS_STACK_SIZE)])
 #define EE_SYS_SP_END \
   ((EE_ADDR)&EE_e200zx_sys_stack[0])
-#endif /* EE_MM_OPT */
 
 #endif /* EE_STACK_MONITORING__ */
 

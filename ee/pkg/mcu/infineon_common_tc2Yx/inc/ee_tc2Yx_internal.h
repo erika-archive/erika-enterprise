@@ -84,7 +84,7 @@
 /******************************************************************************
                Handle CPU Clock in case of PLL configuration Bypass
 *******************************************************************************/
-#if (defined(EE_BYPASS_CLOCK_CONFIGURATION)) && (!defined(EE_MM_OPT))
+#if (defined(EE_BYPASS_CLOCK_CONFIGURATION))
 #if (defined(EE_CPU_CLOCK))
 #if (EE_CPU_CLOCK != EE_EVR_OSC_FREQUENCY)
 #error If EE_BYPASS_CLOCK_CONFIGURATION is configured, CPU_CLOCK have to be\
@@ -93,7 +93,7 @@
 #else
 #define EE_CPU_CLOCK  EE_EVR_OSC_FREQUENCY
 #endif /* EE_CPU_CLOCK */
-#endif /* EE_BYPASS_CLOCK_CONFIGURATION && !EE_MM_OPT */
+#endif /* EE_BYPASS_CLOCK_CONFIGURATION */
 
 /** Interrupt table */
 extern void EE_tc_interrupt_table ( void );
@@ -396,7 +396,7 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc2Yx_fill_stacks( void )
   /* User Stack Base. */
   extern EE_UINT32 EE_B_USTACK[];
 
-#if (defined(__GNUC__) && (!defined(EE_EXECUTE_FROM_RAM))) || defined(__DCC__) 
+#if (defined(__GNUC__) && (!defined(EE_EXECUTE_FROM_RAM))) || defined(__DCC__)
   /* ERIKA stacks table entry */
   extern EE_UINT32 ee_stacks_table[];
   /* Pointer used to traverse stack table */
@@ -416,7 +416,7 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc2Yx_fill_stacks( void )
   }
 
 
-#if (defined(__GNUC__) && (!defined(EE_EXECUTE_FROM_RAM))) || defined(__DCC__) 
+#if (defined(__GNUC__) && (!defined(EE_EXECUTE_FROM_RAM))) || defined(__DCC__)
   /* Stack table */
   stack_table_ptr = ee_stacks_table;
   /* Traverse it */
@@ -428,7 +428,7 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc2Yx_fill_stacks( void )
     stack_table_ptr++;
     /* Get the stack section length */
     stack_length = *stack_table_ptr;
-    
+
     /* we have finished when next length == -1 */
     if ( stack_length == 0xFFFFFFFFU ) {
       break;
@@ -472,14 +472,14 @@ extern void EE_tc2Yx_stm_set_clockpersec ( void );
 __INLINE__ EE_TYPEBOOL __ALWAYS_INLINE__ EE_cpu_startos( void )
 {
 #if (defined(__EE_MEMORY_PROTECTION__) || defined(EE_TIMING_PROTECTION__)) &&\
-  (defined(EE_USE_CUSTOM_STARTUP_CODE) || defined(EE_MM_OPT))
+  (defined(EE_USE_CUSTOM_STARTUP_CODE))
   /* In case of "User Boot" and "sytem protections" play SAFE and force
      the set of the right Trap Table. */
   EE_tc_endint_disable();
   EE_tc_set_csfr(EE_CPU_REG_BTV, (EE_UINT32)&EE_tc_trap_table);
   EE_tc_endint_enable();
 #endif /* (__EE_MEMORY_PROTECTION__ || EE_TIMING_PROTECTION__) &&
-   (EE_USE_CUSTOM_STARTUP_CODE || EE_MM_OPT) */
+   (EE_USE_CUSTOM_STARTUP_CODE) */
 #if (defined(EE_MASTER_CPU))
 #if (!defined(EE_BYPASS_CLOCK_CONFIGURATION))
   /* If a CPU CLOCK frequency is defined configure the SCU registers */

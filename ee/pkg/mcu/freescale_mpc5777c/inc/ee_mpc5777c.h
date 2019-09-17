@@ -46,11 +46,9 @@
 #ifndef EE_MCU_MPC5777C_H
 #define EE_MCU_MPC5777C_H
 
-#if !defined(EE_MM_OPT)
 /* ISO int types used by MPC5777C.h */
 #define STDINT_SKIP_64BIT
 #include "cpu/common/inc/ee_stdint.h"
-#endif /* !EE_MM_OPT */
 
 /*#include "MPC5777C.h"*/
 

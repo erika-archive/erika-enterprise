@@ -7,7 +7,7 @@
  *
  * ERIKA Enterprise is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation, 
+ * version 2 as published by the Free Software Foundation,
  * (with a special exception described below).
  *
  * Linking this code statically or dynamically with other modules is
@@ -60,11 +60,7 @@
  *          SRC_GPSR20, will be used for this communication mechanism,
  *          respectively, for core 0,1 and 2.
  */
-#if (!defined(EE_MM_OPT))
 __DECLARE_INLINE__ void __ALWAYS_INLINE__ EE_tc2Yx_setup_inter_irqs( void );
-#else	/* EE_MM_OPT */
-#define	EE_tc2Yx_setup_inter_irqs()	((void)0)
-#endif	/* !EE_MM_OPT */
 
 #include "cpu/tricore/inc/ee_tc_irq.h"
 
@@ -82,7 +78,6 @@ __DECLARE_INLINE__ void __ALWAYS_INLINE__ EE_tc2Yx_setup_inter_irqs( void );
 #endif  /* EE_CPU2_START_ADDR */
 #endif /* EE_NUMBER_OF_CORES > 2 */
 
-#if (!defined(EE_MM_OPT))
 __INLINE__ void __ALWAYS_INLINE__ EE_tc2Yx_setup_inter_irqs( void )
 {
   /*  Assign TOS (Type of Service Control:Read CPU) enable and assign
@@ -98,7 +93,6 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc2Yx_setup_inter_irqs( void )
     EE_TC2YX_SRN_PRIORITY(EE_ISR_PRI_1);
 #endif /* EE_NUMBER_OF_CORES > 2 */
 }
-#endif /* !EE_MM_OPT */
 
 /*******************************************************************************
                             Multicore CPU Signal
@@ -196,7 +190,7 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc2Yx_ack_signal( EE_TYPECOREID cpu )
 #ifdef EE_MASTER_CPU
 /* Symbol remapping already done */
 
-#elif (EE_CURRENTCPU == 1) 
+#elif (EE_CURRENTCPU == 1)
 /* Start-Up Symbols Remapping */
 #define EE_B_USTACK     __USTACK_BEGIN    /* user stack base */
 #define EE_E_USTACK     __USTACK          /* user stack end */

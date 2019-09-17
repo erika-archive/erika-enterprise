@@ -1,20 +1,20 @@
 # ###*B*###
 # ERIKA Enterprise - a tiny RTOS for small microcontrollers
-# 
+#
 # Copyright (C) 2002-2012  Evidence Srl
-# 
+#
 # This file is part of ERIKA Enterprise.
-# 
+#
 # ERIKA Enterprise is free software; you can redistribute it
 # and/or modify it under the terms of the GNU General Public License
-# version 2 as published by the Free Software Foundation, 
+# version 2 as published by the Free Software Foundation,
 # (with a special exception described below).
-# 
+#
 # Linking this code statically or dynamically with other modules is
 # making a combined work based on this code.  Thus, the terms and
 # conditions of the GNU General Public License cover the whole
 # combination.
-# 
+#
 # As a special exception, the copyright holders of this library give you
 # permission to link this code with independent modules to produce an
 # executable, regardless of the license terms of these independent
@@ -26,12 +26,12 @@
 # this exception to your version of the code, but you are not
 # obligated to do so.  If you do not wish to do so, delete this
 # exception statement from your version.
-# 
+#
 # ERIKA Enterprise is distributed in the hope that it will be
 # useful, but WITHOUT ANY WARRANTY; without even the implied warranty
 # of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License version 2 for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # version 2 along with ERIKA Enterprise; if not, write to the
 # Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
@@ -50,7 +50,7 @@
 ## This file has been generated for HIGHTEC GCC v4.6.1.2
 ##
 
-ifeq ($(call iseeopt, EE_FIND_COMPILER_IN_PATH), yes) 
+ifeq ($(call iseeopt, EE_FIND_COMPILER_IN_PATH), yes)
 ## If this EE_OPT is used, the toolchain expects the compiler present in path
 ## This solution has been introduced because Lin does not like compiler paths
 EE_LINK ?= tricore-gcc
@@ -74,7 +74,7 @@ CC_LD_SUFFIX := ld
 
 ifneq ($(ONLY_LIBS), TRUE)
 # OPT_LIBS is used to link additional libraries (e.g., for C++ support)
-ifneq ($(call iseeopt, __BIN_DISTR), yes) 
+ifneq ($(call iseeopt, __BIN_DISTR), yes)
 OPT_LIBS +=
 else  # EEOPT __BIN_DISTR
 OPT_LIBS +=
@@ -108,14 +108,6 @@ GNUC_TRICORE_MODEL := tc26xx
 endif
 
 ## OPT_CC are the options for compiler invocation
-ifeq ($(call iseeopt, EE_MM_OPT), yes)
-# -fomit-frame-pointer (neeeded to avoid that additional instructions are inserted before _START symbol),
-# -ffunction-sections (needed to easily pick function in linker scripts and place them wherever you want),
-# -fzero-initialized-in-bss, -finline-functions are all set in CFLAGS_tricore_gcc.txt file
-OPT_CC += -c @$(call native_path,$(EEBASE))/pkg/cfg/arch/CFLAGS_tricore_gcc.txt -mcpu=$(GNUC_TRICORE_MODEL)\
- -Wdisabled-optimization -mcpu114
-
-else # EE_MM_OPT
 # -fomit-frame-pointer  is needed to avoid that additional instructions are
 #                       inserted before _START symbol
 # -fno-tree-loop-optimize needed to work around to a compiler bug
@@ -133,8 +125,6 @@ OPT_CC += -g3 -ggdb -O1
 else # EE_DEBUG
 OPT_CC += -g -O3
 endif # EE_DEBUG
-
-endif # EE_MM_OPT
 
 ifeq ($(call iseeopt, EE_SAVE_TEMP_FILES), yes)
 OPT_CC += -save-temps=obj
@@ -155,18 +145,10 @@ target_c_file=$(addprefix -o ,$1)
 ##
 ## OPT_ASM are the options for asm invocation
 ##
-ifeq ($(call iseeopt, EE_MM_OPT), yes)
-OPT_ASM = -c -mcpu=$(GNUC_TRICORE_MODEL) -mtc161 \
- -mcpu009 -mcpu034 -mcpu048 -mcpu050 -mcpu060 -mcpu069 -mcpu070 -mcpu072 \
- -mcpu081 -mcpu082 -mcpu083 -mcpu094 -mcpu095
-
-else # EE_MM_OPT
 OPT_ASM += -c -mcpu=$(GNUC_TRICORE_MODEL) -mtc161 -Wall -fshort-double
 
-endif # EE_MM_OPT
-
 ifeq ($(call iseeopt, EE_DEBUG), yes)
-OPT_ASM += -Wa,--gdwarf2 
+OPT_ASM += -Wa,--gdwarf2
 endif # EE_DEBUG
 
 
@@ -185,7 +167,7 @@ ifneq ($(call iseeopt, EE_AS_OSAPPLICATIONS__), yes)
 # apps.conf is not generated if there is no Memory Protection
 apps.conf:
 	@touch $@
-endif # EE_AS_OSAPPLICATIONS__ 
+endif # EE_AS_OSAPPLICATIONS__
 
 # Generate configuration files for Os-Applications
 ifeq ($(call iseeopt, EE_AS_OSAPPLICATIONS__), yes)
@@ -405,7 +387,7 @@ target_ld_file=$(addprefix -o ,$1)
 OPT_AR += -r -c
 
 # Defining EEOPT Macros
-# Each identifier that is listed in EEOPT is also inserted as a 
+# Each identifier that is listed in EEOPT is also inserted as a
 # command-line macro in the compiler...
 DEFS_ASM = $(addprefix -D, $(EEOPT) )
 DEFS_CC  = $(addprefix -D, $(EEOPT) )

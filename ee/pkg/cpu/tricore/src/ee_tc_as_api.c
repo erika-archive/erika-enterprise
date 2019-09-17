@@ -234,7 +234,7 @@ void EE_TC_INTERRUPT_HANDER EE_TC_CHANGE_STACK_POINTER
   /* Get the service pointer or get back in the Kernel */
   register EE_FADDR service_ptr;
 
-#if defined(__OO_EXTENDED_STATUS__) || (!defined(EE_MM_OPT))
+#if defined(__OO_EXTENDED_STATUS__)
   /* Begin Kernel Code Range */
   extern void ee_skernel_code ( void );
   /* End Kernel Code Range */
@@ -246,13 +246,13 @@ void EE_TC_INTERRUPT_HANDER EE_TC_CHANGE_STACK_POINTER
   /* Check Who Executed The System Call: we accept call only from ee_api_text
      and ee_kernel_text sections. */
   register EE_FADDR ra = EE_tc_get_syscall_RA();
-#endif /* __OO_EXTENDED_STATUS__ || !EE_MM_OPT */
+#endif /* __OO_EXTENDED_STATUS__ */
 
   /* I do not handle stack passing parameters because I don't need them */
 
   /* PSW.PRS is automatically set to 0 by hardware so Set 0 of DPR is yet
      active here + PSW.IO is in supervisor mode (Done by the hardware) */
-#if defined(__OO_EXTENDED_STATUS__) || (!defined(EE_MM_OPT))
+#if defined(__OO_EXTENDED_STATUS__)
   if( !((( ra >= ee_skernel_code ) && ( ra <= ee_ekernel_code )) ||
         (( ra >= ee_sapi_code ) && ( ra <= ee_eapi_code ))) )
   {
@@ -261,7 +261,7 @@ void EE_TC_INTERRUPT_HANDER EE_TC_CHANGE_STACK_POINTER
     /* the following won't be called: added just in case */
     EE_tc_restore_os_app(EE_as_active_app);
   } else
-#endif /* __OO_EXTENDED_STATUS__ || !EE_MM_OPT */
+#endif /* __OO_EXTENDED_STATUS__ */
   {
     /* Pause active TP... !!!WARNING!!! I CANNOT do this here...
        This will clutter scratch registers needed for syscalls parameters */
@@ -442,7 +442,7 @@ static int EE_tc_tp_is_isr2_race ( void ) {
         break;
       }
     }
-  
+
     if ( p_after_isr2_csa != NULL ) {
       is_isr2_race = (p_after_isr2_csa->next.bits.PCPN != after_isr2_pcpn);
     }
@@ -542,7 +542,7 @@ void EE_tc_default_trap_handler ( EE_TIN tin )
 #include "MemMap.h"
 
 /***************************************************************************
- * 13.3 Interrupt handling 
+ * 13.3 Interrupt handling
  ***************************************************************************/
 
 /* 13.3.2.1: BCC1, BCC2, ECC1, ECC2 */
@@ -618,7 +618,7 @@ void SuspendOSInterrupts( void )
 #endif /* ! __PRIVATE_SUSPENDOSINTERRUPTS__ */
 
 /***************************************************************************
- * 13.2 Task management 
+ * 13.2 Task management
  ***************************************************************************/
 
 /* 13.2.3 System services                                                  */
@@ -720,7 +720,7 @@ StatusType ForceSchedule(void)
 #endif /* __PRIVATE_FORCESCHEDULE__ */
 
 /***************************************************************************
- * 13.4 Resource management 
+ * 13.4 Resource management
  ***************************************************************************/
 
 #ifndef __OO_NO_RESOURCES__
@@ -769,7 +769,7 @@ StatusType ReleaseResource(ResourceType ResID)
 #endif /* !__OO_NO_RESOURCES__ */
 
 /***************************************************************************
- * 13.5 Event control 
+ * 13.5 Event control
  ***************************************************************************/
 
 /* 13.5.3 System services                                                  */
@@ -841,7 +841,7 @@ StatusType WaitEvent(EventMaskType Mask)
 #endif /* __OO_ECC1__ || __OO_ECC2__ */
 
 /***************************************************************************
- * 13.6 Alarms 
+ * 13.6 Alarms
  ***************************************************************************/
 
 #ifndef __OO_NO_ALARMS__
@@ -872,7 +872,7 @@ StatusType WaitEvent(EventMaskType Mask)
 
    The function will also implement the notification of expired alarms
    (calling an alarm callback, setting an event, or activating a
-   task). 
+   task).
 
    And DO RESCHEDULING.
    see also internal.h
@@ -990,7 +990,7 @@ StatusType CancelAlarm(AlarmType AlarmID)
 #endif /* !__OO_NO_ALARMS__ */
 
 /***************************************************************************
- * 13.7 Operating system execution control 
+ * 13.7 Operating system execution control
  ***************************************************************************/
 
 /* 13.7.2.3: BCC1, BCC2, ECC1, ECC2 */

@@ -93,13 +93,7 @@ endif
 OPT_CC += -c $(CFLAGS) $(OPT_TARGET)
 
 ## OPT_ASM are the options for asm invocation
-ifeq ($(call iseeopt, EE_MM_OPT), yes)
-OPT_ASM = -Xgnu-locals-off $(OPT_TARGET)
-# -Xgnu-locals-off disables local GNU labels. See GNU-Style Locals for
-# more information. The default setting is -Xgnu-locals-on.
-else
 OPT_ASM = $(OPT_TARGET)
-endif
 
 ifneq ($(call iseeopt, __BIN_DISTR), yes)
 ifeq ($(call iseeopt, DEBUG), yes)
@@ -138,7 +132,7 @@ DEFS_CC  = $(addprefix -D, $(EEOPT) )
 
 # Automatic dependency generation
 ifeq ($(call iseeopt, NODEPS), yes)
-DEPENDENCY_OPT = 
+DEPENDENCY_OPT =
 make-depend =
 else # NODEPS
 ifeq ($(call iseeopt, __RTD_CYGWIN__), yes)

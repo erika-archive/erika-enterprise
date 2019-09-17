@@ -63,8 +63,7 @@
 /* Labels for Kernel Tracing. It has been used an utility function to generate
    only one copy of Tracing Labels.
    Enabled when ORTI is enabled and ISR are handled by ERIKA's intvec */
-#if defined(__OO_ORTI_SERVICETRACE__) && ((!defined(EE_ERIKA_ISR_HANDLING_OFF))\
-  || defined(EE_MM_OPT))
+#if defined(__OO_ORTI_SERVICETRACE__) && (!defined(EE_ERIKA_ISR_HANDLING_OFF))
 /* If MemMap.h support is enabled (i.e. because memory protection): use it */
 #ifdef EE_SUPPORT_MEMMAP_H
 #define API_START_SEC_CODE
@@ -79,8 +78,7 @@ void __NEVER_INLINE__ EE_tc_isr2_call_handler( EE_tc_ISR_handler f );
 #include "MemMap.h"
 #endif /* EE_SUPPORT_MEMMAP_H */
 
-#else /* __OO_ORTI_SERVICETRACE__ &&
-  (!EE_ERIKA_ISR_HANDLING_OFF || EE_MM_OPT) */
+#else /* __OO_ORTI_SERVICETRACE__ && !EE_ERIKA_ISR_HANDLING_OFF */
 __INLINE__ void __ALWAYS_INLINE__ EE_tc_isr2_call_handler( EE_tc_ISR_handler f )
 {
   /* Call The ISR User Handler */
@@ -88,8 +86,7 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc_isr2_call_handler( EE_tc_ISR_handler f )
     f();
   }
 }
-#endif /* __OO_ORTI_SERVICETRACE__ &&
-    (!EE_ERIKA_ISR_HANDLING_OFF || EE_MM_OPT) */
+#endif /* __OO_ORTI_SERVICETRACE__ && !EE_ERIKA_ISR_HANDLING_OFF */
 
 #ifdef EE_AS_OSAPPLICATIONS__
 
