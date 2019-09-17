@@ -188,7 +188,7 @@ extern void __copy_multiple (/* struct copytable */void *begin,
 asm volatile int EE_tc2Yx_extru (int src, int start, int size)
 {
 %reg src; con start, size;
-!"%d2" 
+!"%d2"
   mov.d	 %d2, src               # pointer src is not casted by compiler
   extr.u %d2, %d2, start, size
 }
@@ -559,13 +559,13 @@ void __NEVER_INLINE__ JUMP EE_TC2YX_START( void )
    * Set the ENDINIT bit in the WDT_CON0 register again
    * to enable the write-protection.
    */
-  EE_tc_endint_enable();
+  EE_tc2Yx_setCpuEndinit(EE_tc2Yx_getCpuWatchdogPassword());
 #ifdef EE_MASTER_CPU
   /*
    * Set the ENDINIT bit in the WDTSCON0 register to enable the
    * safety-critical register write-protection.
    */
-  EE_tc_safety_endinit_enable();
+  EE_tc2Yx_setSafetyEndinit(EE_tc2Yx_getSafetyWatchdogPassword());
 #endif /* EE_MASTER_CPU */
 
   /* Setup the context save area linked list. This MUST be inline because
@@ -601,7 +601,7 @@ void __NEVER_INLINE__ JUMP EE_TC2YX_START( void )
 #ifdef	EE_MASTER_CPU
   EE_tc_safety_wdg_disable();
 #endif	/* EE_MASTER_CPU */
-  
+
   /*
    * Call C main program.
    */
@@ -711,7 +711,7 @@ static void EE_tc_apply_clear_table(EE_tc_clear_table * p_clear_table) {
 
 /* Get the lenght of the table entry (in bytes) */
     table_entry_length = p_clear_table->table_entry_length;
-    
+
 /* We have finished when length == -1 */
     if (table_entry_length != 0xFFFFFFFFU) {
 /* Prepare to clear as much unsigned long long as you can... */
@@ -761,7 +761,7 @@ static void EE_tc_apply_copy_table(EE_tc_copy_table * p_copy_table) {
 
 /* Get the lenght of the table entry (in bytes) */
     table_entry_length = p_copy_table->table_entry_length;
-    
+
 /* We have finished when length == -1 */
     if (table_entry_length != 0xFFFFFFFFU) {
 /* Prepare to copy as much unsigned long long as you can... */
