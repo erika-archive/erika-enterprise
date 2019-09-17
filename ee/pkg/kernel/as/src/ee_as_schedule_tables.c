@@ -346,9 +346,15 @@ StatusType EE_as_StartScheduleTableAbs( ScheduleTableType ScheduleTableID,
       if (modulo_valid) {
         TickType const
           cnt_value = EE_counter_RAM[EE_oo_counter_object_ROM[obj_id].c].value;
+
+        first_absstart = (Start + first_offset);
+
+        if ((first_absstart >= cnt_modulo) || (first_absstart < Start)) {
+          first_absstart -= cnt_modulo;
+        }
+
         if (Start > cnt_value) {
           if ((cnt_modulo - first_offset) >= (Start - cnt_value)) {
-            first_absstart = (Start + first_offset) % cnt_modulo;
             starting_position = EE_as_Schedule_Table_ROM[ScheduleTableID].
               expiry_point_first;
           } else {
@@ -356,7 +362,6 @@ StatusType EE_as_StartScheduleTableAbs( ScheduleTableType ScheduleTableID,
             starting_position = SCHEDULETABLE_STARTING_POSITION;
           }
         } else {
-          first_absstart    = (Start + first_offset) % cnt_modulo;
           starting_position = EE_as_Schedule_Table_ROM[ScheduleTableID].
             expiry_point_first;
         }
