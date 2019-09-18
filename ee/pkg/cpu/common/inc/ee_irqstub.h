@@ -68,13 +68,7 @@ __INLINE__ EE_TYPEBOOL __ALWAYS_INLINE__ EE_is_inside_ISR_call( void )
  * EE_std_enableIRQ_nested() and EE_std_disableIRQ_nested() are used to control
  * when IRQ nesting is enabled.
  */
-#if defined(__AS_SC4__)
-/* For SC4 the nesting level is updated inside the prestub and postub */
-__INLINE__ void __ALWAYS_INLINE__ EE_decrement_IRQ_nesting_level(void) {}
-__INLINE__ void __ALWAYS_INLINE__ EE_increment_IRQ_nesting_level(void) {}
-__INLINE__ void __ALWAYS_INLINE__ EE_std_enableIRQ_nested(void) {}
-__INLINE__ void __ALWAYS_INLINE__ EE_std_disableIRQ_nested(void) {}
-#elif defined(__ALLOW_NESTED_IRQ__)
+#if defined(__ALLOW_NESTED_IRQ__)
 __INLINE__ void __ALWAYS_INLINE__ EE_decrement_IRQ_nesting_level(void) { --EE_IRQ_nesting_level; }
 __INLINE__ void __ALWAYS_INLINE__ EE_increment_IRQ_nesting_level(void) { ++EE_IRQ_nesting_level; }
 /*  EE_std_enableIRQ_nested() and EE_std_disableIRQ_nested() must be defined in
@@ -85,10 +79,10 @@ __INLINE__ void __ALWAYS_INLINE__ EE_decrement_IRQ_nesting_level(void) { EE_IRQ_
 __INLINE__ void __ALWAYS_INLINE__ EE_increment_IRQ_nesting_level(void) { EE_IRQ_nesting_level = 1U; }
 __INLINE__ void __ALWAYS_INLINE__ EE_std_enableIRQ_nested(void) {}
 __INLINE__ void __ALWAYS_INLINE__ EE_std_disableIRQ_nested(void) {}
-#endif
+#endif /* __ALLOW_NESTED_IRQ__ */
 
 #if (defined(__OO_BCC1__)) || (defined(__OO_BCC2__)) || (defined(__OO_ECC1__)) \
-  || (defined(__OO_ECC2__)) || (defined(__AS_SC4__))
+  || (defined(__OO_ECC2__))
 /* Function to be called at the end of a function service interrupt, to execute
    clean-up specifiend in Autosar standard */
 __INLINE__ void __ALWAYS_INLINE__ EE_std_end_IRQ_post_stub(void)

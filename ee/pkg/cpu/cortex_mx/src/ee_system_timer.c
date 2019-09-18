@@ -59,7 +59,7 @@
 ISR(EE_cortex_system_timer_handler)
 {
 #if defined(__OO_BCC1__) || defined(__OO_BCC2__) || defined(__OO_ECC1__) || \
-    defined(__OO_ECC2__) || defined(__AS_SC4__)
+    defined(__OO_ECC2__)
   IncrementCounterHardware(EE_SYSTEM_TIMER);
 #else
   CounterTick(EE_SYSTEM_TIMER);

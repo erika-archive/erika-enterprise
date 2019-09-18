@@ -125,7 +125,7 @@ extern "C" {
 
 /* OO */
 #if (defined(__OO_BCC1__)) || (defined(__OO_BCC2__)) \
-  || (defined(__OO_ECC1__)) || (defined(__OO_ECC2__)) || (defined(__AS_SC4__))
+  || (defined(__OO_ECC1__)) || (defined(__OO_ECC2__))
 #include "kernel/oo/inc/ee_oo_irq.h"
 #endif
 
@@ -161,7 +161,7 @@ extern "C" {
 #ifdef __CORTEX_MX__
 #include "cpu/cortex_mx/inc/ee_irq.h"
 #endif
-	
+
 #ifdef __CORTEX_RX__
 #include "cpu/cortex_rx/inc/ee_irq.h"
 #endif

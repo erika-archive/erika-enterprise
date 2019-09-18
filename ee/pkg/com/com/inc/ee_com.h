@@ -7,7 +7,7 @@
  *
  * ERIKA Enterprise is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation, 
+ * version 2 as published by the Free Software Foundation,
  * (with a special exception described below).
  *
  * Linking this code statically or dynamically with other modules is
@@ -55,8 +55,8 @@
 #include "ee_callout.h"
 
 
-#if !( defined(__OO_BCC1__) || defined(__OO_BCC2__) || defined(__OO_ECC1__) || \
-defined(__OO_ECC2__) || defined(__AS_SC4__) )
+#if !(defined(__OO_BCC1__) || defined(__OO_BCC2__) || defined(__OO_ECC1__) || \
+defined(__OO_ECC2__))
 
 __INLINE__ void __ALWAYS_INLINE__ DisableAllInterrupts(void)
 {
@@ -111,7 +111,7 @@ __INLINE__ void __ALWAYS_INLINE__ EnableAllInterrupts(void)
 #endif
 
 #ifndef EE_TYPECOMSHUTDOWNMODE
-#define EE_TYPECOMSHUTDOWNMODE EE_UINT8 
+#define EE_TYPECOMSHUTDOWNMODE EE_UINT8
 #endif
 
 
@@ -126,7 +126,7 @@ __INLINE__ void __ALWAYS_INLINE__ EnableAllInterrupts(void)
 
 
 #ifndef __PRIVATE_F_ALWAYS__
-EE_UINT8 F_Always(void *new_data, void *old_data, 
+EE_UINT8 F_Always(void *new_data, void *old_data,
 		     EE_UINT8 size, void *extra_data);
 #endif
 
@@ -147,7 +147,7 @@ EE_UINT8 F_NewIsEqual(void *new_data, void *old_data,
 #endif
 
 #ifndef __PRIVATE_F_NEWISDIFFERENT__
-EE_UINT8 F_NewIsDifferent(void *new_data, void *old_data, 
+EE_UINT8 F_NewIsDifferent(void *new_data, void *old_data,
 			     EE_UINT8 size, void *extra_data);
 #endif
 
@@ -194,9 +194,9 @@ EE_UINT8 F_NewIsDifferent(void *new_data, void *old_data,
 typedef EE_TYPESTATUS StatusType;
 #define E_OK                                 0
 #endif
-/*GF: Since the message status is given by the first 3 bits in 
+/*GF: Since the message status is given by the first 3 bits in
 * EE_com_msg_RAM_TYPE->property, it's better to use values in
-* the range [1; 7]. 
+* the range [1; 7].
 */
 /*
 #define E_COM_ID                            32
@@ -224,9 +224,9 @@ typedef void *ApplicationDataRef;
 typedef EE_UINT8 *LengthRef;
 
 /* 2.9.2.1.5 */
-enum FlagValue_enum { 
-  FlagValueF=EE_COM_FALSE, 
-  FlagValueT=EE_COM_TRUE 
+enum FlagValue_enum {
+  FlagValueF=EE_COM_FALSE,
+  FlagValueT=EE_COM_TRUE
 };
 
 typedef enum FlagValue_enum FlagValue;
@@ -240,8 +240,8 @@ typedef EE_TYPECOMSHUTDOWNMODE COMShutdownModeType;
 #define COM_SHUTDOWN_IMMEDIATE 0
 
 /* 2.9.2.1.8 */
-enum CalloutReturnType_enum { 
-  CalloutReturnTypeF=EE_COM_FALSE, 
+enum CalloutReturnType_enum {
+  CalloutReturnTypeF=EE_COM_FALSE,
   CalloutReturnTypeT=EE_COM_TRUE
 };
 
@@ -337,7 +337,7 @@ StatusType EE_com_StopPeriodic(void);
 
 /* 2.9.2.4.1 */
 #ifndef __PRIVATE_COM_SENDMESSAGE__
-StatusType EE_com_SendMessage(MessageIdentifier Message, 
+StatusType EE_com_SendMessage(MessageIdentifier Message,
 				     ApplicationDataRef DataRef);
 #endif
 
@@ -350,8 +350,8 @@ StatusType EE_com_ReceiveMessage(MessageIdentifier Message,
 /* 2.9.2.4.3 */
 #ifdef __COM_CCC1__
 #ifndef __PRIVATE_COM_SENDDYNAMICMESSAGE__
-StatusType EE_com_SendDynamicMessage(MessageIdentifier Message, 
-					    ApplicationDataRef DataRef, 
+StatusType EE_com_SendDynamicMessage(MessageIdentifier Message,
+					    ApplicationDataRef DataRef,
 					    LengthRef msg_length);
 #endif
 #endif

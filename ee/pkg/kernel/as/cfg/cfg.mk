@@ -1,20 +1,20 @@
 # ###*B*###
 # ERIKA Enterprise - a tiny RTOS for small microcontrollers
-# 
+#
 # Copyright (C) 2002-2011  Evidence Srl
-# 
+#
 # This file is part of ERIKA Enterprise.
-# 
+#
 # ERIKA Enterprise is free software; you can redistribute it
 # and/or modify it under the terms of the GNU General Public License
-# version 2 as published by the Free Software Foundation, 
+# version 2 as published by the Free Software Foundation,
 # (with a special exception described below).
-# 
+#
 # Linking this code statically or dynamically with other modules is
 # making a combined work based on this code.  Thus, the terms and
 # conditions of the GNU General Public License cover the whole
 # combination.
-# 
+#
 # As a special exception, the copyright holders of this library give you
 # permission to link this code with independent modules to produce an
 # executable, regardless of the license terms of these independent
@@ -26,24 +26,17 @@
 # this exception to your version of the code, but you are not
 # obligated to do so.  If you do not wish to do so, delete this
 # exception statement from your version.
-# 
+#
 # ERIKA Enterprise is distributed in the hope that it will be
 # useful, but WITHOUT ANY WARRANTY; without even the implied warranty
 # of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License version 2 for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # version 2 along with ERIKA Enterprise; if not, write to the
 # Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA.
 # ###*E*###
-
-
-ifeq ($(call iseeopt, __AS_SC4__), yes)
-EE_SRCS += pkg/kernel/as/src/ee_as_mem_prot.c
-EE_SRCS += pkg/kernel/as/src/ee_as_base.c
-EE_SRCS += pkg/kernel/as/src/ee_as_osapp.c
-endif
 
 ifeq ($(call iseeopt, __OO_BCC1__), yes)
 KERNEL_OO=yes
@@ -75,8 +68,6 @@ ifeq ($(and $(call iseeopt, EE_AS_IOC__), $(KERNEL_OO)), yes)
 EE_SRCS += pkg/kernel/as/src/ee_as_ioc.c
 endif # EE_AS_IOC__ && KERNEL_OO
 
-ifneq ($(call iseeopt, __AS_SC4__), yes)
-
 ifeq ($(or $(call iseeopt, __MSRP__), $(call iseeopt, EE_AS_OSAPPLICATIONS__),\
   $(call iseeopt, EE_SERVICE_PROTECTION__), $(call iseeopt, EE_STACK_MONITORING__)), yes)
 ifeq ($(KERNEL_OO), yes)
@@ -84,7 +75,7 @@ EE_SRCS += pkg/kernel/as/src/ee_as_base.c
 endif # KERNEL_OO
 endif # __MSRP__ || EE_AS_OSAPPLICATIONS__ || EE_AS_SERVICE_PROTECTION__
 
-ifeq ($(and $(call iseeopt, EE_AS_OSAPPLICATIONS__), $(KERNEL_OO)), yes) 
+ifeq ($(and $(call iseeopt, EE_AS_OSAPPLICATIONS__), $(KERNEL_OO)), yes)
 EE_SRCS += pkg/kernel/as/src/ee_as_osapp.c
 endif # EE_AS_OSAPPLICATIONS__
 
@@ -103,6 +94,4 @@ endif # EE_TIMING_PROTECTION__ && KERNEL_OO
 ifeq ($(and $(call iseeopt, EE_AS_HAS_PROTECTIONHOOK__), $(KERNEL_OO)), yes)
 EE_SRCS += pkg/kernel/as/src/ee_as_prot_error.c
 endif # EE_AS_HAS_PROTECTIONHOOK__ && KERNEL_OO
-
-endif # !__AS_SC4__
 

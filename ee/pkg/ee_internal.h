@@ -422,12 +422,6 @@ extern "C" {
 #include "kernel/rn/inc/ee_rn_internal.h"
 #endif /* __RN__ || EE_AS_RPC__ */
 
-#if defined(__AS_SC4__)
-#include "kernel/as/inc/ee_os_internal.h"
-#endif
-
-
-
 #if defined(__cplusplus)
 };
 #endif

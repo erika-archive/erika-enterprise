@@ -7,7 +7,7 @@
  *
  * ERIKA Enterprise is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation, 
+ * version 2 as published by the Free Software Foundation,
  * (with a special exception described below).
  *
  * Linking this code statically or dynamically with other modules is
@@ -125,30 +125,5 @@
   || (defined(__COM_CCC0__)) || (defined(__COM_CCC1__))
 #include "com/com/inc/ee_api.h"
 #endif
-
-  /*
-   *
-   *
-   */
-#if defined(__AS_SC4__)
-#include "kernel/as/inc/ee_os.h"
-#include "kernel/as/inc/ee_os_internal.h"
-/* Multicore API introduced from AS */
-#ifdef __MSRP__
-#include "kernel/as/inc/ee_as_multicore_api.h"
-#endif /* __MSRP__ */
-
-/*
- * Some autosar functionalities are implemented as architecture-dependent
- * macros, but they need the definitions in the above header files.
- */
-#ifdef __PPCE200ZX__
-#include "cpu/e200zx/inc/ee_as_cpu.h"
-#endif
-#endif /* __AS_SC4__ */
-
-#if (defined(__EE_MEMORY_PROTECTION__)) && (!defined(__AS_SC4__))
-#include "kernel/as/inc/ee_as_api.h"
-#endif /* __EE_MEMORY_PROTECTION__ && !__AS_SC4__ */
 
 #endif /* __INCLUDE_EE_API_H__ */

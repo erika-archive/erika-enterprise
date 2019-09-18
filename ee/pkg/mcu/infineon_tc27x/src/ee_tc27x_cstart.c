@@ -49,7 +49,7 @@
   *  documentation pdf file for compiler at:
   *  http://www.tasking.com/support/tricore/tc_user_guide_v4.0.pdf
   *  In following comments, sometime, paragraph reference of this document
-  *  are added. 
+  *  are added.
   *  For HIGHTEC documentation visit site: http://www.hightec-rt.com/
   *
   *  @author Errico Guidieri
@@ -180,7 +180,7 @@ extern void __copy_multiple (/* struct copytable */void *begin,
 asm volatile int EE_tc27x_extru (int src, int start, int size)
 {
 %reg src; con start, size;
-!"%d2" 
+!"%d2"
   mov.d	 %d2, src               # pointer src ís not casted by compiler
   extr.u %d2, %d2, start, size
 }
@@ -319,7 +319,7 @@ void __NEVER_INLINE__ JUMP EE_TC27X_START( void )
   EE_tc_set_SP(sp);
 
 #if (!defined(__OO_BCC1__)) && (!defined(__OO_BCC2__)) && \
-    (!defined(__OO_ECC1__)) && (!defined(__OO_ECC2__)) && (!defined(__AS_SC4__))
+    (!defined(__OO_ECC1__)) && (!defined(__OO_ECC2__))
 /* Multicore initialization needed for non OSEK Kernels */
 #ifdef EE_MASTER_CPU
 #ifdef EE_START_CPU1
@@ -338,8 +338,7 @@ void __NEVER_INLINE__ JUMP EE_TC27X_START( void )
   CPU2_PC.U = (EE_UINT32)EE_tc27x_cpu2_start;
 #endif /* EE_START_CPU2 */
 #endif /* EE_MASTER_CPU */
-#endif /* !__OO_BCC1__ && !__OO_BCC2__ && !__OO_ECC1__ && !__OO_ECC2__ &&
-  !__AS_SC4__ */
+#endif /* !__OO_BCC1__ && !__OO_BCC2__ && !__OO_ECC1__ && !__OO_ECC2__ */
 
   /* Do a dsync before changing any of the csfr values, thus any previous
    * background state gets flushed first. Required for applications that jump
@@ -418,7 +417,7 @@ void __NEVER_INLINE__ JUMP EE_TC27X_START( void )
 #endif
 
 #if (!defined(__OO_BCC1__)) && (!defined(__OO_BCC2__)) && \
-    (!defined(__OO_ECC1__)) && (!defined(__OO_ECC2__)) && (!defined(__AS_SC4__))
+    (!defined(__OO_ECC1__)) && (!defined(__OO_ECC2__))
 /* Clock Initialization needed for non OSEK Kernels */
 #if defined(EE_MASTER_CPU) && defined(EE_CPU_CLOCK)
 /******** Configure CCU Clock Control. ********/
@@ -443,9 +442,7 @@ void __NEVER_INLINE__ JUMP EE_TC27X_START( void )
    */
   GTM_CLC.U = 0U;
 #endif /* __TASKING__ */
-#endif /* !__OO_BCC1__ && !__OO_BCC2__ && !__OO_ECC1__ && !__OO_ECC2__ &&
-  !__AS_SC4__ */
-
+#endif /* !__OO_BCC1__ && !__OO_BCC2__ && !__OO_ECC1__ && !__OO_ECC2__ */
 
 #endif /* EE_MASTER_CPU && EE_CPU_CLOCK */
 

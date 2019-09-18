@@ -7,7 +7,7 @@
  *
  * ERIKA Enterprise is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation, 
+ * version 2 as published by the Free Software Foundation,
  * (with a special exception described below).
  *
  * Linking this code statically or dynamically with other modules is
@@ -80,7 +80,7 @@ ISR2_INT(EE_e200zx_system_timer_handler)
 #endif
 {
 #if defined(__OO_BCC1__) || defined(__OO_BCC2__) || defined(__OO_ECC1__) || \
-    defined(__OO_ECC2__) || defined(__AS_SC4__)
+    defined(__OO_ECC2__)
   IncrementCounterHardware(EE_SYSTEM_TIMER);
 #else
   CounterTick(EE_SYSTEM_TIMER);
