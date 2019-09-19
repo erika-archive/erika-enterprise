@@ -179,6 +179,13 @@ static EE_UREG EE_tc_conf_common_memory_prot( void ) {
 /* Set the given bitmask on SYSCON register */
 static void EE_tc_set_evaluated_syscon( EE_UREG syscon_value )
 {
+  /* SAFETY Endinit Watchdog is global, so I need to protect the access to it.
+     SYSCON register it is a per-CPU register so I wouldn't need to do that for
+     it. */
+#if (defined(__MSRP__))
+  EE_hal_spin_in(EE_SPINLOCK_CORE0);
+#endif
+
   /* Disable SAFETY ENDINIT Protection */
   EE_tc_safety_endinit_disable();
 
@@ -194,6 +201,10 @@ static void EE_tc_set_evaluated_syscon( EE_UREG syscon_value )
 
   /* Re-enable SAFETY ENDINIT Protection */
   EE_tc_safety_endinit_enable();
+
+#if (defined(__MSRP__))
+  EE_hal_spin_out(EE_SPINLOCK_CORE0);
+#endif
 }
 
 #ifdef EE_OS_APP_MAPPED_ON_PROTECTION_SETS
@@ -325,7 +336,7 @@ void EE_tc_enable_protections( void )
   syscon_value |= EE_TC_ENABLE_TEMPORAL_PROTECTION;
 #if (defined(EE_SWFRT_CCNT))
   /* Deprecated since it seams that cannot be used without an attacched
-     debugger */ 
+     debugger */
   /* Start the CPU Clock Cycle Counter used as Free Timer */
   EE_tc_start_CCNT();
 #endif /* EE_SWFRT_CCNT */
@@ -376,7 +387,7 @@ void EE_tc_enable_protections( void )
   syscon_value |= EE_TC_ENABLE_TEMPORAL_PROTECTION;
 #if (defined(EE_SWFRT_CCNT))
   /* Deprecated since it seams that cannot be used without an attacched
-     debugger */ 
+     debugger */
   /* Start the CPU Clock Cycle Counter used as Free Timer */
   EE_tc_start_CCNT();
   /* EE_tc_set_csfr(EE_CPU_REG_CCTRL, 0x2U); */

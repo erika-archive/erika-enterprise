@@ -93,6 +93,10 @@
 #include "kernel/as/inc/ee_as_multicore_api.h"
 #endif /* __MSRP__ */
 
+#if (defined(__EE_MEMORY_PROTECTION__))
+#include "kernel/as/inc/ee_as_api.h"
+#endif /* __EE_MEMORY_PROTECTION__ */
+
 #endif /* __OO_XXXX__ */
 
 #ifdef __EDF__

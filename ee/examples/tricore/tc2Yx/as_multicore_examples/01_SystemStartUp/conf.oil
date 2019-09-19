@@ -9,11 +9,11 @@ CPU test_application {
     EE_OPT = "EE_ICACHE_ENABLED";
     EE_OPT = "EE_DCACHE_ENABLED";
     //EE_OPT = "EE_BUILD_SINGLE_ELF";
-    
+
     //EE_OPT = "TEST_ERROR_CONF";
     //CFLAGS = "-DTEST_SLAVE1_APPMODE=2";
 
-    //REMOTENOTIFICATION = USE_RPC; 
+    //REMOTENOTIFICATION = USE_RPC;
 
     SPINLOCKS = QUEUED;
 
@@ -51,7 +51,7 @@ CPU test_application {
     };
 
     MCU_DATA = TRICORE {
-      MODEL = TC27x;
+      MODEL = TC27xC;
     };
 
     STATUS = EXTENDED;
