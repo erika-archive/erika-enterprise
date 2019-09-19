@@ -14,7 +14,13 @@
 
 void test_assert ( int test );
 
+#define	SHARED_START_SEC_VAR_NOINIT
+#include "MemMap.h"
+
 extern EE_BIT volatile slave2_app_startup_flag;
 extern EE_BIT volatile slave2_app_shutdown_flag;
+
+#define	SHARED_STOP_SEC_VAR_NOINIT
+#include "MemMap.h"
 
 #endif /* SHARED_H */

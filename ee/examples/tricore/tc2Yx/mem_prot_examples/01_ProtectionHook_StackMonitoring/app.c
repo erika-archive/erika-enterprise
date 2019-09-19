@@ -7,9 +7,11 @@ extern void really_grab_the_stack ( char * stack_grabber );
 /* Variable used to check privileges in Hooks */
 int trusted_memory;
 
+#ifdef EE_SUPPORT_MEMMAP_H
 #define API_START_SEC_VAR_NOINIT
 #define API_START_SEC_CODE
 #include "MemMap.h"
+#endif /* EE_SUPPORT_MEMMAP_H */
 
 /* Variable used to check privileges in Hooks */
 int public_memory;
@@ -26,11 +28,15 @@ static void assert(int test)
   EE_assert(next_assert, test, EE_ASSERT_NIL);
   assert_count = next_assert;
 }
+
+#ifdef EE_SUPPORT_MEMMAP_H
 #define API_STOP_SEC_VAR_NOINIT
 #define API_STOP_SEC_CODE
 #include "MemMap.h"
+#endif /* EE_SUPPORT_MEMMAP_H */
 
 void EE_TC_CHANGE_STACK_POINTER ShutdownHook ( StatusType Error ) {
+#ifdef __EE_MEMORY_PROTECTION__
   ApplicationType app = EE_TC_READ_PSW_PSR(EE_tc_get_psw());
   AccessType access = EE_hal_get_app_mem_access(app,
     &trusted_memory, sizeof(trusted_memory));
@@ -41,6 +47,7 @@ void EE_TC_CHANGE_STACK_POINTER ShutdownHook ( StatusType Error ) {
 #else /* EE_TERMINATETASKISR_TEST */
   assert( Error == E_OS_STACKFAULT);
 #endif /* EE_TERMINATETASKISR_TEST */
+#endif /* __EE_MEMORY_PROTECTION__ */
   EE_assert_range(0, 1, assert_count); 
   EE_assert_last();
 }
@@ -63,8 +70,7 @@ TASK(TaskApp1Prio1)
    - 44
 #endif /* __DCC__ */
   ];
-  StatusType s;
-  s = ActivateTask(TaskApp1Prio2);
+  (void)ActivateTask(TaskApp1Prio2);
   error();
   really_grab_the_stack(grab_stack);
   TerminateTask();

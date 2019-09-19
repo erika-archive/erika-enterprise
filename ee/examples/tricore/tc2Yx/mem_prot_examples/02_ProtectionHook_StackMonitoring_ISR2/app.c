@@ -13,12 +13,19 @@ unsigned int protection_counter;
 #include "MemMap.h"
 
 #define API_START_SEC_VAR_NOINIT
-#define API_START_SEC_CODE
+#include "MemMap.h"
+EE_TYPEASSERTVALUE EE_assertions[6];
+#define API_STOP_SEC_VAR_NOINIT
 #include "MemMap.h"
 
-EE_TYPEASSERTVALUE EE_assertions[6];
-
+#define API_START_SEC_DATA
+#include "MemMap.h"
 static int assert_count = EE_ASSERT_NIL;
+#define API_STOP_SEC_DATA
+#include "MemMap.h"
+
+#define API_START_SEC_CODE
+#include "MemMap.h"
 static void __NEVER_INLINE__ assert(int test)
 {
   register int next_assert;
@@ -26,7 +33,6 @@ static void __NEVER_INLINE__ assert(int test)
   EE_assert(next_assert, test, EE_ASSERT_NIL);
   assert_count = next_assert;
 }
-#define API_STOP_SEC_VAR_NOINIT
 #define API_STOP_SEC_CODE
 #include "MemMap.h"
 

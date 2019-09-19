@@ -28,7 +28,7 @@ CPU PerfTestApp {
     };
 
     MCU_DATA = TRICORE {
-      MODEL = TC26x;
+      MODEL = TC27xC;
     };
 
     STATUS = EXTENDED;

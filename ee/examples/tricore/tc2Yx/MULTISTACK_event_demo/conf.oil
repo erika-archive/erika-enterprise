@@ -44,10 +44,11 @@ CPU test_application {
         EE_OPT = "EE_DEBUG";
         //EE_OPT = "__ASSERT__";
 
-        EE_OPT = "EE_EXECUTE_FROM_RAM";
-        //EE_OPT = "EE_SAVE_TEMP_FILES";
+        //EE_OPT = "EE_EXECUTE_FROM_RAM";
+        EE_OPT = "EE_SAVE_TEMP_FILES";
 
         SERVICE_PROTECTION = TRUE;
+        //STACKMONITORING = TRUE;
 
         MCU_DATA = TRICORE {
             MODEL = TC27xC;
@@ -69,7 +70,7 @@ CPU test_application {
         STATUS = EXTENDED;
         STARTUPHOOK = TRUE;
         ERRORHOOK = TRUE;
-        //USERESSCHEDULER = FALSE;
+        USERESSCHEDULER = FALSE;
 
         KERNEL_TYPE = ECC1;
         ORTI_SECTIONS = ALL;

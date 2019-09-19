@@ -29,7 +29,7 @@ CPU PerfTestApp {
     };
 
     MCU_DATA = TRICORE {
-      MODEL = TC26x;
+      MODEL = TC27xC;
     };
 
     STATUS = EXTENDED;
@@ -83,6 +83,7 @@ CPU PerfTestApp {
     STACK = PRIVATE {
       SYS_SIZE = 512;
     };
+    ACCESSING_APPLICATION = App1;
   };
 
   TASK App2Ack {
@@ -91,6 +92,7 @@ CPU PerfTestApp {
     SCHEDULE = FULL;
     AUTOSTART = FALSE;
     STACK = SHARED;
+    ACCESSING_APPLICATION = App1;
   };
 
   ISR App1Isr {

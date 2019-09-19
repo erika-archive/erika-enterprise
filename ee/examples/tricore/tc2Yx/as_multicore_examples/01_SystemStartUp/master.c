@@ -43,7 +43,7 @@
 EE_TYPEASSERTVALUE EE_SHARED_UDATA EE_assertions[ASSERT_LENGTH];
 
 static int assert_count = EE_ASSERT_NIL;
-void EE_COMPILER_SECTION("ee_mcglobalt") test_assert(int test)
+void EE_SHARED_TDATA test_assert(int test)
 {
   register int next_assert;
   EE_tc_spin_in(EE_SPINLOCK_CORE0);

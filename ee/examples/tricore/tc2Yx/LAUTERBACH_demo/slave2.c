@@ -43,16 +43,16 @@
 
 TASK(Task7)
 {
-  EE_tc27x_delay(100U);
+  EE_tc2Yx_delay(100U);
   ActivateTask(Task8);
-  EE_tc27x_delay(100U);
+  EE_tc2Yx_delay(100U);
   /* Cleanly terminate the Task */
   TerminateTask();
 }
 
 TASK(Task8)
 {
-  EE_tc27x_delay(100U);
+  EE_tc2Yx_delay(100U);
   ActivateTask(Task9);
   /* Cleanly terminate the Task */
   TerminateTask();
@@ -60,7 +60,7 @@ TASK(Task8)
 
 TASK(Task9)
 {
-  EE_tc27x_delay(100U);
+  EE_tc2Yx_delay(100U);
   /* Cleanly terminate the Task */
   TerminateTask();
 }

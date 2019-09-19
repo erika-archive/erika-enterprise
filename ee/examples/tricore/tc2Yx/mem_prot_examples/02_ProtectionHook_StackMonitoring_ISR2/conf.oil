@@ -6,8 +6,11 @@ CPU PerfTestApp {
     EE_OPT = "EE_SAVE_TEMP_FILES";
     //EE_OPT = "EE_MM_OPT";
 
-    MEMORY_PROTECTION = TRUE;
-    STACKMONITORING = TRUE;
+    //MEMORY_PROTECTION = TRUE;
+    STACKMONITORING = TRUE {
+      PATTERN = 0xC3C3C3C3;
+      PROTECTION_SIZE = 8;
+    };
 
     /* Used to enable static map of OS-Applications on protection sets
        optimization */
@@ -28,7 +31,7 @@ CPU PerfTestApp {
     };
 
     MCU_DATA = TRICORE {
-      MODEL = TC27x;
+      MODEL = TC27xC;
     };
 
     STATUS = EXTENDED;

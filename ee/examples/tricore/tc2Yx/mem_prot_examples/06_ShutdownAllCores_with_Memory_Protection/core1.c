@@ -1,7 +1,11 @@
 #include "test.h"
 #include "trusted.h"
 
+#define SHARED_START_SEC_VAR_NOINIT
+#include "MemMap.h"
 extern EE_UREG volatile sync_shutdown_asserts;
+#define SHARED_STOP_SEC_VAR_NOINIT
+#include "MemMap.h"
 
 int main ( void ) {
   StartOS(DONOTCARE);
