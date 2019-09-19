@@ -195,7 +195,7 @@ ApplicationType EE_as_CheckObjectOwnership_internal( ObjectTypeType ObjectType,
 
 /** @brief Internal part of TerminateApplication service */
 void EE_as_TerminateApplication_internal( ApplicationType Application,
-  RestartType RestartOption ); 
+  RestartType RestartOption );
 
 /* THESE HAL FUNCTIONS DECLARATION ARE PUT HERE BECAUSE SIGNATURE DEPENDS ON
    AS KERNEL TYPES */
@@ -209,6 +209,18 @@ void EE_hal_call_app_status_hook( StatusType Error, EE_STATUSHOOKTYPE
 
 /** @brief Utility macro used to transform a Application ID in a bit mask */
 #define EE_APP_TO_MASK(app_id)  ((EE_TYPEACCESSMASK)1U << (app_id))
+
+#if defined(EE_SYSCALL_NR) && defined(EE_MAX_SYS_SERVICEID) &&\
+  (EE_SYSCALL_NR > EE_MAX_SYS_SERVICEID)
+__INLINE__ EE_TYPEBOOL __ALWAYS_INLINE__
+  EE_as_active_app_is_inside_trusted_function_call ( void )
+{
+  return EE_as_Application_RAM[EE_as_active_app].
+    TrustedFunctionCallsCounter != 0U;
+}
+#else /* EE_SYSCALL_NR > EE_MAX_SYS_SERVICEID */
+#define EE_as_active_app_is_inside_trusted_function_call()  EE_FALSE
+#endif /* EE_SYSCALL_NR > EE_MAX_SYS_SERVICEID */
 
 #ifdef EE_SERVICE_PROTECTION__
 /*******************************************************************************
@@ -255,57 +267,72 @@ extern EE_TYPEACCESSMASK const EE_as_alarm_access_rules[/*EE_MAX_ALARM*/];
 
 #ifdef EE_AS_SCHEDULETABLES__
 /** @var Contains access rules for SCHEDULE TABLEs */
-extern EE_TYPEACCESSMASK const 
+extern EE_TYPEACCESSMASK const
   EE_as_scheduletable_access_rules[/*EE_MAX_SCHEDULETABLE*/];
 #endif /* EE_AS_SCHEDULETABLES__ */
 
 #ifdef EE_AS_USER_SPINLOCKS__
 /** @var Contains access rules for SCHEDULE TABLEs */
-extern EE_TYPEACCESSMASK const 
+extern EE_TYPEACCESSMASK const
   EE_as_spinlock_access_rules[/*EE_MAX_SPINLOCK_USER*/];
 #endif /* EE_AS_USER_SPINLOCKS__ */
 
 
 /* OSApplication Objects belog to active Macros */
-#define EE_OSAPP_TASK_ACCESS(TaskID) (EE_as_Application_RAM[\
-  EE_th_app[(TaskID + 1U)]].ApplState == APPLICATION_ACCESSIBLE)
+#define EE_OSAPP_TASK_ACCESS(TaskID) ((EE_as_Application_RAM[\
+  EE_th_app[(TaskID + 1U)]].ApplState == APPLICATION_ACCESSIBLE) ||\
+  (EE_th_app[(TaskID + 1U)] == EE_as_active_app))
 
-#define EE_OSAPP_ISR_ACCESS(ISRID) (EE_as_Application_RAM[\
-  EE_as_ISR_ROM[ISRID].ApplID].ApplState == APPLICATION_ACCESSIBLE)
+#define EE_OSAPP_ISR_ACCESS(ISRID) ((EE_as_Application_RAM[\
+  EE_as_ISR_ROM[ISRID].ApplID].ApplState == APPLICATION_ACCESSIBLE) ||\
+  (EE_as_ISR_ROM[ISRID].ApplID == EE_as_active_app))
 
-#define EE_OSAPP_COUNTER_ACCESS(CounterID) (EE_as_Application_RAM[\
-  EE_counter_ROM[CounterID].ApplID].ApplState == APPLICATION_ACCESSIBLE)
+#define EE_OSAPP_COUNTER_ACCESS(CounterID) ((EE_as_Application_RAM[\
+  EE_counter_ROM[CounterID].ApplID].ApplState == APPLICATION_ACCESSIBLE) ||\
+  (EE_counter_ROM[CounterID].ApplID == EE_as_active_app))
 
-#define EE_OSAPP_ALARM_ACCESS(AlarmID) (EE_as_Application_RAM[\
-  EE_alarm_ROM[AlarmID].ApplID].ApplState == APPLICATION_ACCESSIBLE)
+#define EE_OSAPP_ALARM_ACCESS(AlarmID) ((EE_as_Application_RAM[\
+  EE_alarm_ROM[AlarmID].ApplID].ApplState == APPLICATION_ACCESSIBLE) ||\
+  (EE_alarm_ROM[AlarmID].ApplID == EE_as_active_app))
 
-#define EE_OSAPP_SCHED_TABLE_ACCESS(SchedTableID) (EE_as_Application_RAM[\
-  EE_as_Schedule_Table_ROM[SchedTableID].ApplID].ApplState == \
-  APPLICATION_ACCESSIBLE)
+#define EE_OSAPP_SCHED_TABLE_ACCESS(SchedTableID) ((EE_as_Application_RAM[\
+  EE_as_Schedule_Table_ROM[SchedTableID].ApplID].ApplState ==\
+    APPLICATION_ACCESSIBLE) ||\
+  (EE_as_Schedule_Table_ROM[SchedTableID].ApplID == EE_as_active_app))
 
 /* Access Macros */
-#define EE_TASK_ACCESS(TaskID, ApplID) (((EE_as_task_access_rules[TaskID] & \
-  EE_APP_TO_MASK(ApplID)) && EE_OSAPP_TASK_ACCESS(TaskID)))
+#define EE_TASK_ACCESS(TaskID, ApplID)\
+  (((EE_as_task_access_rules[TaskID] & EE_APP_TO_MASK(ApplID)) ||\
+      EE_as_active_app_is_inside_trusted_function_call()) &&\
+    EE_OSAPP_TASK_ACCESS(TaskID))
 
-#define EE_ISR_ACCESS(ISRID, ApplID) (((EE_as_isr_access_rules[ISRID] & \
-  EE_APP_TO_MASK(ApplID)) && EE_OSAPP_ISR_ACCESS(ISRID)))
+#define EE_ISR_ACCESS(ISRID, ApplID)\
+  (((EE_as_isr_access_rules[ISRID] & EE_APP_TO_MASK(ApplID)) ||\
+      EE_as_active_app_is_inside_trusted_function_call()) &&\
+    EE_OSAPP_ISR_ACCESS(ISRID))
 
-#define EE_COUNTER_ACCESS(CounterID, ApplID) \
-  (((EE_as_counter_access_rules[CounterID] & EE_APP_TO_MASK(ApplID)) && \
-    EE_OSAPP_COUNTER_ACCESS(CounterID)))
+#define EE_COUNTER_ACCESS(CounterID, ApplID)\
+  (((EE_as_counter_access_rules[CounterID] & EE_APP_TO_MASK(ApplID)) ||\
+      EE_as_active_app_is_inside_trusted_function_call()) &&\
+    EE_OSAPP_COUNTER_ACCESS(CounterID))
 
-#define EE_ALARM_ACCESS(AlarmID, ApplID) (((EE_as_alarm_access_rules[\
-  AlarmID] & EE_APP_TO_MASK(ApplID)) && EE_OSAPP_ALARM_ACCESS(AlarmID)))
+#define EE_ALARM_ACCESS(AlarmID, ApplID)\
+  (((EE_as_alarm_access_rules[AlarmID] & EE_APP_TO_MASK(ApplID)) ||\
+      EE_as_active_app_is_inside_trusted_function_call()) &&\
+    EE_OSAPP_ALARM_ACCESS(AlarmID))
 
-#define EE_SCHED_TABLE_ACCESS(SchedTableID, ApplID) \
-  (((EE_as_scheduletable_access_rules[SchedTableID] & EE_APP_TO_MASK(ApplID)) \
-   && EE_OSAPP_SCHED_TABLE_ACCESS(SchedTableID)))
+#define EE_SCHED_TABLE_ACCESS(STID, ApplID) \
+  (((EE_as_scheduletable_access_rules[STID] & EE_APP_TO_MASK(ApplID)) ||\
+      EE_as_active_app_is_inside_trusted_function_call()) &&\
+    EE_OSAPP_SCHED_TABLE_ACCESS(STID))
 
 #define EE_RESOURCE_ACCESS(ResourceID, ApplID) \
-  ((EE_as_resource_access_rules[ResourceID] & EE_APP_TO_MASK(ApplID)))
+  ((EE_as_resource_access_rules[ResourceID] & EE_APP_TO_MASK(ApplID)) ||\
+    EE_as_active_app_is_inside_trusted_function_call())
 
 #define EE_SPINLOCK_ACCESS(SpinlockID, ApplID) \
-  ((EE_as_spinlock_access_rules[SpinlockID] & EE_APP_TO_MASK(ApplID)))
+  ((EE_as_spinlock_access_rules[SpinlockID] & EE_APP_TO_MASK(ApplID)) ||\
+    EE_as_active_app_is_inside_trusted_function_call())
 
 /* Error Macros */
 #define EE_TASK_ACCESS_ERR(TaskID, ApplID) (!EE_TASK_ACCESS(TaskID, ApplID))
@@ -374,20 +401,6 @@ typedef StatusType (*EE_TRUSTEDFUNCTYPE)(TrustedFunctionIndexType,
  * layer. */
 AccessType EE_hal_get_app_mem_access(ApplicationType app,
   MemoryStartAddressType beg, MemorySizeType size);
-
-#if defined(EE_SYSCALL_NR) && defined(EE_MAX_SYS_SERVICEID) &&\
-  (EE_SYSCALL_NR > EE_MAX_SYS_SERVICEID)
-__INLINE__ EE_TYPEBOOL __ALWAYS_INLINE__
-  EE_as_active_app_is_inside_trusted_function_call ( void )
-{
-  return EE_as_Application_RAM[EE_as_active_app].
-    TrustedFunctionCallsCounter != 0U;
-}
-#else /* EE_SYSCALL_NR > EE_MAX_SYS_SERVICEID */
-#define EE_as_active_app_is_inside_trusted_function_call()  EE_FALSE
-#endif /* EE_SYSCALL_NR > EE_MAX_SYS_SERVICEID */
-#else /* __EE_MEMORY_PROTECTION__ */
-#define EE_as_active_app_is_inside_trusted_function_call()  EE_FALSE
 #endif /* __EE_MEMORY_PROTECTION__ */
 
 /*******************************************************************************

@@ -7,7 +7,7 @@
  *
  * ERIKA Enterprise is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation, 
+ * version 2 as published by the Free Software Foundation,
  * (with a special exception described below).
  *
  * Linking this code statically or dynamically with other modules is
@@ -88,12 +88,13 @@ StatusType EE_oo_GetElapsedValue(CounterType CounterID, TickRefType Value,
       OS-Application) is passed as an out-parameter to an Operating System
       service, the Operating System module shall return the status code
       E_OS_ILLEGAL_ADDRESS. (SRS_Os_11009, SRS_Os_11013) */
-  if ( (!OSMEMORY_IS_WRITEABLE(EE_hal_get_app_mem_access(EE_as_active_app,
-          Value, sizeof(*Value)))) || 
-      (!OSMEMORY_IS_WRITEABLE( EE_hal_get_app_mem_access(EE_as_active_app,
-          ElapsedValue, sizeof(*ElapsedValue)))) )
+  if ((!OSMEMORY_IS_WRITEABLE(EE_hal_get_app_mem_access(EE_as_active_app,
+          Value, sizeof(*Value))) ||
+       !OSMEMORY_IS_WRITEABLE(EE_hal_get_app_mem_access(EE_as_active_app,
+          ElapsedValue, sizeof(*ElapsedValue)))) &&
+    !EE_as_active_app_is_inside_trusted_function_call())
   {
-    ev = E_OS_ILLEGAL_ADDRESS;  
+    ev = E_OS_ILLEGAL_ADDRESS;
   } else
 #endif /* EE_AS_OSAPPLICATIONS__ && __EE_MEMORY_PROTECTION__ &&
   EE_SERVICE_PROTECTION__ */

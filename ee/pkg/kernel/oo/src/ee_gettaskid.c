@@ -7,7 +7,7 @@
  *
  * ERIKA Enterprise is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation, 
+ * version 2 as published by the Free Software Foundation,
  * (with a special exception described below).
  *
  * Linking this code statically or dynamically with other modules is
@@ -48,7 +48,7 @@
 #include "ee_internal.h"
 
 /***************************************************************************
- * 13.2 Task management 
+ * 13.2 Task management
  ***************************************************************************/
 
 /* 13.2.3.5: BCC1, BCC2, ECC1, ECC2 */
@@ -92,10 +92,11 @@ StatusType EE_oo_GetTaskID(TaskRefType TaskID)
       OS-Application) is passed as an out-parameter to an Operating System
       service, the Operating System module shall return the status code
       E_OS_ILLEGAL_ADDRESS. (SRS_Os_11009, SRS_Os_11013) */
-  if ( !OSMEMORY_IS_WRITEABLE(EE_hal_get_app_mem_access(EE_as_active_app,
-    TaskID, sizeof(*TaskID))) )
+  if ((!OSMEMORY_IS_WRITEABLE(EE_hal_get_app_mem_access(EE_as_active_app,
+      TaskID, sizeof(*TaskID)))) &&
+    !EE_as_active_app_is_inside_trusted_function_call())
   {
-    ev = E_OS_ILLEGAL_ADDRESS;  
+    ev = E_OS_ILLEGAL_ADDRESS;
   } else
 #endif /* EE_AS_OSAPPLICATIONS__ && EE_SERVICE_PROTECTION__ &&
   __EE_MEMORY_PROTECTION__ */

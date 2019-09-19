@@ -65,7 +65,7 @@ EE_as_tp_active_type EE_as_tp_active = { INVALID_TIMING_PROTECTION, NULL,
 
 /** Shortcut to the Time Frames Reclaim Budget conf structure */
 static const EE_as_tp_budget_conf_type * const
-  reclamation_time_frame_budget_conf_ref = 
+  reclamation_time_frame_budget_conf_ref =
     &EE_as_tp_budget_confs[EE_RECLAMATION_TIME_FRAMES_BUDGET_ID];
 /** Shortcut to the Time Frames Reclaim Budget data structure */
 static EE_as_tp_budget_data_type * const
@@ -415,7 +415,7 @@ void EE_as_tp_active_update_budgets_and_restart_impl ( void )
   EE_as_tp_budget_data_type * first_expiring_budget_ref;
   BudgetType                  first_expiring_index;
 
-  first_expiring_budget_ref = 
+  first_expiring_budget_ref =
     EE_as_tp_active_update_budgets(EE_hal_swfrt_get_current_time(),
       &first_expiring_index);
 
@@ -428,7 +428,7 @@ void EE_as_tp_active_update_budgets_and_restart_impl ( void )
   /* [SWS_Os_00564]: If such a violation is detected inside a nested call
       sequence of CallTrustedFunction() of a task, the delay shall last until
       the return of the last CallTrustedFunction(). */
-  if ( !EE_as_active_app_is_inside_trusted_function_call() )
+  if (!EE_as_active_app_is_inside_trusted_function_call())
   {
     if ( first_expiring_budget_ref->remaining_budget > 0U ) {
       /* Restart the timing protection */

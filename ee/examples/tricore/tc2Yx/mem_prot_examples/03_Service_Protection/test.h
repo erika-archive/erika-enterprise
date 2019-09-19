@@ -11,6 +11,9 @@
 extern unsigned int assert_count;
 void test_assert(int test);
 int test_service_protection( StatusType Error );
+
+StatusType CallGetApp3CounterValue(TickRefType App3CntValue);
+
 #define API_STOP_SEC_CODE
 #define API_STOP_SEC_DATA
 #include "MemMap.h"

@@ -34,3 +34,36 @@ TASK(TaskApp3Prio2)
   }
   TerminateTask();
 }
+
+#if 0
+#define APP_App3_START_SEC_CODE
+#include "MemMap.h"
+#endif
+
+/* User inteface */
+StatusType CallGetApp3CounterValue(TickRefType App3CntValue)
+{
+  StatusType  s;
+
+  s = CallTrustedFunction(EE_ID_TRUSTED_GetApp3CounterValue, App3CntValue);
+
+  return s;
+}
+
+StatusType TRUSTED_GetApp3CounterValue(TrustedFunctionIndexType index,
+  TrustedFunctionParameterRefType ref)
+{
+  /* This is just to check that inside the TRUSTED function I can access
+     TRUSTED memory, actually this is a concurrency bug. */
+  static TickType trusted_mem_counter_value;
+
+  StatusType s = GetCounterValue(CounterApp3, &trusted_mem_counter_value);
+  *(TickRefType)ref = trusted_mem_counter_value;
+
+  return s;
+}
+
+#if 0
+#define APP_App3_START_SEC_CODE
+#include "MemMap.h"
+#endif

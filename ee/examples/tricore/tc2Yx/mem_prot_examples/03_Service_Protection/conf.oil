@@ -3,7 +3,6 @@ CPU test_application {
   OS EE {
     EE_OPT = "EE_DEBUG";
     EE_OPT = "__ASSERT__";
-    EE_OPT = "EE_EXECUTE_FROM_RAM";
     EE_OPT = "EE_SAVE_TEMP_FILES";
     //EE_OPT = "EE_MM_OPT";
     //EE_OPT = "EE_ICACHE_ENABLED";
@@ -27,7 +26,7 @@ CPU test_application {
     };
 
     MCU_DATA = TRICORE {
-      MODEL = TC27x;
+      MODEL = TC27xC;
     };
 
     STATUS        = EXTENDED;
@@ -125,7 +124,11 @@ CPU test_application {
   };
 
   APPLICATION App3 {
-    TRUSTED = TRUE;
+    TRUSTED = TRUE {
+      TRUSTED_FUNCTION = TRUE {
+        NAME = "GetApp3CounterValue";
+      };
+    };
     TASK    = TaskApp3Prio1;
     TASK    = TaskApp3Prio2;
     COUNTER = CounterApp3;

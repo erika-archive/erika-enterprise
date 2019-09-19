@@ -7,7 +7,7 @@
  *
  * ERIKA Enterprise is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation, 
+ * version 2 as published by the Free Software Foundation,
  * (with a special exception described below).
  *
  * Linking this code statically or dynamically with other modules is
@@ -45,7 +45,7 @@
 #include "ee_internal.h"
 
 /***************************************************************************
- * AS 4.0 OS SWS 8.4.17 GetCounterValue 
+ * AS 4.0 OS SWS 8.4.17 GetCounterValue
  ***************************************************************************/
 
 #ifndef __PRIVATE_GETCOUNTERVALUE__
@@ -85,15 +85,16 @@ StatusType EE_oo_GetCounterValue(CounterType CounterID, TickRefType Value)
 
   if ( Value == NULL ) {
       ev = E_OS_PARAM_POINTER;
-  } else 
+  } else
 #if (defined(EE_AS_OSAPPLICATIONS__)) && (defined(EE_SERVICE_PROTECTION__)) \
   && (defined(__EE_MEMORY_PROTECTION__))
   /* [SWS_Os_00051]: If an invalid address (address is not writable by this
       OS-Application) is passed as an out-parameter to an Operating System
       service, the Operating System module shall return the status code
       E_OS_ILLEGAL_ADDRESS. (SRS_Os_11009, SRS_Os_11013) */
-  if ( !OSMEMORY_IS_WRITEABLE(EE_hal_get_app_mem_access(EE_as_active_app, Value,
-    sizeof(*Value))) )
+  if ((!OSMEMORY_IS_WRITEABLE(EE_hal_get_app_mem_access(EE_as_active_app,
+      Value, sizeof(*Value)))) &&
+    !EE_as_active_app_is_inside_trusted_function_call())
   {
     ev = E_OS_ILLEGAL_ADDRESS;
   } else

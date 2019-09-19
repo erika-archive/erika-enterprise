@@ -352,8 +352,9 @@ StatusType EE_as_GetApplicationState( ApplicationType Application,
       OS-Application) is passed as an out-parameter to an Operating System
       service, the Operating System module shall return the status code
       E_OS_ILLEGAL_ADDRESS. (SRS_Os_11009, SRS_Os_11013) */
-  if ( !OSMEMORY_IS_WRITEABLE(EE_hal_get_app_mem_access(EE_as_active_app, Value,
-      sizeof(*Value))) ) {
+  if ((!OSMEMORY_IS_WRITEABLE(EE_hal_get_app_mem_access(EE_as_active_app, Value,
+      sizeof(*Value)))) && !EE_as_active_app_is_inside_trusted_function_call())
+  {
     ev = E_OS_ILLEGAL_ADDRESS;
   } else
 #endif /* EE_SERVICE_PROTECTION__ && __EE_MEMORY_PROTECTION__ */
@@ -653,7 +654,7 @@ static void EE_as_terminate_app_tasks( ApplicationType app )
 
         /* Assign previous-next to next */
         EE_rq_pairs_next[previous] = next;
- 
+
         /* Make the clean-up of other data structures related to ready queue */
         EE_as_task_other_cleanup(tid);
       } else {
@@ -730,7 +731,7 @@ void EE_as_TerminateApplication_internal ( ApplicationType Application,
     ScheduleTableType sched_id;
     for ( sched_id = 0; sched_id < EE_MAX_SCHEDULETABLE; ++sched_id )
     {
-      EE_as_Schedule_Table_ROM_type const * const p_schedule_table_ROM = 
+      EE_as_Schedule_Table_ROM_type const * const p_schedule_table_ROM =
         &EE_as_Schedule_Table_ROM[sched_id];
 
       if ( p_schedule_table_ROM->ApplID == Application )
@@ -820,7 +821,7 @@ StatusType EE_as_TerminateApplication ( ApplicationType Application,
       "invalid value" of the service. (BSW11009, BSW11013) */
   /* TerminateApplication is callable by Task, ISR2, ErrorHook
       (only self termination) */
-  if ( (EE_as_execution_context > ErrorHook_Context) || 
+  if ( (EE_as_execution_context > ErrorHook_Context) ||
         ((EE_as_execution_context == ErrorHook_Context) &&
           (current_app != Application)) )
   {
@@ -918,7 +919,7 @@ StatusType EE_as_TerminateApplication ( ApplicationType Application,
   EE_ORTI_set_service_out(EE_SERVICETRACE_TERMINATEAPPLICATION);
   EE_OS_EXIT_CRITICAL_SECTION();
 
-  return ev;  
+  return ev;
 }
 
 StatusType EE_as_AllowAccess( void )
@@ -960,7 +961,7 @@ StatusType EE_as_AllowAccess( void )
       "invalid value" of the service. (BSW11009, BSW11013) */
   /* AllowAccess is callable only by Restarting Task Task, ISR2, ErrorHook
       (only self termination) */
-  if ( (EE_as_execution_context > TASK_Context) || 
+  if ( (EE_as_execution_context > TASK_Context) ||
         (current != EE_as_Application_ROM[current_app].restart_task) )
   {
     ev = E_OS_CALLEVEL;

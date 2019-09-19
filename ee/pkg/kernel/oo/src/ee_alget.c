@@ -7,7 +7,7 @@
  *
  * ERIKA Enterprise is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation, 
+ * version 2 as published by the Free Software Foundation,
  * (with a special exception described below).
  *
  * Linking this code statically or dynamically with other modules is
@@ -85,7 +85,7 @@ StatusType EE_oo_GetAlarm(AlarmType AlarmID, TickRefType Tick)
   } else
 #endif /* EE_SERVICE_PROTECTION__ */
   /* [OS566]: The Operating System API shall check in extended mode all pointer
-      argument for NULL pointer and return OS_E_PARAMETER_POINTER 
+      argument for NULL pointer and return OS_E_PARAMETER_POINTER
       if such argument is NULL. +
       MISRA dictate NULL check for pointers always. */
   if ( Tick == NULL ) {
@@ -97,8 +97,9 @@ StatusType EE_oo_GetAlarm(AlarmType AlarmID, TickRefType Tick)
         OS-Application) is passed as an out-parameter to an Operating System
         service, the Operating System module shall return the status code
         E_OS_ILLEGAL_ADDRESS. (SRS_Os_11009, SRS_Os_11013) */
-  if ( !OSMEMORY_IS_WRITEABLE(EE_hal_get_app_mem_access(EE_as_active_app,
-    Tick, sizeof(*Tick))) )
+  if (!OSMEMORY_IS_WRITEABLE(EE_hal_get_app_mem_access(EE_as_active_app,
+      Tick, sizeof(*Tick))) &&
+    !EE_as_active_app_is_inside_trusted_function_call())
   {
     ev = E_OS_ILLEGAL_ADDRESS;
   } else

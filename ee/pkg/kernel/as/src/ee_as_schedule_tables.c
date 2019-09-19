@@ -601,8 +601,9 @@ StatusType EE_as_GetScheduleTableStatus( ScheduleTableType ScheduleTableID,
       OS-Application) is passed as an out-parameter to an Operating System
       service, the Operating System module shall return the status code
       E_OS_ILLEGAL_ADDRESS. (SRS_Os_11009, SRS_Os_11013) */
-  if ( !OSMEMORY_IS_WRITEABLE(EE_hal_get_app_mem_access(EE_as_active_app,
-    ScheduleStatus, sizeof(*ScheduleStatus))) )
+  if (!OSMEMORY_IS_WRITEABLE(EE_hal_get_app_mem_access(EE_as_active_app,
+      ScheduleStatus, sizeof(*ScheduleStatus))) &&
+    !EE_as_active_app_is_inside_trusted_function_call())
   {
     ev = E_OS_ILLEGAL_ADDRESS;
   } else
