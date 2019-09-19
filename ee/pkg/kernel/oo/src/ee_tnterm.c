@@ -7,7 +7,7 @@
  *
  * ERIKA Enterprise is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation, 
+ * version 2 as published by the Free Software Foundation,
  * (with a special exception described below).
  *
  * Linking this code statically or dynamically with other modules is
@@ -55,10 +55,16 @@ void EE_thread_not_terminated(void)
 {
   register EE_TID current;
 
+#if (defined(EE_REALLY_HANDLE_OS_IRQ_CRITICAL_SECTION))
+  /* If the porting it is done in a way that handle correctly IPL, here I
+     need to begin the primitive, not to disable interrupts. */
+  (void)EE_hal_begin_nested_primitive();
+#else
   /* IRQ disabling for primitive atomicity (It doesn't make sense use
      EE_hal_begin_nested_primitive because at the end of the function I won't
      call EE_hal_end_nested_primitive) */
   EE_hal_disableIRQ();
+#endif /* EE_REALLY_HANDLE_OS_IRQ_CRITICAL_SECTION */
 
   /* Monitor the Terminated STACK. This is good place to find corruptions */
   EE_as_monitoring_the_stack();
@@ -67,7 +73,7 @@ void EE_thread_not_terminated(void)
 
   /* [OS069]: If a task returns from its entry function without making a
       TerminateTask() or ChainTask() call AND the error hook is configured,
-      the Operating System shall call the ErrorHook() 
+      the Operating System shall call the ErrorHook()
       (this is done regardless of whether the task causes other errors,
        e.g. E_OS_RESOURCE) with status E_OS_MISSINGEND before the task leaves
       the RUNNING state. */

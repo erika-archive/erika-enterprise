@@ -134,6 +134,11 @@ extern void EE_tc27x_cpu2_start ( void );
                     HAL For Primitives Synchronization
  ******************************************************************************/
 
+/* With the following Macro we declare that this cpu support really handle OS
+   critical sections, so the begin/end primitive avoid to disable interrupts.
+ */
+#define EE_REALLY_HANDLE_OS_IRQ_CRITICAL_SECTION
+
 /* Called as _first_ function of a primitive that can be called from within
  * an IRQ and from within a task. */
 __INLINE__ EE_FREG __ALWAYS_INLINE__ EE_hal_begin_nested_primitive(void)

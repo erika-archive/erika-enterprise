@@ -7,7 +7,7 @@
  *
  * ERIKA Enterprise is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation, 
+ * version 2 as published by the Free Software Foundation,
  * (with a special exception described below).
  *
  * Linking this code statically or dynamically with other modules is
@@ -51,7 +51,12 @@
  * In the mono version, all the stack-related stuff is ignored. */
 EE_TID EE_std_run_task_code(EE_TID tid)
 {
+#if (defined(EE_REALLY_HANDLE_OS_IRQ_CRITICAL_SECTION))
+    EE_hal_set_int_prio(EE_ISR_UNMASKED);
+#else
     EE_hal_enableIRQ();
+#endif /* EE_REALLY_HANDLE_OS_IRQ_CRITICAL_SECTION */
+
 /* Call a the body of a task */
 #if (defined(__OO_BCC1__)) || (defined(__OO_BCC2__))			\
   || (defined(__OO_ECC1__)) || (defined(__OO_ECC2__))
@@ -63,7 +68,11 @@ EE_TID EE_std_run_task_code(EE_TID tid)
         EE_hal_thread_body[tid]();
     }
 #endif
+#if (defined(EE_REALLY_HANDLE_OS_IRQ_CRITICAL_SECTION))
+    (void)EE_hal_begin_nested_primitive();
+#else
     EE_hal_disableIRQ();
+#endif /* EE_REALLY_HANDLE_OS_IRQ_CRITICAL_SECTION */
     EE_thread_end_instance(); /* Call the scheduler */
     return EE_std_endcycle_next_tid;
 }

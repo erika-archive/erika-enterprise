@@ -7,7 +7,7 @@
  *
  * ERIKA Enterprise is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation, 
+ * version 2 as published by the Free Software Foundation,
  * (with a special exception described below).
  *
  * Linking this code statically or dynamically with other modules is
@@ -396,6 +396,10 @@ StatusType EE_as_CallTrustedFunction(TrustedFunctionIndexType FunctionIndex,
     ++app_RAM_ptr->TrustedFunctionCallsCounter;
     /* Re-enable TP & interrupts before call the TRUSTED Function */
     EE_as_tp_active_update_budgets_and_restart();
+    /* We are implicitily requiring that the system call vector does disable
+       IRQs, usually this is done by hardware.
+       Furthermore we are implicitly requiring that system call vector does not
+       mess with IPL (Interrupt Priority Level). */
     EE_hal_enableIRQ();
     ev = ((EE_TRUSTEDFUNCTYPE)EE_syscall_table[FunctionIndex])(FunctionIndex,
       FunctionParams);
@@ -409,7 +413,7 @@ StatusType EE_as_CallTrustedFunction(TrustedFunctionIndexType FunctionIndex,
     EE_as_monitoring_the_stack();
     /* A Task Activation could have been delayed */
     if ( ev == E_OK ) {
-      /* Check for preemption: 
+      /* Check for preemption:
          this test has to be done only if we are inside a TASK. The check
          that we are not in a nested Trusted Functions Call, is done inside the
          preemption point */

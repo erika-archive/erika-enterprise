@@ -49,7 +49,7 @@
  * Fixes for compilation issues with Tasking Compiler:
  * Updates for compilation issues with Dcc Compiler:
  * Usage of generic compiler independent register header file:
- * Author: 
+ * Author:
  *         Ashok Abbi, <Ashok.Abbi@infineon.com> 18.07.2013
  */
 /* I need EE_NIL symbol from the kernel so I include the whole internals */
@@ -159,6 +159,10 @@ static void __NEVER_INLINE__ EE_tc_dummy_context( EE_TID tid )
   /* Before call the body of the TASK, monitor its STACK */
   EE_as_monitoring_the_stack();
 
+  /* Unmask the interrupts, before setting the protection domain, otherwise
+     for NON-Trusted Os-Applications we will get a TRAP. */
+  EE_tc_set_int_prio(EE_ISR_UNMASKED);
+
   /* Set protection domain for the new created TASK */
   EE_tc_set_os_app_term_prot_set(tid);
 
@@ -169,7 +173,7 @@ static void __NEVER_INLINE__ EE_tc_dummy_context( EE_TID tid )
   task_body();
   /* Disable Interrupts: (It works even with memory protection,
      because User Tasks run in User-1 mode that has ISR handling enabled) */
-  EE_tc_disableIRQ();
+  /* EE_tc_disableIRQ(); EG: We do not disable interrupts for this porting */
 
   /* When TerminateTask is not invoked, we simply return here,
    * and we handle the error calling EE_thread_not_terminated,
