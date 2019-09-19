@@ -48,7 +48,7 @@
  * Fixes for compilation issues with Tasking Compiler:
  * Updates for compilation issues with Dcc Compiler:
  * Usage of generic compiler independent register header file:
- * Author: 
+ * Author:
  *         Ashok Abbi, <Ashok.Abbi@infineon.com> 18.07.2013
  */
 
@@ -136,16 +136,16 @@ extern void EE_tc27x_cpu2_start ( void );
 
 /* Called as _first_ function of a primitive that can be called from within
  * an IRQ and from within a task. */
-__INLINE__ EE_FREG __ALWAYS_INLINE__ EE_hal_begin_nested_primitive( void )
+__INLINE__ EE_FREG __ALWAYS_INLINE__ EE_hal_begin_nested_primitive(void)
 {
-  return EE_hal_suspendIRQ();
+  return EE_hal_suspend_OsIRQ();
 }
 
 /* Called as _last_ function of a primitive that can be called from
  * within an IRQ or a task. */
-__INLINE__ void __ALWAYS_INLINE__ EE_hal_end_nested_primitive( EE_FREG flag )
+__INLINE__ void __ALWAYS_INLINE__ EE_hal_end_nested_primitive(EE_FREG flag)
 {
-  EE_hal_resumeIRQ(flag);
+  EE_hal_resume_OsIRQ(flag);
 }
 
 /* Used to get internal CPU priority. */
@@ -251,7 +251,7 @@ void EE_hal_terminate_task( EE_TID tid );
 /*******************************************************************************
                   ISR (and TRAPs) PCXI/Stack handling Code
  ******************************************************************************/
- 
+
  /**
  *  This code crawl the CSA list and search the one after an IRQ or a TRAP.
  *  It makes some assumption about Interrupt and Vector tables implementations.
@@ -567,7 +567,7 @@ __INLINE__ EE_FREG __ALWAYS_INLINE__
            Enable Protection Procedure called inside EE_cpu_startos
  ******************************************************************************/
 #if defined(__EE_MEMORY_PROTECTION__) || defined(EE_TIMING_PROTECTION__)
-/* Set of Macro to configure SYSCON for Memory Protection */ 
+/* Set of Macro to configure SYSCON for Memory Protection */
 /* User Code Can Access ALL Peripherals registers */
 #define EE_TC_USER1_PERIPHERAL_ACCESS_AS_SUPERVISOR ( 1U << 17U )
 /* Disable default behaviour for User-1 to eneble/disable interrupts */
