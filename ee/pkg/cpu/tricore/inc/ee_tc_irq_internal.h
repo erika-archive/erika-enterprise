@@ -157,6 +157,12 @@ __INLINE__ void __ALWAYS_INLINE__ EE_TC_CHANGE_STACK_POINTER
           (app_ROM_ptr->Mode == EE_MEMPROT_TRUST_MODE)) &&
         EE_as_tp_handle_interarrival(EE_AS_TP_ID_FROM_ISR2(isr2_id))  )
   {
+    /* Mask all ISR2s, so I can reenable Interrupts */
+    EE_FREG const flags = EE_hal_begin_nested_primitive();
+    /* Enable IRQ to reduce ISR1 latency as much as possible */
+    EE_hal_enableIRQ();
+    /* Increment nesting level */
+    EE_increment_IRQ_nesting_level();
     /* Switch ORTI ISR2 value */
     EE_ORTI_set_runningisr2(f);
 
@@ -172,21 +178,18 @@ __INLINE__ void __ALWAYS_INLINE__ EE_TC_CHANGE_STACK_POINTER
     } else {
       p_interrupted_tos = &EE_tc_system_tos[EE_tc_active_tos];
     }
-
-    /* Increment nesting level here, with IRQ disabled and after ISR
-       Stack Access */
-    EE_increment_IRQ_nesting_level();
     /* Save interrupted "Top Of Stack" (TASK or ISR2) to be restored. */
     isr_stack_ptr->TerminationTOS   = p_interrupted_tos->ram_tos;
     /* Save Interrupted OS-Application */
     isr_stack_ptr->Interrupted_App  = app_from;
-    /* Save the ID of this ISR to be retrieved by GetISRID() Kernel Function. It's
-       used even to flag if an ISR need to be Terminated (not yet supported). */
+    /* Save the ID of this ISR to be retrieved by GetISRID() Kernel Function.
+       It's used even to flag if an ISR need to be Terminated
+       (not yet supported). */
     isr_stack_ptr->ISR_ID           = isr2_id;
 
-    /* Save Info for TerminateISR: I need to save a context to switch back to and
-       there's only explicit lower context saving instruction. I would need a
-       CALL to save upper context otherwise: problematic. */
+    /* Save Info for TerminateISR: I need to save a context to switch back to
+       and there's only explicit lower context saving instruction.
+       I would need a CALL to save upper context otherwise: problematic. */
     EE_tc_svlcx();
     /* PCXI Saving */
     isr_stack_ptr->ISR_Terminate_data = EE_tc_get_pcxi();
@@ -203,17 +206,22 @@ __INLINE__ void __ALWAYS_INLINE__ EE_TC_CHANGE_STACK_POINTER
     /* Start the timing protection for the new ISR2 */
     EE_as_tp_active_start_for_ISR2(isr2_id);
 
-    if ( (EE_IRQ_nesting_level == 1U) || (app_from != app_to) ) {
+    if ((EE_IRQ_nesting_level == 1U) || (app_from != app_to)) {
       /* Switch on NEW ISR2 User Stack */
       EE_tc_set_SP(EE_tc_system_tos[app_ROM_ptr->ISRTOS].ram_tos);
       EE_as_active_app = app_to;
 
-      /* Monitor actual stack after ISR2 data structures initialization: In this
-         way I can terminate the ISR in case of overflow */
+      /* Monitor actual stack after ISR2 data structures initialization: In
+         this way I can terminate the ISR in case of overflow */
       EE_as_check_and_handle_stack_overflow(app_to,app_ROM_ptr->ISRTOS);
 
       /* Return in User Stack + Set protection domain active */
       EE_tc_set_psw_user_stack();
+
+      /* We don't want to make Kernel ISR2 preemptables, by other ISR2s */
+      if (app_to != KERNEL_OSAPPLICATION) {
+        EE_hal_end_nested_primitive(flags);
+      }
 
       /* Reset Protection Domain */
       EE_tc_set_os_app_prot_set_from_appid(app_to);
@@ -232,26 +240,21 @@ __INLINE__ void __ALWAYS_INLINE__ EE_TC_CHANGE_STACK_POINTER
         EE_TC_PSW_IS_CLEAN_MASK) | EE_as_Application_ROM[app_to].Mode) |
         EE_TC_PSW_APP_TO_PRS(app_to);
 
+      /* We don't want to make Kernel ISR2 preemptables, by other ISR2s */
+      if (app_to != KERNEL_OSAPPLICATION) {
+        EE_hal_end_nested_primitive(flags);
+      }
+
       /* Here possible User-1 mode will be re-enabled */
       EE_tc_set_psw(temp_psw);
-    }
-
-    /* Enable IRQ if nesting  is allowed (It works even with memory protection,
-       because User Tasks run in User-1 mode that has ISR handling enabled) */
-    /* We don't want to make Kernel ISR2 preemptables */
-    if ( app_to != KERNEL_OSAPPLICATION )
-    {
-      EE_std_enableIRQ_nested();
     }
 
     /* Call The ISR User Handler */
     EE_tc_isr2_call_handler(f);
 
 #ifndef __EE_MEMORY_PROTECTION__
-    /* Disable IRQ if nesting is allowed. Note: if nesting is not allowed,
-       the IRQs are already disabled (It works even with memory protection,
-       because User Tasks run in User-1 mode that has ISR handling enabled). */
-    EE_std_disableIRQ_nested();
+    /* Entering in the Kernel -> Mask ISR2, do not disable interrupts. */
+    (void)EE_hal_begin_nested_primitive();
     /* Stop active TP */
     EE_as_tp_active_stop();
     /* Handle ISR2 Rollback and Termination + Scheduling. */
@@ -369,33 +372,32 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc_isr2_wrapper_body( EE_tc_ISR_handler f )
   /* Check the interarrival */
   if (EE_as_tp_handle_interarrival(EE_AS_TP_ID_FROM_ISR2(isr2_id)))
   {
-    /* Keep the old ORTI ISR2 and switch to new one */
-    EE_ORTI_running_isr2_begin(f);
+#if (defined(EE_SYSTEM_TIMER)) || (defined(__MSRP__))
+    EE_TYPEBOOL EE_std_is_disableIRQ_nested = EE_FALSE;
+#if (defined(EE_SYSTEM_TIMER))
+    EE_std_is_disableIRQ_nested |= (
+      EE_tc_get_int_prio() == EE_ISR2_ID_EE_tc_system_timer_handler
+    );
+#endif  /* EE_SYSTEM_TIMER */
+#if (defined(__MSRP__))
+    EE_std_is_disableIRQ_nested |= (EE_tc_get_int_prio() == EE_ISR_PRI_1);
+#endif /* MSRP */
+    /* We don't want to make Kernel ISR2 preemptables */
+    if (EE_std_is_disableIRQ_nested) {
+      /* Mask all ISR2s */
+      (void)EE_hal_begin_nested_primitive();
+    }
+#endif  /* EE_SYSTEM_TIMER || MSRP */
     /* Increment nesting level here, with IRQ disabled */
     EE_increment_IRQ_nesting_level();
+    /* Enable at least ISR1s. */
+    EE_hal_enableIRQ();
+    /* Keep the old ORTI ISR2 and switch to new one */
+    EE_ORTI_running_isr2_begin(f);
     /* Set the context execution at ISR2 */
     EE_as_set_execution_context( ISR2_Context );
     /* Start TP protection for this ISR2 */
     EE_as_tp_active_start_for_ISR2(isr2_id);
-    /* Enable IRQ if nesting  is allowed */
-    /* We don't want to make Kernel ISR2 preemptables */
-    {
-#if	(defined(EE_SYSTEM_TIMER)) || (defined(__MSRP__))
-      EE_TYPEBOOL	EE_std_is_disableIRQ_nested = EE_FALSE;
-#if (defined(EE_SYSTEM_TIMER))
-      EE_std_is_disableIRQ_nested |= (
-        EE_tc_get_int_prio() == EE_ISR2_ID_EE_tc_system_timer_handler
-      );
-#endif  /* EE_SYSTEM_TIMER */
-#if (defined(__MSRP__))
-      EE_std_is_disableIRQ_nested |= (EE_tc_get_int_prio() == EE_ISR_PRI_1);
-#endif /* MSRP */
-      if (!EE_std_is_disableIRQ_nested)
-#endif  /* EE_SYSTEM_TIMER || MSRP */
-      {
-        EE_std_enableIRQ_nested();
-      }
-    }
 #if (defined(__IRQ_STACK_NEEDED__))
     if (EE_IRQ_nesting_level == 1U) {
       /* Switch on NEW ISR2 User Stack */
@@ -404,11 +406,8 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc_isr2_wrapper_body( EE_tc_ISR_handler f )
 #endif /* __IRQ_STACK_NEEDED__ */
     /* Call The ISR User Handler */
     EE_tc_isr2_call_handler(f);
-
-    /* Disable IRQ if nesting is allowed.
-       Note: if nesting is not allowed, the IRQs are
-       already disabled */
-    EE_std_disableIRQ_nested();
+    /* Entering in the Kernel -> Mask all ISR2s, do not disable interrupts. */
+    (void)EE_hal_begin_nested_primitive();
     /* Stop active TP */
     EE_as_tp_active_stop();
     /* ISR2 instance clean-up as requested by AR, must be
