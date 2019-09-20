@@ -333,9 +333,17 @@ void EE_TC_INTERRUPT_HANDER EE_TC_CHANGE_STACK_POINTER
       } else
 #endif /* EE_MAX_ISR2 > 0 */
       {
+        if (service_ptr != (EE_FADDR)EE_as_CallTrustedFunction) {
+          /* The Service cannot block ISR1 so I need to raise ICR.CCPN up to
+             MAX ISR2 prio and then enable the IRQs.
+             I don't need to restore original value in ICR.CCPN, since it will
+             be RFE context restoring to do that.  */
+          (void)EE_hal_begin_nested_primitive();
+          EE_hal_enableIRQ();
+        }
+#if (defined(__GNUC__))
         /* The service function parameters have to be in the right place,
            otherwise have to be restored */
-#if (defined(__GNUC__))
         EE_tc_ldlcx(EE_tc_csa_make_addr(original_lcx_pcxi));
 #endif
         service_ptr();
