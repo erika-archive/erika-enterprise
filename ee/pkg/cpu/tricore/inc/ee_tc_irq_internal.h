@@ -60,37 +60,25 @@
    Stack Monitoring */
 #include "cpu/tricore/inc/ee_tc_mem_prot_internal.h"
 
-/* Labels for Kernel Tracing. It has been used an utility function to generate
-   only one copy of Tracing Labels.
-   Enabled when ORTI is enabled and ISR are handled by ERIKA's intvec */
-#if defined(__OO_ORTI_SERVICETRACE__) && (!defined(EE_ERIKA_ISR_HANDLING_OFF))
-/* If MemMap.h support is enabled (i.e. because memory protection): use it */
-#ifdef EE_SUPPORT_MEMMAP_H
-#define API_START_SEC_CODE
-#include "MemMap.h"
-#endif /* EE_SUPPORT_MEMMAP_H */
-
-void __NEVER_INLINE__ EE_tc_isr2_call_handler( EE_tc_ISR_handler f );
-
-/* If MemMap.h support is enabled (i.e. because memory protection): use it */
-#ifdef EE_SUPPORT_MEMMAP_H
-#define API_STOP_SEC_CODE
-#include "MemMap.h"
-#endif /* EE_SUPPORT_MEMMAP_H */
-
-#else /* __OO_ORTI_SERVICETRACE__ && !EE_ERIKA_ISR_HANDLING_OFF */
-__INLINE__ void __ALWAYS_INLINE__ EE_tc_isr2_call_handler( EE_tc_ISR_handler f )
-{
-  /* Call The ISR User Handler */
-  if ( f != NULL ) {
-    f();
-  }
-}
-#endif /* __OO_ORTI_SERVICETRACE__ && !EE_ERIKA_ISR_HANDLING_OFF */
-
 #ifdef EE_AS_OSAPPLICATIONS__
 
 #include "kernel/as/inc/ee_as_internal.h"
+
+/* Needed to have a context to return to + the context restoring will
+   set back Kernel Protection Set. */
+/* I've got lucky since parameter passing registers are D4..D7 for
+   non-pointers parameter and A4..A7 for pointer parameters.
+   So 4 non-pointer parameters and 4 pointer parameters passed trought
+   registers, all used. */
+extern void __NEVER_INLINE__ EE_tc_isr2_ar_wrapper(
+  EE_FREG const flags,
+  ISRType const isr2_id,
+  ApplicationType const app_from,
+  ApplicationType const app_to,
+  EE_as_ISR_RAM_type * const isr_stack_ptr,
+  EE_as_Application_ROM_type const * const app_ROM_ptr,
+  EE_ADDR interrupted_sp,
+  EE_tc_ISR_handler f);
 
 /* ISR2 support have to be configured when OS Applications are used */
 #if defined(EE_MAX_ISR_ID) && (EE_MAX_ISR_ID > 0)
@@ -104,7 +92,7 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc_isr2_call_handler( EE_tc_ISR_handler f )
  * application: one for trusted and one for untrusted mode.
  */
 __INLINE__ void __ALWAYS_INLINE__ EE_TC_CHANGE_STACK_POINTER
-  EE_tc_isr2_wrapper_body( EE_tc_ISR_handler f )
+  EE_tc_isr2_wrapper_body(EE_tc_ISR_handler f)
 {
   /* In TriCore Architecture the vector table is ordered by priority so ISR
      priority is her ID. After an ISR is taken, her priority value (i.e. her id)
@@ -161,8 +149,6 @@ __INLINE__ void __ALWAYS_INLINE__ EE_TC_CHANGE_STACK_POINTER
     EE_FREG const flags = EE_hal_begin_nested_primitive();
     /* Enable IRQ to reduce ISR1 latency as much as possible */
     EE_hal_enableIRQ();
-    /* Increment nesting level */
-    EE_increment_IRQ_nesting_level();
     /* Switch ORTI ISR2 value */
     EE_ORTI_set_runningisr2(f);
 
@@ -178,6 +164,9 @@ __INLINE__ void __ALWAYS_INLINE__ EE_TC_CHANGE_STACK_POINTER
     } else {
       p_interrupted_tos = &EE_tc_system_tos[EE_tc_active_tos];
     }
+
+    /* Increment nesting level here after ISR Stack Access */
+    EE_increment_IRQ_nesting_level();
     /* Save interrupted "Top Of Stack" (TASK or ISR2) to be restored. */
     isr_stack_ptr->TerminationTOS   = p_interrupted_tos->ram_tos;
     /* Save Interrupted OS-Application */
@@ -187,82 +176,20 @@ __INLINE__ void __ALWAYS_INLINE__ EE_TC_CHANGE_STACK_POINTER
        (not yet supported). */
     isr_stack_ptr->ISR_ID           = isr2_id;
 
-    /* Save Info for TerminateISR: I need to save a context to switch back to
-       and there's only explicit lower context saving instruction.
-       I would need a CALL to save upper context otherwise: problematic. */
-    EE_tc_svlcx();
-    /* PCXI Saving */
-    isr_stack_ptr->ISR_Terminate_data = EE_tc_get_pcxi();
+    /* Call a function for TerminateISR: I need to save a context to switch
+       back to and with a function call I can restore a Context and get back to
+       Kernel Protection Set */
+    EE_tc_isr2_ar_wrapper(flags, isr2_id, app_from, app_to, isr_stack_ptr,
+      app_ROM_ptr, interrupted_sp, f);
 
-    /* Set the right execution context */
-#if (defined(EE_SERVICE_PROTECTION__))
-    if ( app_to == KERNEL_OSAPPLICATION ) {
-      EE_as_set_execution_context( Kernel_Context );
-    } else {
-      EE_as_set_execution_context( ISR2_Context );
-    }
-#endif /* EE_SERVICE_PROTECTION__ */
+    /* CSA CONTEXT RESTORING SET BACK KERNEL PROTECTION SET. */
 
-    /* Start the timing protection for the new ISR2 */
-    EE_as_tp_active_start_for_ISR2(isr2_id);
-
-    if ((EE_IRQ_nesting_level == 1U) || (app_from != app_to)) {
-      /* Switch on NEW ISR2 User Stack */
-      EE_tc_set_SP(EE_tc_system_tos[app_ROM_ptr->ISRTOS].ram_tos);
-      EE_as_active_app = app_to;
-
-      /* Monitor actual stack after ISR2 data structures initialization: In
-         this way I can terminate the ISR in case of overflow */
-      EE_as_check_and_handle_stack_overflow(app_to,app_ROM_ptr->ISRTOS);
-
-      /* Return in User Stack + Set protection domain active */
-      EE_tc_set_psw_user_stack();
-
-      /* We don't want to make Kernel ISR2 preemptables, by other ISR2s */
-      if (app_to != KERNEL_OSAPPLICATION) {
-        EE_hal_end_nested_primitive(flags);
-      }
-
-      /* Reset Protection Domain */
-      EE_tc_set_os_app_prot_set_from_appid(app_to);
-    } else {
-      /* Set the stack back, set back the active application and re-enable
-         User-1 Mode (if needed) */
-      EE_tc_set_SP(interrupted_sp);
-
-      /* Monitor actual stack after ISR2 data structures initialization: In this
-         way I can terminate the ISR in case of overflow */
-      EE_as_check_and_handle_stack_overflow(app_to, app_ROM_ptr->ISRTOS);
-
-      /* Set protection domain active (Trusted or Untrusted) + return in
-         User Stack */
-      EE_UREG temp_psw = (((EE_tc_get_psw() & EE_TC_PSW_PRS_IO_CLEAN_MASK) &
-        EE_TC_PSW_IS_CLEAN_MASK) | EE_as_Application_ROM[app_to].Mode) |
-        EE_TC_PSW_APP_TO_PRS(app_to);
-
-      /* We don't want to make Kernel ISR2 preemptables, by other ISR2s */
-      if (app_to != KERNEL_OSAPPLICATION) {
-        EE_hal_end_nested_primitive(flags);
-      }
-
-      /* Here possible User-1 mode will be re-enabled */
-      EE_tc_set_psw(temp_psw);
-    }
-
-    /* Call The ISR User Handler */
-    EE_tc_isr2_call_handler(f);
-
-#ifndef __EE_MEMORY_PROTECTION__
     /* Entering in the Kernel -> Mask ISR2, do not disable interrupts. */
     (void)EE_hal_begin_nested_primitive();
     /* Stop active TP */
     EE_as_tp_active_stop();
     /* Handle ISR2 Rollback and Termination + Scheduling. */
     EE_as_TerminateISR2();
-#else /* !__EE_MEMORY_PROTECTION__ */
-    /* Handle ISR2 Rollback and Termination + Scheduling. */
-    EE_tc_syscall( EE_ID_TerminateISR2 );
-#endif /* !__EE_MEMORY_PROTECTION__ */
   } else {
     /* Restart old TP's first expiring budget.
        I cannot check and update here because if the budget would be
@@ -338,7 +265,7 @@ __INLINE__ void __ALWAYS_INLINE__ EE_TC_CHANGE_STACK_POINTER
 extern void EE_as_monitoring_the_stack( void );
 #endif /* EE_STACK_MONITORING__ && EE_ERIKA_ISR_HANDLING_OFF */
 
-__INLINE__ void __ALWAYS_INLINE__ EE_tc_isr2_wrapper_body( EE_tc_ISR_handler f )
+__INLINE__ void __ALWAYS_INLINE__ EE_tc_isr2_wrapper_body(EE_tc_ISR_handler f)
 {
   /* This macro generate the local variables eventually needed */
   EE_generate_locals();

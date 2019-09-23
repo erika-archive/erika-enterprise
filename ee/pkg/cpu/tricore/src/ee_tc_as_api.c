@@ -333,7 +333,11 @@ void EE_TC_INTERRUPT_HANDER EE_TC_CHANGE_STACK_POINTER
       } else
 #endif /* EE_MAX_ISR2 > 0 */
       {
-        if (service_ptr != (EE_FADDR)EE_as_CallTrustedFunction) {
+#if defined(EE_SYSCALL_NR) && defined(EE_MAX_SYS_SERVICEID) &&\
+  (EE_SYSCALL_NR > EE_MAX_SYS_SERVICEID)
+        if (service_ptr != (EE_FADDR)EE_as_CallTrustedFunction)
+#endif /* EE_SYSCALL_NR > EE_MAX_SYS_SERVICEID */
+        {
           /* The Service cannot block ISR1 so I need to raise ICR.CCPN up to
              MAX ISR2 prio and then enable the IRQs.
              I don't need to restore original value in ICR.CCPN, since it will

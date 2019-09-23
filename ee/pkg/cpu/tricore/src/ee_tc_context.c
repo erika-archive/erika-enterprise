@@ -262,3 +262,33 @@ void EE_TC_CHANGE_STACK_POINTER EE_std_change_context( EE_TID tid )
 }
 
 #endif  /* __MULTI__ */
+
+/* N.B.
+   I Need a compilation unit where place this stuff that isn't
+   ee_tc_internal.c nor ee_tc_intvec.c */
+
+/* Labels for Kernel Tracing. It has been used an utility function to generate
+   only one copy of Tracing Labels.
+   Enabled when ORTI is enabled and ISR are handled by ERIKA's intvec */
+#if defined(__OO_ORTI_SERVICETRACE__) && (!defined(EE_ERIKA_ISR_HANDLING_OFF))
+/* If MemMap.h support is enabled (i.e. because memory protection): use it */
+#ifdef EE_SUPPORT_MEMMAP_H
+#define API_START_SEC_CODE
+#include "MemMap.h"
+#endif /* EE_SUPPORT_MEMMAP_H */
+
+void __NEVER_INLINE__ EE_tc_isr2_call_handler( EE_tc_ISR_handler f )
+{
+  /* Call The ISR User Handler */
+  if ( f != NULL ) {
+    f();
+  }
+}
+
+/* If MemMap.h support is enabled (i.e. because memory protection): use it */
+#ifdef EE_SUPPORT_MEMMAP_H
+#define API_STOP_SEC_CODE
+#include "MemMap.h"
+#endif /* EE_SUPPORT_MEMMAP_H */
+
+#endif /* __OO_ORTI_SERVICETRACE__ && !EE_ERIKA_ISR_HANDLING_OFF */

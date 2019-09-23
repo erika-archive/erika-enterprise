@@ -478,6 +478,39 @@ void EE_tc2Yx_stm_set_sr1( EE_UINT32 usec, EE_TYPEISR2PRIO intvec );
   */
 void EE_tc2Yx_stm_set_sr1_next_match( EE_UINT32 usec );
 #endif /* EE_SYSTEM_TIMER_DEVICE != EE_TC_STM_SR1 */
+#else /* EE_SYSTEM_TIMER_DEVICE */
+/**
+  *  @brief Programs STM compare register 0 to trigger an IRQ after
+  *         usec microseconds
+  *  @param usec microseconds after you want get an IRQ on intvec
+  *  @param intvec Interrupt Vector Table entry that will handle STM interrupt.
+  *         With intvec == 0, the correponding service request node is left
+  *         unprogrammed or resetted.
+  */
+void EE_tc2Yx_stm_set_sr0( EE_UINT32 usec, EE_TYPEISR2PRIO intvec );
+
+/**
+  *  @brief Change previous programmed STM compare register 0 to trigger next
+            IRQ after usec microseconds
+  *  @param usec microseconds after you want get an IRQ on intvec
+  */
+void EE_tc2Yx_stm_set_sr0_next_match( EE_UINT32 usec );
+/**
+  *  @brief Programs STM compare register 1 to trigger an IRQ after
+  *         usec microseconds
+  *  @param usec microseconds after you want get an IRQ on intvec
+  *  @param intvec Interrupt Vector Table entry that will handle STM interrupt.
+  *         With intvec == 0, the correponding service request node is left
+  *         unprogrammed or resetted.
+  */
+void EE_tc2Yx_stm_set_sr1( EE_UINT32 usec, EE_TYPEISR2PRIO intvec );
+
+/**
+  * @brief  Change previous programmed STM compare register 1 to trigger next
+  *         IRQ after usec microseconds
+  * @param  usec microseconds after you want get an IRQ on intvec
+  */
+void EE_tc2Yx_stm_set_sr1_next_match( EE_UINT32 usec );
 #endif /* EE_SYSTEM_TIMER_DEVICE */
 
 /****************************************************************
