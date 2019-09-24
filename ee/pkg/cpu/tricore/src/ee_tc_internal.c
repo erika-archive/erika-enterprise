@@ -597,33 +597,16 @@ AccessType EE_hal_get_app_mem_access(ApplicationType app,
 #if (defined(EE_AS_OSAPPLICATIONS__))
 /* I've got lucky since parameter passing registers are D4..D7 for
    non-pointers parameter and A4..A7 for pointer parameters.
-   So 4 non-pointer parameters and 4 pointer parameters passed trought
-   registers, all used. */
+   So 3 non-pointer parameters and 3 pointer parameters passed through
+   registers. */
 void __NEVER_INLINE__ EE_tc_isr2_ar_wrapper(
   EE_FREG const flags,
-  ISRType const isr2_id,
   ApplicationType const app_from,
   ApplicationType const app_to,
-  EE_as_ISR_RAM_type * const isr_stack_ptr,
   EE_as_Application_ROM_type const * const app_ROM_ptr,
   EE_ADDR interrupted_sp,
   EE_tc_ISR_handler f)
 {
-  /* PCXI Saving */
-  isr_stack_ptr->ISR_Terminate_data = EE_tc_get_pcxi();
-
-  /* Set the right execution context */
-#if (defined(EE_SERVICE_PROTECTION__))
-  if (app_to == KERNEL_OSAPPLICATION) {
-    EE_as_set_execution_context(Kernel_Context);
-  } else {
-    EE_as_set_execution_context(ISR2_Context);
-  }
-#endif /* EE_SERVICE_PROTECTION__ */
-
-  /* Start the timing protection for the new ISR2 */
-  EE_as_tp_active_start_for_ISR2(isr2_id);
-
   if ((EE_IRQ_nesting_level == 1U) || (app_from != app_to)) {
     /* Switch on NEW ISR2 User Stack */
     EE_tc_set_SP(EE_tc_system_tos[app_ROM_ptr->ISRTOS].ram_tos);

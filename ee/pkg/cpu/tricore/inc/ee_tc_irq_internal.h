@@ -68,14 +68,12 @@
    set back Kernel Protection Set. */
 /* I've got lucky since parameter passing registers are D4..D7 for
    non-pointers parameter and A4..A7 for pointer parameters.
-   So 4 non-pointer parameters and 4 pointer parameters passed trought
-   registers, all used. */
+   So 3 non-pointer parameters and 3 pointer parameters passed trought
+   registers. */
 extern void __NEVER_INLINE__ EE_tc_isr2_ar_wrapper(
   EE_FREG const flags,
-  ISRType const isr2_id,
   ApplicationType const app_from,
   ApplicationType const app_to,
-  EE_as_ISR_RAM_type * const isr_stack_ptr,
   EE_as_Application_ROM_type const * const app_ROM_ptr,
   EE_ADDR interrupted_sp,
   EE_tc_ISR_handler f);
@@ -176,11 +174,35 @@ __INLINE__ void __ALWAYS_INLINE__ EE_TC_CHANGE_STACK_POINTER
        (not yet supported). */
     isr_stack_ptr->ISR_ID           = isr2_id;
 
-    /* Call a function for TerminateISR: I need to save a context to switch
-       back to and with a function call I can restore a Context and get back to
-       Kernel Protection Set */
-    EE_tc_isr2_ar_wrapper(flags, isr2_id, app_from, app_to, isr_stack_ptr,
-      app_ROM_ptr, interrupted_sp, f);
+    /* Save Info for TerminateISR: I need to save a context to switch back to
+       and there's only explicit lower context saving instruction.
+       Even though we will use a call to wrap the ISR2 body call, I cannot use
+       the context of that call as returning point, since we want to return
+       from that call to re-enter in Kernel Protection Set without a syscall.
+       This will release the context and generate a race condition long a bunch
+       of instructions (those needed to raise ICR.CCPN with
+       EE_hal_begin_nested_primitive) where an ISR2 could nest and mess with
+       CSA. */
+    EE_tc_svlcx();
+    /* PCXI Saving */
+    isr_stack_ptr->ISR_Terminate_data = EE_tc_get_pcxi();
+
+    /* Set the right execution context */
+#if (defined(EE_SERVICE_PROTECTION__))
+    if (app_to == KERNEL_OSAPPLICATION) {
+      EE_as_set_execution_context(Kernel_Context);
+    } else {
+      EE_as_set_execution_context(ISR2_Context);
+    }
+#endif /* EE_SERVICE_PROTECTION__ */
+
+    /* Start the timing protection for the new ISR2 */
+    EE_as_tp_active_start_for_ISR2(isr2_id);
+
+    /* Context restoring from this call let us get back to
+       Kernel Protection Set without a syscall even for NON-Trusted OS-A. */
+    EE_tc_isr2_ar_wrapper(flags, app_from, app_to, app_ROM_ptr,
+      interrupted_sp, f);
 
     /* CSA CONTEXT RESTORING SET BACK KERNEL PROTECTION SET. */
 
