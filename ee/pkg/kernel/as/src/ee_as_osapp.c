@@ -377,8 +377,8 @@ StatusType EE_as_GetApplicationState( ApplicationType Application,
     } else
 #endif /* __OO_EXTENDED_STATUS__ */
     {
-      /* XXX: ApplicationStateType is an enum so an integer, so a
-          read it SHOULD Atomic (Check this in Architectures other than TriCore) */
+      /* XXX: ApplicationStateType is an enum so an integer, so a read
+         SHOULD be Atomic (Check this in Architectures other than TriCore) */
       (*Value) = EE_as_Application_RAM[Application].ApplState;
       ev = E_OK;
     }
@@ -473,8 +473,6 @@ static void EE_as_terminate_preempted_task( EE_TID tid ) {
 
   /* Make the clean-up of other data structures related to scheduler */
   EE_as_task_other_cleanup(tid);
-  /* TASK stack rewind */
-  EE_hal_terminate_other_task(tid);
 }
 
 /* Terminate stacked TASKs belonging to app */
@@ -487,6 +485,13 @@ static void EE_as_app_terminate_stacked_tasks( ApplicationType app )
      task. (Current stacked TASK eventually will be terminated at the end of
      primitive) */
   previous  = EE_stk_queryfirst();
+  /* If the stacked TASK belong to terminating OS-Application start doing the
+     status clean-up. */
+  if (EE_th_app[previous + 1] == app) {
+    /* Terminate the TASK */
+    EE_as_terminate_preempted_task(previous);
+  }
+
   current   = EE_th_next[previous];
   while ( current != EE_NIL ) {
     /* Get the next */
@@ -495,6 +500,8 @@ static void EE_as_app_terminate_stacked_tasks( ApplicationType app )
     if ( EE_th_app[current + 1] == app ) {
       /* Terminate the TASK */
       EE_as_terminate_preempted_task(current);
+      /* TASK stack rewind */
+      EE_hal_terminate_other_task(current);
       /* Removing the task from the queue */
       EE_th_next[previous] = next;
     } else {
