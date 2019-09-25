@@ -607,6 +607,8 @@ void __NEVER_INLINE__ EE_tc_isr2_ar_wrapper(
   EE_ADDR interrupted_sp,
   EE_tc_ISR_handler f)
 {
+  EE_UREG temp_psw;
+
   if ((EE_IRQ_nesting_level == 1U) || (app_from != app_to)) {
     /* Switch on NEW ISR2 User Stack */
     EE_tc_set_SP(EE_tc_system_tos[app_ROM_ptr->ISRTOS].ram_tos);
@@ -619,13 +621,21 @@ void __NEVER_INLINE__ EE_tc_isr2_ar_wrapper(
     /* Return in User Stack + Set protection domain active */
     EE_tc_set_psw_user_stack();
 
+    /* Set OSApplication Range Registers */
+    EE_tc_set_os_app_range_registers(app_ROM_ptr);
+
+    /* Set protection set active (PSW.PSR bits) + active PSW.IO
+      (Trusted [supervisor] or Untrusted[User-1] ) */
+    temp_psw = (EE_tc_get_psw() & EE_TC_PSW_PRS_IO_CLEAN_MASK) |
+      EE_TC_PSW_APP_TO_PRS(app_to) | app_ROM_ptr->Mode;
+
+    /* Save the new active OS-Application */
+    EE_as_active_app = app_to;
+
     /* We don't want to make Kernel ISR2 preemptables, by other ISR2s */
     if (app_to != KERNEL_OSAPPLICATION) {
       EE_hal_end_nested_primitive(flags);
     }
-
-      /* Reset Protection Domain */
-    EE_tc_set_os_app_prot_set_from_appid(app_to);
   } else {
     /* Set the stack back, set back the active application and re-enable
        User-1 Mode (if needed) */
@@ -637,7 +647,7 @@ void __NEVER_INLINE__ EE_tc_isr2_ar_wrapper(
 
     /* Set protection domain active (Trusted or Untrusted) + return in
        User Stack */
-    EE_UREG temp_psw = (((EE_tc_get_psw() & EE_TC_PSW_PRS_IO_CLEAN_MASK) &
+    temp_psw = (((EE_tc_get_psw() & EE_TC_PSW_PRS_IO_CLEAN_MASK) &
       EE_TC_PSW_IS_CLEAN_MASK) | EE_as_Application_ROM[app_to].Mode) |
       EE_TC_PSW_APP_TO_PRS(app_to);
 
@@ -645,10 +655,11 @@ void __NEVER_INLINE__ EE_tc_isr2_ar_wrapper(
     if (app_to != KERNEL_OSAPPLICATION) {
       EE_hal_end_nested_primitive(flags);
     }
-
-    /* Here possible User-1 mode will be re-enabled */
-    EE_tc_set_psw(temp_psw);
   }
+
+  /* Activate the new user protection set. Here possible User-1 mode will be
+     re-enabled */
+  EE_tc_set_psw(temp_psw);
 
   /* Call The ISR User Handler */
   EE_tc_isr2_call_handler(f);
