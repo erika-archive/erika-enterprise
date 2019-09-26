@@ -696,7 +696,6 @@ void EE_as_TerminateApplication_internal ( ApplicationType Application,
   /* Terminate application TASKs */
   EE_as_terminate_app_tasks(Application);
 
-#ifdef EE_SERVICE_PROTECTION__
 #if defined(EE_MAX_ALARM) && (EE_MAX_ALARM > 0)
   {
     /* Handle alarms cancellation and counters reset */
@@ -776,7 +775,6 @@ void EE_as_TerminateApplication_internal ( ApplicationType Application,
     }
   }
 #endif /* EE_MAX_SCHEDULETABLE > 0 */
-#endif /* EE_SERVICE_PROTECTION__ */
 
   /* Set Application in requested Status */
   if ( RestartOption == RESTART ) {
