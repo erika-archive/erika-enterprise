@@ -25,13 +25,19 @@ StatusType TRUSTED_SignalShutdown (TrustedFunctionIndexType index,
   return E_OK;
 }
 
+EE_TYPEASSERTVALUE EE_assertions[15];
+
 #define APP_AppCore1_START_SEC_CODE
 #define APP_AppCore1_START_SEC_DATA
 #include "MemMap.h"
 
-EE_TYPEASSERTVALUE EE_assertions[15];
-
 static int assert_count = EE_ASSERT_NIL;
+
+#define APP_AppCore1_STOP_SEC_DATA
+#include "MemMap.h"
+#define APP_AppCore1_START_SEC_VAR_NOINIT
+#include "MemMap.h"
+
 void test_assert(int test)
 {
   register int next_assert;
@@ -54,9 +60,8 @@ TASK(TaskCore1Restart) {
 #endif /* EE_TEST_TASK_IN_EXECUTION_TERMINATION */
   test_assert(ext_activated == 1U);
 
-  test_assert(ActivateTask(TaskCore1Restart) == E_OS_ACCESS);
-  test_assert(ActivateTask(TaskCore1StdPrio1) == E_OS_ACCESS);
-  test_assert(ActivateTask(TaskCore1ExtPrio2) == E_OS_ACCESS);
+  test_assert(ActivateTask(TaskCore1Restart) == E_OS_LIMIT);
+  test_assert(ActivateTask(TaskCore1ExtPrio2) == E_OK);
   while ( sync_shutdown_asserts == 0U )
     ;
   AllowAccess();
@@ -107,5 +112,5 @@ void ShutdownHook_AppCore1( StatusType Error )
 }
 
 #define APP_AppCore1_STOP_SEC_CODE
-#define APP_AppCore1_STOP_SEC_DATA
+#define APP_AppCore1_STOP_SEC_VAR_NOINIT
 #include "MemMap.h"

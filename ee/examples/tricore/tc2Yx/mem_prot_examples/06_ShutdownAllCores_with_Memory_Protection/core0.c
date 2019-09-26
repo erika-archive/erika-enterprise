@@ -59,7 +59,6 @@ TASK(TaskCore0Prio1) {
   test_assert(ActivateTask(TaskCore1StdPrio1) == E_OK);
   test_assert(ActivateTask(TaskCore1StdPrio1) == E_OK);
   test_assert(ActivateTask(TaskCore1StdPrio1) == E_OS_LIMIT);
-  test_assert(ActivateTask(TaskCore1ExtPrio2) == E_OK);
   test_assert(ActivateTask(TaskCore1ExtPrio2) == E_OS_LIMIT);
 #ifdef EE_TEST_TASK_IN_EXECUTION_TERMINATION
   EE_tc2Yx_delay(1000);

@@ -59,7 +59,9 @@
 #define EE_TC2YX_SRN_ENABLE               ((EE_UINT32)1U << 10U)
 #define EE_TC2YX_SRN_TYPE_OF_SERVICE(tos) ((((EE_UINT32)(tos)) & \
   (EE_UINT32)0x3U) << 11U)
-#define EE_TC2YX_SRN_CLEAR_REQUEST        ((EE_UINT32)1U << 25U)
+/* Clear request with sticky clear */
+#define EE_TC2YX_SRN_CLEAR_REQUEST        (((EE_UINT32)1U << 25U) |\
+  ((EE_UINT32)1U << 30U))
 #define EE_TC2YX_SRN_SET_REQUEST          ((EE_UINT32)1U << 26U)
 
 /******************************************************************************

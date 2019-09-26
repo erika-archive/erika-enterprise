@@ -261,9 +261,12 @@ StatusType EE_TC_INTERRUPT_HANDER EE_TC_CHANGE_STACK_POINTER
         EE_tc_system_bos[interrupted_tos].base_stack;
       /* Reset ORTI ISR2 value */
       EE_ORTI_set_runningisr2(EE_NO_ISR2);
-      /* Set CCPN to unmask next IRQ, it would have been
-         done by RFE but we are not returning yet */
-      EE_tc_set_int_prio( EE_ISR_UNMASKED );
+      /* ISR handling is changed, so I cannot unmask CCPN here,
+         since we are no longer with interrupts disabled.
+         CCPN restoring will be done by:
+         1) RFE instructions for interrupted TASKs
+         2) EE_hal_end_nested_primitive for schedule points inside a primitive
+         3) EE_hal_terminate_savestk (precisely inside EE_tc_dummy_context) */
       /* Configure "User" Stack */
       EE_tc_set_psw_user_stack();
       /* Restore task stack pointer */
@@ -612,30 +615,16 @@ void __NEVER_INLINE__ EE_tc_isr2_ar_wrapper(
   if ((EE_IRQ_nesting_level == 1U) || (app_from != app_to)) {
     /* Switch on NEW ISR2 User Stack */
     EE_tc_set_SP(EE_tc_system_tos[app_ROM_ptr->ISRTOS].ram_tos);
+
+    /* Save the new active OS-Application */
     EE_as_active_app = app_to;
 
     /* Monitor actual stack after ISR2 data structures initialization: In
        this way I can terminate the ISR in case of overflow */
     EE_as_check_and_handle_stack_overflow(app_to,app_ROM_ptr->ISRTOS);
 
-    /* Return in User Stack + Set protection domain active */
-    EE_tc_set_psw_user_stack();
-
     /* Set OSApplication Range Registers */
     EE_tc_set_os_app_range_registers(app_ROM_ptr);
-
-    /* Set protection set active (PSW.PSR bits) + active PSW.IO
-      (Trusted [supervisor] or Untrusted[User-1] ) */
-    temp_psw = (EE_tc_get_psw() & EE_TC_PSW_PRS_IO_CLEAN_MASK) |
-      EE_TC_PSW_APP_TO_PRS(app_to) | app_ROM_ptr->Mode;
-
-    /* Save the new active OS-Application */
-    EE_as_active_app = app_to;
-
-    /* We don't want to make Kernel ISR2 preemptables, by other ISR2s */
-    if (app_to != KERNEL_OSAPPLICATION) {
-      EE_hal_end_nested_primitive(flags);
-    }
   } else {
     /* Set the stack back, set back the active application and re-enable
        User-1 Mode (if needed) */
@@ -644,17 +633,17 @@ void __NEVER_INLINE__ EE_tc_isr2_ar_wrapper(
     /* Monitor actual stack after ISR2 data structures initialization: In this
        way I can terminate the ISR in case of overflow */
     EE_as_check_and_handle_stack_overflow(app_to, app_ROM_ptr->ISRTOS);
+  }
 
-    /* Set protection domain active (Trusted or Untrusted) + return in
-       User Stack */
-    temp_psw = (((EE_tc_get_psw() & EE_TC_PSW_PRS_IO_CLEAN_MASK) &
-      EE_TC_PSW_IS_CLEAN_MASK) | EE_as_Application_ROM[app_to].Mode) |
-      EE_TC_PSW_APP_TO_PRS(app_to);
+  /* Set protection domain active (Trusted or Untrusted) + return in
+     User Stack */
+  temp_psw = (((EE_tc_get_psw() & EE_TC_PSW_PRS_IO_CLEAN_MASK) &
+    EE_TC_PSW_IS_CLEAN_MASK) | EE_as_Application_ROM[app_to].Mode) |
+    EE_TC_PSW_APP_TO_PRS(app_to);
 
-    /* We don't want to make Kernel ISR2 preemptables, by other ISR2s */
-    if (app_to != KERNEL_OSAPPLICATION) {
-      EE_hal_end_nested_primitive(flags);
-    }
+  /* We don't want to make Kernel ISR2 preemptables, by other ISR2s */
+  if (app_to != KERNEL_OSAPPLICATION) {
+    EE_hal_end_nested_primitive(flags);
   }
 
   /* Activate the new user protection set. Here possible User-1 mode will be
