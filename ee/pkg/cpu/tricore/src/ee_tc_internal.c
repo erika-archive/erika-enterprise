@@ -113,7 +113,7 @@ void EE_as_restore_stack_canary ( EE_UREG stktop ) {
   EE_STACK_T * p_end_stack;
 #if (!defined(EE_AS_OSAPPLICATIONS__)) && (defined(__IRQ_STACK_NEEDED__))
   if ( stktop == ((EE_UREG)-1) ) {
-    p_end_stack = (EE_STACK_T *)EE_tc_IRQ_tos.SYS_bos;
+    p_end_stack = (EE_STACK_T *)EE_tc_IRQ_tos.end_stack;
   } else
 #endif /* !EE_AS_OSAPPLICATIONS__ && __IRQ_STACK_NEEDED__ */
   {

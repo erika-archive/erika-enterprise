@@ -350,7 +350,7 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc_isr2_wrapper_body(EE_tc_ISR_handler f)
 #if (defined(__IRQ_STACK_NEEDED__))
     if (EE_IRQ_nesting_level == 1U) {
       /* Switch on NEW ISR2 User Stack */
-      EE_tc_set_SP(EE_tc_IRQ_tos.SYS_tos);
+      EE_tc_set_SP(EE_tc_IRQ_tos.base_stack);
     }
 #endif /* __IRQ_STACK_NEEDED__ */
     /* Call The ISR User Handler */

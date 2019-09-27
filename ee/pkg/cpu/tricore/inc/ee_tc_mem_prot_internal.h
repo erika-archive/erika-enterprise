@@ -146,8 +146,8 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc_set_os_app_prot_set_from_task_utid(
 {
   EE_as_active_app = EE_th_app[utid];
 }
-
-#define EE_tc_restore_os_app( app_to_be_restored ) ((void)0)
+#define EE_tc_set_os_app_range_registers(app_ROM_ptr) ((void)0)
+#define EE_tc_restore_os_app(app_to_be_restored)      ((void)0)
 #endif /* __EE_MEMORY_PROTECTION__ */
 
 #endif /* EE_AS_OSAPPLICATIONS__ */

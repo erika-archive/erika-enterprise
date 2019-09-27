@@ -608,9 +608,9 @@ __INLINE__ EE_TYPEBOOL __ALWAYS_INLINE__
   EE_TYPEBOOL  is_overflow = EE_FALSE;
 #if (!defined(EE_AS_OSAPPLICATIONS__)) && (defined(__IRQ_STACK_NEEDED__))
   if ( stktop == ((EE_UREG)-1) ) {
-    p_end_stack = (EE_STACK_T *)EE_tc_IRQ_tos.SYS_bos;
-    is_overflow = ( (sp < EE_tc_IRQ_tos.SYS_bos) ||
-      (sp > EE_tc_IRQ_tos.SYS_tos) );
+    p_end_stack = (EE_STACK_T *)EE_tc_IRQ_tos.end_stack;
+    is_overflow = ( (sp < EE_tc_IRQ_tos.end_stack) ||
+      (sp > EE_tc_IRQ_tos.base_stack) );
   } else
 #endif /* !EE_AS_OSAPPLICATIONS__ && __IRQ_STACK_NEEDED__ */
   {

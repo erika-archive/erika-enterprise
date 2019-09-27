@@ -7,7 +7,7 @@
  *
  * ERIKA Enterprise is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation, 
+ * version 2 as published by the Free Software Foundation,
  * (with a special exception described below).
  *
  * Linking this code statically or dynamically with other modules is
@@ -50,7 +50,7 @@
  * Fixes for compilation issues with Tasking Compiler:
  * Updates for compilation issues with Dcc Compiler:
  * Usage of generic compiler independent register header file:
- * Author: 
+ * Author:
  *         Ashok Abbi, <Ashok.Abbi@infineon.com> 18.07.2013
  */
 
@@ -345,7 +345,7 @@ extern struct EE_TC_TOS EE_tc_system_tos[];
  ******************************************************************************/
 /* Stack used by IRQ handlers */
 #if (defined(__IRQ_STACK_NEEDED__))
-extern struct EE_TOS const EE_tc_IRQ_tos;
+extern struct EE_TC_BOS const EE_tc_IRQ_tos;
 #endif /* __IRQ_STACK_NEEDED__ */
 
 #if (defined(EE_AS_PROTECTIONHOOK_HAS_STACK__))
@@ -392,7 +392,7 @@ extern struct EE_TOS const EE_tc_prot_hook_tos;
 
 /*******************************************************************************
  *  IMPORTANT:
- *  These struct layouts are packet by construction so I don't add 
+ *  These struct layouts are packet by construction so I don't add
  *  __attribute__((packed)) because it could harm performances.
  *  Look at:
  *  http://digitalvampire.org/blog/index.php/2006/07/31/\
@@ -411,7 +411,7 @@ typedef union {
 #endif /* __TC13__ || __TC131__ */
     EE_UINT32 UL    :1;  /* Upper or Lower Context Tag */
     EE_UINT32 PIE   :1;  /* Previous Interrupt Enable */
-    EE_UINT32 PCPN  :8;  /* Previous CPU Priority Number */ 
+    EE_UINT32 PCPN  :8;  /* Previous CPU Priority Number */
   } bits;
 } EE_PCXI;
 

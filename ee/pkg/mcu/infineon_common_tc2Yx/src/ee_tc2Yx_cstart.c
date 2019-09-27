@@ -525,7 +525,7 @@ void __NEVER_INLINE__ JUMP EE_TC2YX_START( void )
    * ROM monitors require to keep in control of vectors)
    */
   /* EE_UINT32 isp = (EE_UINT32)(_lc_ue_istack) & EE_STACK_ALIGN; */
-  isp = (EE_UINT32)EE_tc_IRQ_tos.SYS_tos & EE_STACK_ALIGN;
+  isp = (EE_UINT32)EE_tc_IRQ_tos.base_stack & EE_STACK_ALIGN;
   EE_tc_set_csfr(EE_CPU_REG_ISP, isp);
 #endif /* __MULTI__ &&  __IRQ_STACK_NEEDED__ */
 
