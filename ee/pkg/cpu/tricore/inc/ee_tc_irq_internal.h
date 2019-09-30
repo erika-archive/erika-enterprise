@@ -68,14 +68,12 @@
    set back Kernel Protection Set. */
 /* I've got lucky since parameter passing registers are D4..D7 for
    non-pointers parameter and A4..A7 for pointer parameters.
-   So 3 non-pointer parameters and 3 pointer parameters passed trought
+   So 2 non-pointer parameters and 2 pointer parameters passed trought
    registers. */
 extern void __NEVER_INLINE__ EE_tc_isr2_ar_wrapper(
   EE_FREG const flags,
-  ApplicationType const app_from,
   ApplicationType const app_to,
   EE_as_Application_ROM_type const * const app_ROM_ptr,
-  EE_ADDR interrupted_sp,
   EE_tc_ISR_handler f);
 
 /* ISR2 support have to be configured when OS Applications are used */
@@ -196,13 +194,35 @@ __INLINE__ void __ALWAYS_INLINE__ EE_TC_CHANGE_STACK_POINTER
     }
 #endif /* EE_SERVICE_PROTECTION__ */
 
+    if ((EE_IRQ_nesting_level == 1U) || (app_from != app_to)) {
+      /* Switch on NEW ISR2 User Stack */
+      EE_tc_set_SP(EE_tc_system_tos[app_ROM_ptr->ISRTOS].ram_tos);
+
+      /* Save the new active OS-Application */
+      EE_as_active_app = app_to;
+
+      /* Monitor actual stack after ISR2 data structures initialization: In
+         this way I can terminate the ISR in case of overflow */
+      EE_as_check_and_handle_stack_overflow(app_to,app_ROM_ptr->ISRTOS);
+
+      /* Set OSApplication Range Registers */
+      EE_tc_set_os_app_range_registers(app_ROM_ptr);
+    } else {
+      /* Set the stack back, set back the active application and re-enable
+         User-1 Mode (if needed) */
+      EE_tc_set_SP(interrupted_sp);
+
+      /* Monitor actual stack after ISR2 data structures initialization:
+         In this way I can terminate the ISR in case of overflow */
+      EE_as_check_and_handle_stack_overflow(app_to, app_ROM_ptr->ISRTOS);
+    }
+
     /* Start the timing protection for the new ISR2 */
     EE_as_tp_active_start_for_ISR2(isr2_id);
 
     /* Context restoring from this call let us get back to
        Kernel Protection Set without a syscall even for NON-Trusted OS-A. */
-    EE_tc_isr2_ar_wrapper(flags, app_from, app_to, app_ROM_ptr,
-      interrupted_sp, f);
+    EE_tc_isr2_ar_wrapper(flags, app_to, app_ROM_ptr, f);
 
     /* CSA CONTEXT RESTORING SET BACK KERNEL PROTECTION SET. */
 
@@ -324,12 +344,13 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc_isr2_wrapper_body(EE_tc_ISR_handler f)
 #if (defined(EE_SYSTEM_TIMER)) || (defined(__MSRP__))
     EE_TYPEBOOL EE_std_is_disableIRQ_nested = EE_FALSE;
 #if (defined(EE_SYSTEM_TIMER))
-    EE_std_is_disableIRQ_nested |= (
+    EE_std_is_disableIRQ_nested |= (EE_TYPEBOOL)(
       EE_tc_get_int_prio() == EE_ISR2_ID_EE_tc_system_timer_handler
     );
 #endif  /* EE_SYSTEM_TIMER */
 #if (defined(__MSRP__))
-    EE_std_is_disableIRQ_nested |= (EE_tc_get_int_prio() == EE_ISR_PRI_1);
+    EE_std_is_disableIRQ_nested |=
+      (EE_TYPEBOOL)(EE_tc_get_int_prio() == EE_ISR_PRI_1);
 #endif /* MSRP */
     /* We don't want to make Kernel ISR2 preemptables */
     if (EE_std_is_disableIRQ_nested) {

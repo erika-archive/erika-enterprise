@@ -600,44 +600,17 @@ AccessType EE_hal_get_app_mem_access(ApplicationType app,
 #if (defined(EE_AS_OSAPPLICATIONS__))
 /* I've got lucky since parameter passing registers are D4..D7 for
    non-pointers parameter and A4..A7 for pointer parameters.
-   So 3 non-pointer parameters and 3 pointer parameters passed through
+   So 2 non-pointer parameters and 2 pointer parameters passed through
    registers. */
 void __NEVER_INLINE__ EE_tc_isr2_ar_wrapper(
   EE_FREG const flags,
-  ApplicationType const app_from,
   ApplicationType const app_to,
   EE_as_Application_ROM_type const * const app_ROM_ptr,
-  EE_ADDR interrupted_sp,
   EE_tc_ISR_handler f)
 {
-  EE_UREG temp_psw;
-
-  if ((EE_IRQ_nesting_level == 1U) || (app_from != app_to)) {
-    /* Switch on NEW ISR2 User Stack */
-    EE_tc_set_SP(EE_tc_system_tos[app_ROM_ptr->ISRTOS].ram_tos);
-
-    /* Save the new active OS-Application */
-    EE_as_active_app = app_to;
-
-    /* Monitor actual stack after ISR2 data structures initialization: In
-       this way I can terminate the ISR in case of overflow */
-    EE_as_check_and_handle_stack_overflow(app_to,app_ROM_ptr->ISRTOS);
-
-    /* Set OSApplication Range Registers */
-    EE_tc_set_os_app_range_registers(app_ROM_ptr);
-  } else {
-    /* Set the stack back, set back the active application and re-enable
-       User-1 Mode (if needed) */
-    EE_tc_set_SP(interrupted_sp);
-
-    /* Monitor actual stack after ISR2 data structures initialization: In this
-       way I can terminate the ISR in case of overflow */
-    EE_as_check_and_handle_stack_overflow(app_to, app_ROM_ptr->ISRTOS);
-  }
-
   /* Set protection domain active (Trusted or Untrusted) + return in
      User Stack */
-  temp_psw = (((EE_tc_get_psw() & EE_TC_PSW_PRS_IO_CLEAN_MASK) &
+  EE_UREG const new_psw = (((EE_tc_get_psw() & EE_TC_PSW_PRS_IO_CLEAN_MASK) &
     EE_TC_PSW_IS_CLEAN_MASK) | EE_as_Application_ROM[app_to].Mode) |
     EE_TC_PSW_APP_TO_PRS(app_to);
 
@@ -648,7 +621,7 @@ void __NEVER_INLINE__ EE_tc_isr2_ar_wrapper(
 
   /* Activate the new user protection set. Here possible User-1 mode will be
      re-enabled */
-  EE_tc_set_psw(temp_psw);
+  EE_tc_set_psw(new_psw);
 
   /* Call The ISR User Handler */
   EE_tc_isr2_call_handler(f);
