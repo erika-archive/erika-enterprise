@@ -15,7 +15,7 @@ TASK(TaskApp2Prio2)
   test_assert(IncrementCounter(CounterApp3) == E_OS_ACCESS);
 
   test_assert(GetCounterValue(CounterApp3, &app3CntValue) == E_OS_ACCESS);
-  test_assert(CallGetApp3CounterValue(&app3CntValue) == E_OK);
+  CallGetApp3CounterValue(&app3CntValue);
   test_assert(app3CntValue == 0U);
   test_assert(ActivateTask(TaskApp3Prio1) == E_OS_ACCESS);
   test_assert(TerminateApplication(App3, RESTART) == E_OS_ACCESS);

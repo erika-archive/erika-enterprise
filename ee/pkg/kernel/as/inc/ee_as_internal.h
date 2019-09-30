@@ -389,8 +389,8 @@ void EE_as_handle_protection_error( StatusType error );
 /** Syscall table */
 extern EE_FADDR const EE_syscall_table[/*EE_SYSCALL_NR*/];
 
-/** @typedef for TRUSTED Function pointers */
-typedef StatusType (*EE_TRUSTEDFUNCTYPE)(TrustedFunctionIndexType,
+/** @typedef for TRUSTED Function pointers. [SWS_OS_00312] */
+typedef void (*EE_TRUSTEDFUNCTYPE)(TrustedFunctionIndexType,
   TrustedFunctionParameterRefType);
 
 /* THIS HAL FUNCTIONS DECLARATION ARE PUT HERE BECAUSE SIGNATURE DEPENDS ON

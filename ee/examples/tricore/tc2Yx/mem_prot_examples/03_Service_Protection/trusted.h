@@ -3,7 +3,7 @@
 
 #include "ee.h"
 
-StatusType TRUSTED_GetApp3CounterValue(TrustedFunctionIndexType index,
+void TRUSTED_GetApp3CounterValue(TrustedFunctionIndexType index,
   TrustedFunctionParameterRefType ref);
 
 #endif /* TRUSTED_H */

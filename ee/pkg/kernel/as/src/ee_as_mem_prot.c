@@ -401,8 +401,9 @@ StatusType EE_as_CallTrustedFunction(TrustedFunctionIndexType FunctionIndex,
        Furthermore we are implicitly requiring that system call vector does not
        mess with IPL (Interrupt Priority Level). */
     EE_hal_enableIRQ();
-    ev = ((EE_TRUSTEDFUNCTYPE)EE_syscall_table[FunctionIndex])(FunctionIndex,
+    ((EE_TRUSTEDFUNCTYPE)EE_syscall_table[FunctionIndex])(FunctionIndex,
       FunctionParams);
+    ev = E_OK;
     /* Disable them again */
     EE_hal_disableIRQ();
     EE_as_tp_active_pause_and_update_budgets();

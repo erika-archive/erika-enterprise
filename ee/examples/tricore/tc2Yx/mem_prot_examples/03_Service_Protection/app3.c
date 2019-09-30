@@ -1,4 +1,5 @@
 #include "test.h"
+#include "trusted.h"
 
 TASK(TaskApp3Prio1)
 {
@@ -38,26 +39,22 @@ TASK(TaskApp3Prio2)
 #endif
 
 /* User inteface */
-StatusType CallGetApp3CounterValue(TickRefType App3CntValue)
+void CallGetApp3CounterValue(TickRefType App3CntValue)
 {
-  StatusType  s;
-
-  s = CallTrustedFunction(EE_ID_TRUSTED_GetApp3CounterValue, App3CntValue);
-
-  return s;
+  (void)CallTrustedFunction(EE_ID_TRUSTED_GetApp3CounterValue, App3CntValue);
 }
 
-StatusType TRUSTED_GetApp3CounterValue(TrustedFunctionIndexType index,
+void TRUSTED_GetApp3CounterValue(TrustedFunctionIndexType index,
   TrustedFunctionParameterRefType ref)
 {
   /* This is just to check that inside the TRUSTED function I can access
      TRUSTED memory, actually this is a concurrency bug. */
   static TickType trusted_mem_counter_value;
 
-  StatusType s = GetCounterValue(CounterApp3, &trusted_mem_counter_value);
+  (void)GetCounterValue(CounterApp3, &trusted_mem_counter_value);
   *(TickRefType)ref = trusted_mem_counter_value;
 
-  return s;
+  return;
 }
 
 #if 0

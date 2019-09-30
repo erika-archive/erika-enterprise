@@ -60,7 +60,7 @@ EE_INT32 CallMyTaskTrustedService(EE_INT32 arg)
   }
   return str.res;
 }
- 
+
 /* User inteface */
 EE_INT32 CallMyIsrTrustedService(EE_INT32 arg)
 {
@@ -73,8 +73,8 @@ EE_INT32 CallMyIsrTrustedService(EE_INT32 arg)
   }
   return str.res;
 }
- 
-StatusType TRUSTED_MyTaskTrustedService(TrustedFunctionIndexType index,
+
+void TRUSTED_MyTaskTrustedService(TrustedFunctionIndexType index,
   TrustedFunctionParameterRefType ref)
 {
   /* Privileged function */
@@ -89,16 +89,16 @@ StatusType TRUSTED_MyTaskTrustedService(TrustedFunctionIndexType index,
   ActivateTask(App2HiPriTask);
   /* Again, a privileged function */
   x = EE_tc_get_ICR().reg;
-  return E_OK;
+  return;
 }
 
-StatusType TRUSTED_MyIsrTrustedService(TrustedFunctionIndexType index,
+void TRUSTED_MyIsrTrustedService(TrustedFunctionIndexType index,
   TrustedFunctionParameterRefType ref)
 {
   /* Privileged function */
   x = EE_tc_get_ICR().reg;
   flag1 = 1;
-  return E_OK;
+  return;
 }
 
 TASK(TrustedTask1)

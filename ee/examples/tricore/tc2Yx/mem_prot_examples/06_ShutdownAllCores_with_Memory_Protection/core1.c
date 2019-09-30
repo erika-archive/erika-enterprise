@@ -13,16 +13,16 @@ int main ( void ) {
 }
 
 /* User inteface */
-StatusType CallSignalShutdown ( void )
+void CallSignalShutdown ( void )
 {
-  return CallTrustedFunction(EE_ID_TRUSTED_SignalShutdown, NULL);
+  (void)CallTrustedFunction(EE_ID_TRUSTED_SignalShutdown, NULL);
 }
 
-StatusType TRUSTED_SignalShutdown (TrustedFunctionIndexType index,
+void TRUSTED_SignalShutdown (TrustedFunctionIndexType index,
   TrustedFunctionParameterRefType ref)
 {
   sync_shutdown_asserts = 0U;
-  return E_OK;
+  return;
 }
 
 EE_TYPEASSERTVALUE EE_assertions[15];
@@ -100,11 +100,11 @@ void ShutdownHook_AppCore1( StatusType Error )
   test_assert(GetApplicationID() == AppCore1);
   test_assert(core1App_startup == 1U);
 #ifdef EE_TEST_TASK_IN_EXECUTION_TERMINATION
-  test_assert(std_activated == 3U);
-  test_assert(ext_activated == 1U);
+  test_assert(std_activated == 6U);
+  test_assert(ext_activated == 2U);
 #else  /* EE_TEST_TASK_IN_EXECUTION_TERMINATION */
-  test_assert(std_activated <= 3U);
-  test_assert(ext_activated <= 1U);
+  test_assert(std_activated <= 6U);
+  test_assert(ext_activated <= 2U);
 #endif /* EE_TEST_TASK_IN_EXECUTION_TERMINATION */
 
   EE_assert_range(0, 1, assert_count);
