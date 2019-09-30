@@ -228,6 +228,67 @@ __INLINE__ void __ALWAYS_INLINE__
 #endif /* __OO_ORTI_USE_OTM__ */
 #endif /* __OO_ORTI_RUNNINGISR2__ */
 
+/******************************************************************************
+                        First Bunch of Utility Functions
+ *****************************************************************************/
+#ifdef __TASKING__
+/* Data barrier */
+__INLINE__ void __ALWAYS_INLINE__ EE_tc_dsync( void )
+{
+  __dsync();
+}
+
+/* Instruction barrier */
+__INLINE__ void __ALWAYS_INLINE__ EE_tc_isync( void )
+{
+  __isync();
+}
+
+/* Debug instruction */
+__INLINE__ void __ALWAYS_INLINE__ EE_tc_debug( void )
+{
+  __debug();
+}
+
+#elif defined(__GNUC__)
+/* Data barrier */
+__INLINE__ void __ALWAYS_INLINE__ EE_tc_dsync( void )
+{
+  _dsync();
+}
+
+/* Instruction barrier */
+__INLINE__ void __ALWAYS_INLINE__ EE_tc_isync( void )
+{
+  _isync();
+}
+
+/* Debug instruction */
+__INLINE__ void __ALWAYS_INLINE__ EE_tc_debug( void )
+{
+  _debug();
+}
+
+#elif defined(__DCC__)
+/* Data barrier */
+__INLINE__ void __ALWAYS_INLINE__ EE_tc_dsync( void )
+{
+  _dsync();
+}
+
+/* Instruction barrier */
+__INLINE__ void __ALWAYS_INLINE__ EE_tc_isync( void )
+{
+  _isync();
+}
+
+/* Debug instruction */
+__INLINE__ void __ALWAYS_INLINE__ EE_tc_debug( void )
+{
+  _debug();
+}
+#endif /* __TASKING__ || __GNUC__ || __DCC__ */
+
 /*******************************************************************************
                     Multicore and multiprocessor support
  ******************************************************************************/
@@ -521,24 +582,6 @@ __INLINE__ EE_UREG __ALWAYS_INLINE__ EE_tc_clz( EE_UREG data )
   return (EE_UREG)__clz(data);
 }
 
-/* Data barrier */
-__INLINE__ void __ALWAYS_INLINE__ EE_tc_dsync( void )
-{
-  __dsync();
-}
-
-/* Instruction barrier */
-__INLINE__ void __ALWAYS_INLINE__ EE_tc_isync( void )
-{
-  __isync();
-}
-
-/* Debug instruction */
-__INLINE__ void __ALWAYS_INLINE__ EE_tc_debug( void )
-{
-  __debug();
-}
-
 /*Core info*/
 __INLINE__ EE_UREG __ALWAYS_INLINE__ EE_tc_cpu_model( void )
 {
@@ -723,24 +766,6 @@ __INLINE__ EE_UREG __ALWAYS_INLINE__ EE_tc_read_return_value( void )
   register EE_UREG reg = 0U;
   __asm volatile ("mov %0, %%d2" : "=d"(reg));
   return reg;
-}
-
-/* Data barrier */
-__INLINE__ void __ALWAYS_INLINE__ EE_tc_dsync( void )
-{
-  _dsync();
-}
-
-/* Instruction barrier */
-__INLINE__ void __ALWAYS_INLINE__ EE_tc_isync( void )
-{
-  _isync();
-}
-
-/* Debug instruction */
-__INLINE__ void __ALWAYS_INLINE__ EE_tc_debug( void )
-{
-  _debug();
 }
 
 /* Core info */
@@ -930,24 +955,6 @@ asm volatile EE_UREG EE_tc_read_return_value( void )
 __INLINE__ EE_UREG __ALWAYS_INLINE__ EE_tc_clz( EE_UREG data )
 {
   return (EE_UREG)_clz(data);
-}
-
-/* Data barrier */
-__INLINE__ void __ALWAYS_INLINE__ EE_tc_dsync( void )
-{
-  _dsync();
-}
-
-/* Instruction barrier */
-__INLINE__ void __ALWAYS_INLINE__ EE_tc_isync( void )
-{
-  _isync();
-}
-
-/* Debug instruction */
-__INLINE__ void __ALWAYS_INLINE__ EE_tc_debug( void )
-{
-  _debug();
 }
 
 /* Core info */

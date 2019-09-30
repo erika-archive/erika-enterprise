@@ -7,7 +7,7 @@
  *
  * ERIKA Enterprise is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation, 
+ * version 2 as published by the Free Software Foundation,
  * (with a special exception described below).
  *
  * Linking this code statically or dynamically with other modules is
@@ -101,7 +101,7 @@ typedef struct ee_tc_barrier {
   volatile EE_UINT32 value;
 } EE_TYPEBARRIER;
 
-/** 
+/**
  *  @brief Synchronize on a barrier. Wait until all CPUs have called this
  *    function on the same barrier.
  *  @param bar Pointer to barrier to synchronize on.
@@ -239,7 +239,7 @@ __INLINE__ EE_UINT32 __ALWAYS_INLINE__ EE_tc_cmpswapw( EE_UINT32 * const p_var,
 #endif	/* __STRICT_ANSI__ */
 }
 #elif defined (__DCC__)
-  /* extern void _cmpswapw( unsigned long long,  void*, const unsigned int) 
+  /* extern void _cmpswapw( unsigned long long,  void*, const unsigned int)
      This is the signature for diab intrinsic cmpswap.w support. I suppose that
      the last parameter is the offset from address value: in this case it will
      be always 0 for us */
@@ -250,7 +250,7 @@ __INLINE__ EE_UINT32 __ALWAYS_INLINE__ EE_tc_cmpswapw( EE_UINT32 * const p_var,
 {
   EE_UINT64 e_reg = ((EE_UINT64)expected_val << 32U) | new_val;
 
-  _cmpswapw(e_reg, p_var, 0); 
+  _cmpswapw(e_reg, p_var, 0);
 
   return (EE_UINT32)e_reg;
 } */
@@ -287,7 +287,7 @@ asm volatile EE_UINT32 EE_tc_swapw( EE_UINT32 * const p_var,
   EE_UINT32 new_val )
 {
 % reg p_var, new_val
-! "%d2" 
+! "%d2"
   swap.w new_val, [p_var]0
   mov %d2, new_val
 }
@@ -365,7 +365,7 @@ EE_DO_PRAGMA(warning 557)
  *  EE_hal_spinlock_value[cpu][i] {cpu from 0 to EE_MAX_CPU}
  *
  *  For that reason initialization values will be:
- * 
+ *
  *  EE_hal_spinlock_status[i] = ((EE_UINT32)&EE_hal_spin_cpu0[i])+1U);
  *  EE_hal_spinlock_value[i][cpu] = 0;
  *
@@ -432,9 +432,11 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc_spin_out( EE_TYPESPIN spin_id )
 {
   /* Get current core */
   register  EE_TYPECOREID         current_core = EE_tc_get_core_id();
+  /* Commit all the changes in memory */
+  EE_tc_dsync();
   /*  Free the lock. All the writes in
-      EE_hal_spinlock_value[spin_id][EE_CURRENTCPU] location are made by current
-      cpu so I don't need atomicity */
+      EE_hal_spinlock_value[spin_id][EE_CURRENTCPU] location are made by
+      current cpu so I don't need atomicity */
   EE_hal_spinlock_value[spin_id][current_core] =
     (EE_hal_spinlock_value[spin_id][current_core] == 0U) ? 1U : 0U;
 }
@@ -468,6 +470,8 @@ __INLINE__ void __ALWAYS_INLINE__ EE_tc_spin_in( EE_TYPESPIN spin_id )
     @param spin_id Spinlock to be released id */
 __INLINE__ void __ALWAYS_INLINE__ EE_tc_spin_out( EE_TYPESPIN spin_id )
 {
+  /* Commit all the changes in memory */
+  EE_tc_dsync();
   EE_hal_spinlock_status[spin_id] = 0U;
 }
 
