@@ -7,7 +7,7 @@
  *
  * ERIKA Enterprise is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation, 
+ * version 2 as published by the Free Software Foundation,
  * (with a special exception described below).
  *
  * Linking this code statically or dynamically with other modules is
@@ -47,7 +47,7 @@ EE_OPT = "EE_BYPASS_CLOCK_CONFIGURATION";
 
 MCU_DATA = TRICORE {
 #ifdef	tricore_tc27x
-    MODEL = TC27x;
+    MODEL = TC27xC;
 #endif	/* tricore_tc27x */
 #ifdef	tricore_tc29x
     MODEL = TC29x;

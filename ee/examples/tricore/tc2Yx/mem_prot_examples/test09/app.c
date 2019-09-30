@@ -28,6 +28,12 @@ unsigned int priority_to_be_generated;
 
 EE_TYPEASSERTVALUE EE_assertions[33];
 
+#define API_STOP_SEC_VAR_NOINIT
+#include "MemMap.h"
+
+#define API_START_SEC_DATA
+#include "MemMap.h"
+
 static int assert_count = EE_ASSERT_NIL;
 static void assert(int test)
 {
@@ -36,7 +42,7 @@ static void assert(int test)
   EE_assert(next_assert, test, EE_ASSERT_NIL);
   assert_count = next_assert;
 }
-#define API_STOP_SEC_VAR_NOINIT
+#define API_STOP_SEC_DATA
 #define API_STOP_SEC_CODE
 #include "MemMap.h"
 
@@ -303,7 +309,7 @@ void EE_TC_CHANGE_STACK_POINTER ShutdownHook ( StatusType Error ) {
   assert( public_memory == 6 );
   assert( trusted_memory == 4 );
 
-  EE_assert_range(0, 1, assert_count); 
+  EE_assert_range(0, 1, assert_count);
   EE_assert_last();
 }
 

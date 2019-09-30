@@ -18,6 +18,12 @@ unsigned int priority_to_be_generated;
 
 EE_TYPEASSERTVALUE EE_assertions[5];
 
+#define API_STOP_SEC_VAR_NOINIT
+#include "MemMap.h"
+
+#define API_START_SEC_DATA
+#include "MemMap.h"
+
 static int assert_count = EE_ASSERT_NIL;
 static void assert(int test)
 {
@@ -26,7 +32,7 @@ static void assert(int test)
   EE_assert(next_assert, test, EE_ASSERT_NIL);
   assert_count = next_assert;
 }
-#define API_STOP_SEC_VAR_NOINIT
+#define API_STOP_SEC_VAR_DATA
 #define API_STOP_SEC_CODE
 #include "MemMap.h"
 
@@ -114,7 +120,7 @@ TASK(TaskApp2Prio5)
   ActivateTask(TaskApp1Prio6);
   WaitEvent(DummyEvent);
 
-  EE_assert_range(0, 1, assert_count); 
+  EE_assert_range(0, 1, assert_count);
   EE_assert_last();
 
   /* This shall not never return */

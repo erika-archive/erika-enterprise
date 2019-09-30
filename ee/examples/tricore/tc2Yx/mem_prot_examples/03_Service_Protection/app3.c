@@ -26,9 +26,6 @@ TASK(TaskApp3Prio2)
     IncrementCounter(CounterApp3);
     TerminateTask();
     error();
-  } else if ( count == 3U ) {
-    IncrementCounter(CounterApp3);
-    error();
   } else {
     error();
   }

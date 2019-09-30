@@ -101,6 +101,7 @@ CPU test_application {
     EXPIRE_POINT = ACTION {
       EXPIRE_VALUE = 1;
       ACTION = SETEVENT { TASK = TaskApp1Prio1; EVENT = EventApp1Prio1; };
+      ACTION = SETEVENT { TASK = TaskApp2Prio2; EVENT = EventApp2Prio2; };
       SYNC_ADJUSTMENT = FALSE;
     };
     LOCAL_TO_GLOBAL_TIME_SYNCHRONIZATION = FALSE; //EG @Nico: Che regola di syncronizzazione imponi nella ROM della schedule table in questo caso?

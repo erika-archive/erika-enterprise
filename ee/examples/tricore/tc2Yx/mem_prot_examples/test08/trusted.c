@@ -21,6 +21,11 @@ unsigned int priority_to_be_generated;
 
 EE_TYPEASSERTVALUE EE_assertions[20];
 
+#define API_STOP_SEC_VAR_NOINIT
+#include "MemMap.h"
+#define API_START_SEC_DATA
+#include "MemMap.h"
+
 static int assert_count = EE_ASSERT_NIL;
 static void assert(int test)
 {
@@ -29,7 +34,7 @@ static void assert(int test)
   EE_assert(next_assert, test, EE_ASSERT_NIL);
   assert_count = next_assert;
 }
-#define API_STOP_SEC_VAR_NOINIT
+#define API_STOP_SEC_DATA
 #define API_STOP_SEC_CODE
 #include "MemMap.h"
 
@@ -46,7 +51,7 @@ void EE_TC_CHANGE_STACK_POINTER TRUSTED_call_stack3( void )
     assert((EE_STACK_ENDP(EE_tc_stack_4) < sp) && (sp <= EE_STACK_INITP(EE_tc_stack_4)));
     assert( current_app == 2U );
     assert( EE_as_Application_RAM[current_app].TrustedFunctionCallsCounter != 0U );
-    /* !!!! FOLLOWING INSTRUCTION IS CRIMINAL done only because 
+    /* !!!! FOLLOWING INSTRUCTION IS CRIMINAL done only because
             App1Isr3 will be filtered by EE_tc_isr2_global_wrapper for
             [OS563] !!!!   */
     /* EE_as_Application_RAM[1].TrustedFunctionCallsCounter = 0U;
@@ -151,7 +156,7 @@ void EE_TC_CHANGE_STACK_POINTER FuncTaskApp2Prio5( void )
   if ( count >= 5U ) {
     assert ( UserApp1ISRTOS == EE_tc_system_tos[EE_as_Application_ROM[UserApp1].ISRTOS].ram_tos );
     assert ( TrustedApp2ISRTOS == EE_tc_system_tos[EE_as_Application_ROM[TrustedApp2].ISRTOS].ram_tos );
-    EE_assert_range(0, 1, assert_count); 
+    EE_assert_range(0, 1, assert_count);
     EE_assert_last();
   }
   ++count;

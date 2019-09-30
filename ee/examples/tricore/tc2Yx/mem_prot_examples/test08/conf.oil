@@ -2,9 +2,7 @@ CPU PerfTestApp {
   OS EE {
     EE_OPT = "EE_DEBUG";
     EE_OPT = "__ASSERT__";
-    EE_OPT = "EE_EXECUTE_FROM_RAM";
     EE_OPT = "EE_SAVE_TEMP_FILES";
-    //EE_OPT = "EE_MM_OPT";
 
     MEMORY_PROTECTION = TRUE;
     STACKMONITORING = TRUE;
@@ -79,7 +77,6 @@ CPU PerfTestApp {
     STACK = SHARED;
   };
 
-  
   TASK TaskApp2Prio5 {
     PRIORITY = 5;
     ACTIVATION = 4;

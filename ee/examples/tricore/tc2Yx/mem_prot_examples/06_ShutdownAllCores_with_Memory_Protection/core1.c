@@ -100,11 +100,11 @@ void ShutdownHook_AppCore1( StatusType Error )
   test_assert(GetApplicationID() == AppCore1);
   test_assert(core1App_startup == 1U);
 #ifdef EE_TEST_TASK_IN_EXECUTION_TERMINATION
-  test_assert(std_activated == 6U);
-  test_assert(ext_activated == 2U);
+  test_assert(std_activated == 3U);
+  test_assert(ext_activated == 1U);
 #else  /* EE_TEST_TASK_IN_EXECUTION_TERMINATION */
-  test_assert(std_activated <= 6U);
-  test_assert(ext_activated <= 2U);
+  test_assert(std_activated <= 3U);
+  test_assert(ext_activated <= 1U);
 #endif /* EE_TEST_TASK_IN_EXECUTION_TERMINATION */
 
   EE_assert_range(0, 1, assert_count);
