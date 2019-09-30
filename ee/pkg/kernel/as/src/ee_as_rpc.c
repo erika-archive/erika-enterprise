@@ -63,8 +63,7 @@ EE_BIT volatile EE_SHARED_UDATA EE_as_shutdown_all_cores_flag;
 StatusType volatile EE_SHARED_UDATA EE_as_shutdown_all_cores_error;
 
 /** @brief Mask used in shutdown all cores procedure for synchronization */
-EE_UREG volatile EE_SHARED_IDATA
-  EE_as_shutdown_mask = ( (EE_UREG)1U << EE_MAX_CPU ) - 1U;
+EE_UREG volatile EE_SHARED_UDATA EE_as_shutdown_mask;
 
 #ifdef __EE_MEMORY_PROTECTION__
 /** @brief array used to crossing memory protection between cores when call a

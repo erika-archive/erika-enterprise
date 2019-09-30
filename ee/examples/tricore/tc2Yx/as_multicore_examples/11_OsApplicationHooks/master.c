@@ -40,7 +40,7 @@
 #include "ee.h"
 #include "shared.h"
 
-#define ASSERT_LENGTH 20U
+#define ASSERT_LENGTH 15U
 EE_TYPEASSERTVALUE EE_assertions[ASSERT_LENGTH];
 
 static int assert_count = EE_ASSERT_NIL;
@@ -128,7 +128,7 @@ if ( current_core == OS_CORE_ID_2 )
     EE_assert_range(0U, 1U, assert_count);
 
     EE_assert_last();
- 
+
   } else if  ( current_core == OS_CORE_ID_1 ) {
     slave1_shutdown = 1;
   } else if ( current_core == OS_CORE_ID_2 ) {

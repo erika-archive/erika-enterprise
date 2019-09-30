@@ -7,7 +7,7 @@
  *
  * ERIKA Enterprise is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation, 
+ * version 2 as published by the Free Software Foundation,
  * (with a special exception described below).
  *
  * Linking this code statically or dynamically with other modules is
@@ -109,7 +109,7 @@ void EE_oo_ShutdownOS_internal(StatusType Error)
 #if 0
   EE_oo_call_PostTaskHook();
 #endif
-  
+
   /* Definitely stop the timing protection. I cannot use EE_as_tp_active_stop,
      because it will restart Reclamation Time Frames Budget */
   EE_hal_tp_stop();
@@ -178,7 +178,7 @@ void EE_oo_ShutdownOS_internal(StatusType Error)
           synchronized. (BSW4080007) */
       EE_hal_sync_barrier(
         &EE_startos_before_hook_barrier,
-        &EE_as_core_mask,
+        &EE_as_shutdown_mask,
         EE_OO_SHUTDOWNOS_SYNC_BARRIER_CB
       );
     } else {

@@ -7,7 +7,7 @@
  *
  * ERIKA Enterprise is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation, 
+ * version 2 as published by the Free Software Foundation,
  * (with a special exception described below).
  *
  * Linking this code statically or dynamically with other modules is
@@ -106,7 +106,6 @@ extern void EE_OO_STARTOS_2ND_SYNC_BARRIER_CB( void );
 static EE_TID compute_task_tid(const EE_TID task_id_vec[], EE_UREG t);
 static void EE_oo_autostart_tasks(AppModeType Mode);
 
-  
 static EE_TID compute_task_tid(const EE_TID task_id_vec[], EE_UREG t)
 {
   EE_TID res = EE_NIL;
@@ -262,7 +261,7 @@ static void EE_oo_start_os(void);
 
 
 /*
- * If __OO_STARTOS_OLD__ is not defined the system behaves 
+ * If __OO_STARTOS_OLD__ is not defined the system behaves
  * like Autosar requires: infinite loop (do not return).
  * This is the standard solution.
  */
@@ -467,6 +466,11 @@ StatusType EE_oo_StartOS(AppModeType Mode)
         &EE_as_core_mask,
         EE_OO_STARTOS_2ND_SYNC_BARRIER_CB
       );
+#if (defined(EE_MASTER_CPU))
+/* After second synchronization I'm sure that no more AR cores will be
+   started: I initialize the Shutdown(AllCores) mask in master core */
+      EE_as_shutdown_mask = EE_as_core_mask;
+#endif /* EE_MASTER_CPU */
 #endif /* __MSRP__ && !EE_AS_MULTICORE_NO_SYNC */
 
       /* Check if there is a preemption.
@@ -509,6 +513,9 @@ StatusType EE_oo_StartOS(AppModeType Mode)
         __OO_STARTOS_OLD__ enabled) I have to enable IRQ. */
       /* In any case enable IRQ before endless IDLE loop */
       EE_hal_enableIRQ();
+#if (defined(EE_REALLY_HANDLE_OS_IRQ_CRITICAL_SECTION))
+      EE_hal_set_int_prio(EE_ISR_UNMASKED);
+#endif /* EE_REALLY_HANDLE_OS_IRQ_CRITICAL_SECTION */
       /* If __OO_STARTOS_OLD__ is defined -> return, otherwise endless cycle. */
       EE_oo_start_os();
     }
