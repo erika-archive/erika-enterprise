@@ -154,9 +154,9 @@ __INLINE__ void __ALWAYS_INLINE__ EE_hal_end_nested_primitive(EE_FREG flag)
 }
 
 /* Used to get internal CPU priority. */
-__INLINE__ EE_TYPEISR2PRIO __ALWAYS_INLINE__ EE_hal_get_int_prio( void )
+__INLINE__ EE_TYPEISR2PRIO __ALWAYS_INLINE__ EE_hal_get_int_prio(EE_FREG flag)
 {
-  return EE_tc_get_int_prio();
+  return flag;
 }
 
 /* Used to set internal CPU priority. */
@@ -174,7 +174,6 @@ __INLINE__ void __ALWAYS_INLINE__ EE_hal_set_int_prio( EE_TYPEISR2PRIO prio )
 __INLINE__ EE_FREG __ALWAYS_INLINE__ EE_hal_change_int_prio(
   EE_TYPEISR2PRIO prio, EE_FREG flags )
 {
-  EE_tc_set_int_prio(prio);
   return EE_TC_ADJUST_FLAGS_WITH_NEW_PRIO(flags, prio);
 }
 
@@ -187,12 +186,11 @@ __INLINE__ EE_FREG __ALWAYS_INLINE__ EE_hal_change_int_prio(
  */
 
 __INLINE__ EE_FREG __ALWAYS_INLINE__ EE_hal_raise_int_prio_if_less(
-  EE_TYPEISR2PRIO new_prio, EE_FREG flags )
+  EE_TYPEISR2PRIO new_prio, EE_FREG flags)
 {
-  register EE_TYPEISR2PRIO prev_prio = EE_tc_get_int_prio();
-  if ( prev_prio < new_prio )
-  {
-    EE_tc_set_int_prio(new_prio);
+  register EE_TYPEISR2PRIO prev_prio = (EE_TYPEISR2PRIO)flags;
+
+  if (prev_prio < new_prio) {
     /* Mask CCPN in flags and set the new one */
     flags = EE_TC_ADJUST_FLAGS_WITH_NEW_PRIO(flags, new_prio);
   }
@@ -204,9 +202,9 @@ __INLINE__ EE_FREG __ALWAYS_INLINE__ EE_hal_raise_int_prio_if_less(
     set.
 */
 __INLINE__ EE_BIT __ALWAYS_INLINE__ EE_hal_check_int_prio_if_higher(
-    EE_TYPEISR2PRIO new_prio )
+  EE_TYPEISR2PRIO new_prio, EE_FREG flags)
 {
-  register EE_TYPEISR2PRIO actual_prio = EE_tc_get_int_prio();
+  register EE_TYPEISR2PRIO actual_prio = (EE_TYPEISR2PRIO)flags;
   return (actual_prio > new_prio)? 1U: 0U;
 }
 

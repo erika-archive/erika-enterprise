@@ -7,7 +7,7 @@
  *
  * ERIKA Enterprise is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation, 
+ * version 2 as published by the Free Software Foundation,
  * (with a special exception described below).
  *
  * Linking this code statically or dynamically with other modules is
@@ -51,7 +51,7 @@
    - no point of rescheduling inside critical sections!!!
    - returns (only extended state)
        E_OS_ID     if resource number is invalid
-       E_OS_ACCESS if resource already locked or interrupt routine 
+       E_OS_ACCESS if resource already locked or interrupt routine
                    greater than the ceiling priority
 
    Extended Status: Count for locked resources!!!!
@@ -140,9 +140,10 @@ __OO_EXTENDED_STATUS__ */
 #ifdef __OO_ISR2_RESOURCES__
   /* Check if interrupt controller priority is greater than priority
      of resource to be realeased */
-  if ( (inside_task == EE_FALSE) &&
-    (EE_hal_check_int_prio_if_higher(EE_resource_isr2_priority[ResID]) !=
-     0U) )
+  if ((inside_task == EE_FALSE) &&
+    (EE_hal_check_int_prio_if_higher(EE_resource_isr2_priority[ResID], flag)
+      != 0U)
+  )
   {
     ev = E_OS_ACCESS;
   } else
@@ -163,7 +164,7 @@ __OO_EXTENDED_STATUS__ */
 
 #if (defined(__OO_EXTENDED_STATUS__)) || (defined(__OO_ISR2_RESOURCES__))
     /* remove the last entry from the data structure */
-    EE_th_resource_last[current] = 
+    EE_th_resource_last[current] =
       EE_resource_stack[EE_th_resource_last[current]];
 #endif /* __OO_EXTENDED_STATUS__ || __OO_ISR2_RESOURCES__ */
 
@@ -181,7 +182,7 @@ __OO_EXTENDED_STATUS__ */
 
     /* there is no need to store that the resource has no more lockers,
        because we inserted an if expression into the ORTI File */
-#if 0    
+#if 0
 #ifdef __OO_ORTI_RES_LOCKER_TASK__
     EE_ORTI_res_locker[ResID] = EE_NIL;
 #endif

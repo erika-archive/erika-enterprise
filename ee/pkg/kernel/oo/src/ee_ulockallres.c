@@ -7,7 +7,7 @@
  *
  * ERIKA Enterprise is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation, 
+ * version 2 as published by the Free Software Foundation,
  * (with a special exception described below).
  *
  * Linking this code statically or dynamically with other modules is
@@ -69,7 +69,7 @@ static void EE_oo_unlock_others(EE_UREG ResID)
 #else
 #define EE_oo_unlock_others(ResID)  ((void)0)
 #endif
-#endif 
+#endif
 
 EE_UREG EE_oo_release_all_resources( EE_TID tid ) {
   /* ALLERT! this method have to be called only inside a critical section
@@ -100,11 +100,12 @@ EE_UREG EE_oo_release_all_resources( EE_TID tid ) {
        resource stack */
     EE_sys_ceiling = EE_resource_oldceiling[ResID];
 
-#ifdef __OO_ISR2_RESOURCES__
+#if (defined(__OO_ISR2_RESOURCES__)) &&\
+    (!defined(EE_REALLY_HANDLE_OS_IRQ_CRITICAL_SECTION))
     /* Restore the isr2 prio with the old value from the bottom of the
        resource stack */
     EE_hal_set_int_prio(EE_isr2_oldpriority[ResID]);
-#endif /* __OO_ISR2_RESOURCES__ */
+#endif /* __OO_ISR2_RESOURCES__ && !EE_REALLY_HANDLE_OS_IRQ_CRITICAL_SECTION */
 
 #ifdef __OO_ORTI_PRIORITY__
     /* Restore the ORTI priority with the old value from the bottom of the

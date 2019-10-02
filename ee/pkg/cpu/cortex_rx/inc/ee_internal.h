@@ -7,7 +7,7 @@
  *
  * ERIKA Enterprise is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation, 
+ * version 2 as published by the Free Software Foundation,
  * (with a special exception described below).
  *
  * Linking this code statically or dynamically with other modules is
@@ -38,7 +38,7 @@
  * Boston, MA 02110-1301 USA.
  * ###*E*### */
 
-/** 
+/**
 	@file	ee_internal.h
 	@brief	Derived from cpu/pic30/inc/ee_internal.h
 	@author	Gianluca Franchino
@@ -46,7 +46,7 @@
 	@date	2012
   @author Christoph Kreuzberger
   @date 2014
-*/  
+*/
 
 #ifndef __INCLUDE_CORTEX_RX_INTERNAL_H__
 #define __INCLUDE_CORTEX_RX_INTERNAL_H__
@@ -103,8 +103,9 @@ __INLINE__ void __ALWAYS_INLINE__ EE_hal_end_nested_primitive(EE_FREG f)
 }
 
 /* Used to get internal CPU priority. */
-__INLINE__ EE_TYPEISR2PRIO __ALWAYS_INLINE__ EE_hal_get_int_prio(void)
+__INLINE__ EE_TYPEISR2PRIO __ALWAYS_INLINE__ EE_hal_get_int_prio(EE_FREG flags)
 {
+  (void)flags;
   return EE_cortex_rx_get_int_prio();
 }
 
@@ -151,15 +152,16 @@ __INLINE__ EE_FREG __ALWAYS_INLINE__ EE_hal_raise_int_prio_if_less(
  * than actual priority.
  */
 __INLINE__ EE_BIT __ALWAYS_INLINE__ EE_hal_check_int_prio_if_higher(
-  EE_TYPEISR2PRIO new_prio
+  EE_TYPEISR2PRIO new_prio, EE_FREG flags
 )
 {
+  (void)flags;
   register EE_TYPEISR2PRIO prev_prio = EE_cortex_rx_get_int_prio();
   return ((prev_prio != 0U) && ((prev_prio < new_prio) || (new_prio == 0U)));
 }
 
-/* 
- * Context Handling  
+/*
+ * Context Handling
  */
 
 //#include "cpu/cortex_rx/inc/ee_context.h"
@@ -174,7 +176,7 @@ EE_TID EE_std_run_task_code(EE_TID tid);
 #define EE_hal_IRQ_stacked	EE_hal_endcycle_stacked
 #define EE_hal_IRQ_ready	EE_hal_endcycle_ready
 
-/* 
+/*
  * OO TerminateTask related stuffs
  */
 

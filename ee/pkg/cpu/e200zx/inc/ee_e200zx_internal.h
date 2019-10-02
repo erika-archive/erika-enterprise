@@ -132,8 +132,9 @@ __INLINE__ void __ALWAYS_INLINE__ EE_hal_end_nested_primitive(EE_FREG endflags)
 }
 
 /* Used to get internal CPU priority. */
-__INLINE__ EE_TYPEISR2PRIO __ALWAYS_INLINE__ EE_hal_get_int_prio(void)
+__INLINE__ EE_TYPEISR2PRIO __ALWAYS_INLINE__ EE_hal_get_int_prio(EE_FREG flags)
 {
+	(void)flags;
 	return EE_e200zx_get_int_prio();
 }
 
@@ -185,7 +186,9 @@ __INLINE__ EE_FREG __ALWAYS_INLINE__
 		set.
 	*/
 __INLINE__ EE_BIT __ALWAYS_INLINE__ EE_hal_check_int_prio_if_higher(
-		EE_TYPEISR2PRIO new_prio){
+		EE_TYPEISR2PRIO new_prio, EE_FREG flags)
+{
+	(void)flags;
 	EE_TYPEISR2PRIO actual_prio = EE_e200zx_get_int_prio();
 	return (actual_prio > new_prio)?1U:0U;
 }

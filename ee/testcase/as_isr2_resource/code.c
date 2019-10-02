@@ -7,7 +7,7 @@
  *
  * ERIKA Enterprise is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation, 
+ * version 2 as published by the Free Software Foundation,
  * (with a special exception described below).
  *
  * Linking this code statically or dynamically with other modules is
@@ -56,6 +56,15 @@
 #define IRQ_LOW_PRIO    EE_ISR_PRI_1
 #define IRQ_MEDIUM_PRIO EE_ISR_PRI_2
 #define IRQ_HIGH_PRIO   EE_ISR_PRI_3
+
+/* Workaround for the new signature of EE_hal_get_int_prio */
+#if defined(EE_TRICORE__)
+#define EE_hal_get_int_prio EE_tc_get_int_prio
+#elif (defined(__PPCE200Z7__)) || (defined(__PPCE200ZX__))
+#define EE_hal_get_int_prio EE_e200zx_get_int_prio
+#elif (defined(__CORTEX_MX__))
+#define EE_hal_get_int_prio EE_cortex_mx_get_int_prio()
+#endif /* EE_TRICORE__ || (__PPCE200Z7__ || __PPCE200ZX__) || __CORTEX_MX__ */
 
 static StatusType last_error;
 static unsigned int error_count;
@@ -254,7 +263,7 @@ int main(int argc, char *argv[])
   assert(EE_th_resource_last[EE_MAX_TASK] == EE_UREG_MINUS1);
   assert(EE_th_resource_last[EE_MAX_TASK + 1] == EE_UREG_MINUS1);
 
-  EE_assert_range(0, 1, assert_count); 
+  EE_assert_range(0, 1, assert_count);
 
   EE_assert_last();
 
