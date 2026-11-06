@@ -1,0 +1,57 @@
+; Script for SPC574K (K2)
+; Author: Francesco Esposito
+; Company: Evidence Srl
+; 19-3-2014
+; Note: derived from Lauterbach script
+;
+&use_vle=#USE_VLE#
+
+;core_0: halt on reset
+&core0 SYStem.Up
+
+if POWERNEXUS()
+(
+  &all Trace.INIT
+)
+
+; initialize internal SRAM
+&core0 Data.Set EA:0x40008000--0x4000FFFF %quad 0
+
+;core_1: still in reset, attach only
+&core1 SYStem.Mode.Attach
+&alletpu SYStem.Mode.Attach
+
+; Load ALL of the master
+&core0 Data.LOAD "master/myProject_master.elf"
+
+; evi - call orti.cmm if needed
+cd master
+#ORTICMD#
+cd ..
+
+; Load ONLY code of the slave
+&core0 Data.LOAD "slave/myProject_slave.elf" 0x40008000--0x40010000 /NosYmbol /NoReg /NoBreak /NoClear
+
+;core_1: on a Break while in reset, the debugger will stop core 1 as soon as it comes out of reset
+&core1 Break
+
+; Load ALL except code of slave core using core1 debug instance (code has been already loaded by previous command)
+&core1 DO slave/t32.cmm
+
+; The following statements are ALL ignored
+;
+;core_0: run until function main_core0
+;  &core0 Break.Set main_core0
+;  &core0 Go
+  
+;core_0 reaches main_core0 after enabling core_1 -> wait until core_1 stopped at reset
+;  &core1 WAIT !RUN()
+  
+;now both cores are enabled
+;run to main_core1
+;  &core1 Go main_core1
+;  &core1 WAIT !RUN()
+
+;core_0 will reach main_core0 after core_1 sets nCore1_Ready to 1
+;  &core0 WAIT !RUN()
+;  &core0 Break.Delete main_core0

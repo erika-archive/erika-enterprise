@@ -1,0 +1,16 @@
+; Script for MPC5777C (Cobra55)
+; Author: Francesco Esposito
+; Company: Evidence Srl
+; 19-3-2014
+; Note: derived from Lauterbach script
+;
+
+Data.LOAD "slave/myProject_slave.elf" /NoCode
+
+; evi - call orti.cmm if needed
+cd slave
+#ORTICMD#
+cd ..
+
+ENDDO
+
